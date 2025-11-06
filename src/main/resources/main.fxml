@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.SeparatorMenuItem?>
+<?import javafx.scene.control.TreeView?>
+<?import javafx.scene.control.TreeItem?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.Button?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="dev.hipposgrumm.kamapreader.FirstThing"
+      minWidth="800" minHeight="600" stylesheets="@style.css">
+    <MenuBar fx:id="menuBar" onKeyPressed="#handleKeyInput">
+        <Menu text="File">
+            <MenuItem text="Open" onAction="#load"/>
+            <MenuItem text="Package Mod" onAction="#save"/>
+            <SeparatorMenuItem/>
+            <MenuItem text="Exit"/>
+        </Menu>
+        <Menu text="Edit" visible="false">
+            <MenuItem text="Copy"/>
+            <MenuItem text="Cut"/>
+            <MenuItem text="Paste"/>
+        </Menu>
+        <Menu text="Help">
+            <MenuItem text="Help" onAction="#helpButton"/>
+        </Menu>
+    </MenuBar>
+    <HBox fx:id="dragTarget" alignment="CENTER" spacing="20.0">
+        <padding>
+            <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+        </padding>
+        <TreeView fx:id="tree" minWidth="300" minHeight="525">
+            <TreeItem fx:id="treeRoot"/>
+        </TreeView>
+        <VBox alignment="CENTER" spacing="5.0">
+            <TableView fx:id="table" minWidth="435" minHeight="500">
+                <placeholder>
+                    <Label text="Open a file to begin."/>
+                </placeholder>
+            </TableView>
+            <Button text="Save" minWidth="435" onAction="#save"/>
+        </VBox>
+    </HBox>
+</VBox>
