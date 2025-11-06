@@ -23,17 +23,14 @@ public class SoundsBlock extends Block {
     protected void read(BlockReader reader) throws IOException {
         rsck = ResourceCheckBlock.read(reader, "SnFm");
         arck = ArCkBlock.read(reader, "SnFm");
-        boolean littleEndian = reader.isLittleEndian();
         while (reader.getRemaining() >= 40) {
             byte[] un = reader.readBytes(40);
-            reader.setLittleEndian(true);
-            int size = reader.readInt();
-            int un2 = reader.readInt();
+            int size = reader.readIntLittle();
+            int un2 = reader.readIntLittle();
             SnSound snd = new SnSound(reader.readBytes(size));
             snd.UNKNOWN1 = un;
             snd.UNKNOWN2 = un2;
             sounds.add(snd);
-            reader.setLittleEndian(littleEndian);
         }
         tailingbytes = reader.readBytes(reader.getRemaining());
     }
@@ -42,14 +39,11 @@ public class SoundsBlock extends Block {
     public void write(BlockWriter writer) throws IOException {
         rsck.write(writer.segment());
         arck.write(writer.segment());
-        boolean littleEndian = writer.isLittleEndian();
         for (SnSound snd:sounds) {
             writer.writeBytes(snd.UNKNOWN1);
-            writer.setLittleEndian(true);
-            writer.writeInt(snd.getData().length);
-            writer.writeInt(snd.UNKNOWN2);
+            writer.writeIntLittle(snd.getData().length);
+            writer.writeIntLittle(snd.UNKNOWN2);
             writer.writeBytes(snd.getData());
-            writer.setLittleEndian(littleEndian);
         }
         writer.writeBytes(tailingbytes);
     }

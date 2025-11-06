@@ -24,16 +24,16 @@ public class Texture implements DatingBachelor, Previewable {
     public Texture(BlockReader reader, boolean arckVariant) throws IOException {
         if (arckVariant) unknown0 = reader.readBytes(4);
         else unknown0 = null;
-        this.unknown1 = reader.readInt();
-        this.uid = reader.readInt();
+        this.unknown1 = reader.readIntLittle();
+        this.uid = reader.readIntLittle();
         this.unknown2 = reader.readBytes(87);
         byte b = reader.readByte();
         this.textures = new BITMAP_TEXTURE[b];
         for (int i=0;i<textures.length;i++) {
-            BITMAP_TEXTURE tex = new BITMAP_TEXTURE(reader.readUShort(), reader.readUShort());
-            tex.UNKNOWN1 = reader.readInt();
-            tex.UNKNOWN2 = reader.readInt();
-            tex.FORMAT = switch (reader.readInt()) {
+            BITMAP_TEXTURE tex = new BITMAP_TEXTURE(reader.readUShortLittle(), reader.readUShortLittle());
+            tex.UNKNOWN1 = reader.readIntLittle();
+            tex.UNKNOWN2 = reader.readIntLittle();
+            tex.FORMAT = switch (reader.readIntLittle()) {
                 case 21 -> BITMAP_TEXTURE.Format.A8R8G8B8;
                 case 22 -> BITMAP_TEXTURE.Format.X8R8G8B8;
                 case 23 -> BITMAP_TEXTURE.Format.R5G6B5;
@@ -43,7 +43,7 @@ public class Texture implements DatingBachelor, Previewable {
             int bytesize = tex.FORMAT.bytesize();
             Number[] bytes = new Number[tex.WIDTH * tex.HEIGHT];
             ByteBuffer buffer = ByteBuffer.wrap(reader.readBytes(bytes.length * bytesize));
-            if (reader.isLittleEndian()) buffer.order(ByteOrder.LITTLE_ENDIAN);
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
             switch (bytesize) {
                 case 2 -> {
                     for (int j=0;j<bytes.length;j++)
@@ -62,20 +62,20 @@ public class Texture implements DatingBachelor, Previewable {
 
     public void write(BlockWriter writer) throws IOException {
         if (unknown0 != null) writer.writeBytes(unknown0);
-        writer.writeInt(unknown1);
-        writer.writeInt(uid);
+        writer.writeIntLittle(unknown1);
+        writer.writeIntLittle(uid);
         writer.writeBytes(unknown2);
         writer.writeByte((byte) textures.length);
         for (BITMAP_TEXTURE tex:textures) {
-            writer.writeUShort(tex.WIDTH);
-            writer.writeUShort(tex.HEIGHT);
-            writer.writeInt(tex.UNKNOWN1);
-            writer.writeInt(tex.UNKNOWN2);
-            writer.writeInt(tex.FORMAT.id);
+            writer.writeUShortLittle(tex.WIDTH);
+            writer.writeUShortLittle(tex.HEIGHT);
+            writer.writeIntLittle(tex.UNKNOWN1);
+            writer.writeIntLittle(tex.UNKNOWN2);
+            writer.writeIntLittle(tex.FORMAT.id);
             int bytesize = tex.FORMAT.bytesize();
             Number[] bytes = tex.getData();
             ByteBuffer buffer = ByteBuffer.allocate(bytes.length * bytesize);
-            if (writer.isLittleEndian()) buffer.order(ByteOrder.LITTLE_ENDIAN);
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
             switch (bytesize) {
                 case 2 -> {
                     for (Number num:bytes)

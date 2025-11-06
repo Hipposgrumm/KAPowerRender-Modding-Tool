@@ -32,7 +32,6 @@ public class TexturesBlock extends Block {
             arck = ArCkBlock.read(reader, "TrFm");
         } else unknown = reader.readBytes(12);
 
-        reader.setLittleEndian(true);
         while (reader.getRemaining() > 0) {
             textures.add(new Texture(reader, arck != null));
         }
@@ -43,8 +42,7 @@ public class TexturesBlock extends Block {
         rsck.write(writer.segment());
         if (arck != null) arck.write(writer.segment());
 
-        writer.setLittleEndian(true);
-        writer.writeBytes(unknown);
+        if (unknown != null) writer.writeBytes(unknown);
         for (Texture tex:textures) {
             tex.write(writer.segment());
         }

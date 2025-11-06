@@ -23,33 +23,33 @@ public class Icon {
     }
 
     public static ImageView play() {
-        return icon(play);
+        return icon(play, 25);
     }
 
     public static ImageView pause() {
-        return icon(pause);
+        return icon(pause, 25);
     }
 
     public static ImageView stop() {
-        return icon(stop);
+        return icon(stop, 25);
     }
 
     public static ImageView loop() {
-        return icon(loop);
+        return icon(loop, 25);
     }
 
     public static ImageView download() {
-        return icon(download);
+        return icon(download, 15);
     }
 
     public static ImageView upload() {
-        return icon(upload);
+        return icon(upload, 15);
     }
 
-    private static ImageView icon(Image image) {
+    private static ImageView icon(Image image, double size) {
         ImageView view = new ImageView(image);
-        view.setFitWidth(25);
-        view.setFitHeight(25);
+        view.setFitWidth(size);
+        view.setFitHeight(size);
         return view;
     }
 }

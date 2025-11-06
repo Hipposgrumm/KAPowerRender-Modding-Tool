@@ -25,7 +25,7 @@ public class TexturesDisplay {
             Button changeButton = new Button("Change Texture", Icon.upload());
             if (i == 0) {
                 double minwidth = controller.tableValue.getMinWidth();
-                controller.tableValue.setMinWidth(image.getImage().getWidth() + 125);
+                controller.tableValue.setMinWidth(image.getImage().getWidth() + 150);
                 controller.tableValue.setMinWidth(minwidth);
             }
             saveButton.setOnAction(event -> saveOne(controller, parent, texArr[lambdaSafeIndex]));
