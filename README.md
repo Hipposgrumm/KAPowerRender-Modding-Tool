@@ -18,4 +18,6 @@ Anything that is not implemented will remain intact when the modded `KAR` is gen
 - Anything else not listed here
 
 # How to Use
-There currently is no build of it so for now I guess you just have to wrangle the compiler and hope the current contents run.
+Go to [releases](https://github.com/Hipposgrumm/KAPowerRender-Modding-Tool/releases) and download `app.zip`.  
+Unzip `app.zip`, navigate to the `bin` folder inside the extracted folder, and run `app.bat`. It's hidden among the other files but it's there.
+Opening a `KAR` file with the app or dragging one on top of it will show you its contents.
