@@ -1,5 +1,10 @@
 package dev.hipposgrumm.kamapreader.reader;
 
+import dev.hipposgrumm.kamapreader.util.types.wrappers.SizeLimitedString;
+import dev.hipposgrumm.kamapreader.util.types.wrappers.UByte;
+import dev.hipposgrumm.kamapreader.util.types.wrappers.UInteger;
+import dev.hipposgrumm.kamapreader.util.types.wrappers.UShort;
+
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
@@ -128,13 +133,23 @@ public class BlockReader {
 
     /**
      * Reads a byte.
-     * @return Byte
+     * @return Byte (Signed)
      * @throws IOException If there is a read error.
      * @throws IndexOutOfBoundsException If there is not 1 byte of data to read.
      */
     public byte readByte() throws IOException {
         assertSize(1);
         return reader.readByte();
+    }
+
+    /**
+     * Reads an unsigned byte.
+     * @return Byte (Unsigned)
+     * @throws IOException If there is a read error.
+     * @throws IndexOutOfBoundsException If there is not 1 byte of data to read.
+     */
+    public UByte readUByte() throws IOException {
+        return new UByte(readByte());
     }
 
     /**
@@ -156,10 +171,8 @@ public class BlockReader {
      * @throws IOException If there is a read error.
      * @throws IndexOutOfBoundsException If there is not 2 bytes of available data to read as short.
      */
-    public int readUShort() throws IOException {
-        short s = readShort();
-        if (s >= 0) return s;
-        return s & 0xFFFF;
+    public UShort readUShort() throws IOException {
+        return new UShort(readShort());
     }
 
     /**
@@ -181,10 +194,8 @@ public class BlockReader {
      * @throws IOException If there is a read error.
      * @throws IndexOutOfBoundsException If there is not 4 bytes of available data to read as int.
      */
-    public long readUInt() throws IOException {
-        int i = readInt();
-        if (i >= 0) return i;
-        return i & 0xFFFFFFFFL; // Casts to long and removes negative bit (and any excess from long cast).
+    public UInteger readUInt() throws IOException {
+        return new UInteger(readInt());
     }
 
     /**
@@ -216,10 +227,8 @@ public class BlockReader {
      * @throws IOException If there is a read error.
      * @throws IndexOutOfBoundsException If there is not 2 bytes of available data to read as short.
      */
-    public int readUShortLittle() throws IOException {
-        short s = readShortLittle();
-        if (s >= 0) return s;
-        return s & 0xFFFF;
+    public UShort readUShortLittle() throws IOException {
+        return new UShort(readShortLittle());
     }
 
     /**
@@ -240,10 +249,8 @@ public class BlockReader {
      * @throws IOException If there is a read error.
      * @throws IndexOutOfBoundsException If there is not 4 bytes of available data to read as int.
      */
-    public long readUIntLittle() throws IOException {
-        int i = readIntLittle();
-        if (i >= 0) return i;
-        return i & 0xFFFFFFFFL; // Casts to long and removes negative bit (and any excess from long cast).
+    public UInteger readUIntLittle() throws IOException {
+        return new UInteger(readIntLittle());
     }
 
     /**
@@ -267,7 +274,7 @@ public class BlockReader {
         long i = reader.getFilePointer();
         while (i < endpos) {
             char c = (char)reader.read();
-            if (c==0) break;
+            if (c=='\0') break;
             string.append(c);
             i++;
         }
@@ -291,6 +298,28 @@ public class BlockReader {
             size--;
         }
         return string.toString();
+    }
+
+    /**
+     * Reads a string until it reaches an end character (NUL) or the end of the specified size.
+     * @param size Size of the string.
+     * @return Sized String
+     * @throws IOException If there is a read error.
+     * @throws IndexOutOfBoundsException If there is not enough data to read a string of the requested size.
+     */
+    public SizeLimitedString readStringFixed(int size) throws IOException {
+        assertSize(size);
+        StringBuilder string = new StringBuilder();
+        size--;
+        final int fullSize = size;
+        while (size > 0) {
+            char c = (char)reader.read();
+            if (c=='\0') break;
+            size--;
+            string.append(c);
+        }
+        reader.skipBytes(size);
+        return new SizeLimitedString(string.toString(), fullSize);
     }
 
     /**

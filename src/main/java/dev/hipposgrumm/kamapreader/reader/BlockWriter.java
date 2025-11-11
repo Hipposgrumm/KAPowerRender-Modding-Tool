@@ -1,6 +1,10 @@
 package dev.hipposgrumm.kamapreader.reader;
 
 import dev.hipposgrumm.kamapreader.blocks.Block;
+import dev.hipposgrumm.kamapreader.util.types.wrappers.SizeLimitedString;
+import dev.hipposgrumm.kamapreader.util.types.wrappers.UByte;
+import dev.hipposgrumm.kamapreader.util.types.wrappers.UInteger;
+import dev.hipposgrumm.kamapreader.util.types.wrappers.UShort;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -102,6 +106,15 @@ public class BlockWriter {
     }
 
     /**
+     * Write an unsigned byte.
+     * @param b UByte
+     * @throws IOException If there is a write error.
+     */
+    public void writeUByte(UByte b) throws IOException {
+        writeByte(b.getByte());
+    }
+
+    /**
      * Write a short.
      * @param s Short
      * @throws IOException If there is a write error.
@@ -113,11 +126,11 @@ public class BlockWriter {
 
     /**
      * Writes an unsigned short.
-     * @param s Short (Unsigned) -- This value will be casted to short.
+     * @param s UShort
      * @throws IOException If there is a write error.
      */
-    public void writeUShort(int s) throws IOException {
-        writeShort((short) s); // Casting will keep the sign in its existing place.
+    public void writeUShort(UShort s) throws IOException {
+        writeShort(s.getShort());
     }
 
     /**
@@ -132,11 +145,11 @@ public class BlockWriter {
 
     /**
      * Writes an unsigned integer.
-     * @param i Integer (Unsigned) -- This value will be casted to int.
+     * @param i UInteger
      * @throws IOException If there is a write error.
      */
-    public void writeUInt(long i) throws IOException {
-        writeInt((int) i); // Casting will keep the sign in its existing place.
+    public void writeUInt(UInteger i) throws IOException {
+        writeInt(i.getInt());
     }
 
     /**
@@ -163,8 +176,8 @@ public class BlockWriter {
      * @param s Short (Unsigned) -- This value will be casted to short.
      * @throws IOException If there is a write error.
      */
-    public void writeUShortLittle(int s) throws IOException {
-        writeShortLittle((short) s); // Casting will keep the sign in its existing place.
+    public void writeUShortLittle(UShort s) throws IOException {
+        writeShortLittle(s.getShort());
     }
 
     /**
@@ -182,8 +195,8 @@ public class BlockWriter {
      * @param i Integer (Unsigned) -- This value will be casted to int.
      * @throws IOException If there is a write error.
      */
-    public void writeUIntLittle(long i) throws IOException {
-        writeIntLittle((int) i); // Casting will keep the sign in its existing place.
+    public void writeUIntLittle(UInteger i) throws IOException {
+        writeIntLittle(i.getInt());
     }
 
     /**
@@ -212,6 +225,17 @@ public class BlockWriter {
     public void writeTerminatedString(String str) throws IOException {
         writer.writeBytes(str);
         writer.writeByte('\0');
+    }
+
+    /**
+     * Write a string with a terminating character (NUL) at the end, but with a specific size anyway.
+     * @param str String
+     * @throws IOException If there is a write error.
+     * @throws IndexOutOfBoundsException If the string is longer than the allotted space.
+     */
+    public void writeTerminatedStringFixed(SizeLimitedString str) throws IOException {
+        writer.writeBytes(str.toString());
+        writeBytes(new byte[(str.getSize()-str.toString().length())+1]);
     }
 
     /**

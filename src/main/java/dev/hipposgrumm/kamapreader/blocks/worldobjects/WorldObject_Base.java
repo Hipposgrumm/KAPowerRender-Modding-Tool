@@ -3,13 +3,13 @@ package dev.hipposgrumm.kamapreader.blocks.worldobjects;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
-import dev.hipposgrumm.kamapreader.util.types.WorldObjectFlags;
+import dev.hipposgrumm.kamapreader.util.types.Flags;
 
 import java.io.IOException;
 import java.util.List;
 
 public class WorldObject_Base extends WorldObject {
-    private WorldObjectFlags flags;
+    private Flags flags;
     private int base_un1;
     private int base_un2;
     private int base_un3;
@@ -27,7 +27,8 @@ public class WorldObject_Base extends WorldObject {
     @Override
     public void read(BlockReader reader) throws IOException {
         super.read(reader);
-        flags = new WorldObjectFlags(reader.readInt());
+        flags = new Flags(reader.readInt());
+        flags.setName(0, "Visible");
         base_un1 = reader.readInt();
         base_un2 = reader.readInt();
         base_un3 = reader.readInt();
@@ -43,7 +44,7 @@ public class WorldObject_Base extends WorldObject {
     @Override
     public void write(BlockWriter writer) throws IOException {
         super.write(writer);
-        writer.writeInt(flags.get());
+        writer.writeInt(flags.getValue());
         writer.writeInt(base_un1);
         writer.writeInt(base_un2);
         writer.writeInt(base_un3);

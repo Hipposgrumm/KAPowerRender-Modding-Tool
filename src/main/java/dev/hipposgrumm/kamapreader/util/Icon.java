@@ -11,6 +11,8 @@ public class Icon {
     private static final Image loop;
     private static final Image download;
     private static final Image upload;
+    private static final Image export;
+    private static final Image redirect;
 
     static {
         ClassLoader loader = Icon.class.getClassLoader();
@@ -20,6 +22,8 @@ public class Icon {
         loop = new Image(loader.getResourceAsStream("repeat-solid.png"));
         download = new Image(loader.getResourceAsStream("download-solid.png"));
         upload = new Image(loader.getResourceAsStream("file-import-solid.png"));
+        export = new Image(loader.getResourceAsStream("file-export-solid.png"));
+        redirect = new Image(loader.getResourceAsStream("arrow-up-right-from-square-solid.png"));
     }
 
     public static ImageView play() {
@@ -44,6 +48,14 @@ public class Icon {
 
     public static ImageView upload() {
         return icon(upload, 15);
+    }
+
+    public static ImageView export() {
+        return icon(export, 15);
+    }
+
+    public static ImageView redirect() {
+        return icon(redirect, 15);
     }
 
     private static ImageView icon(Image image, double size) {

@@ -10,8 +10,7 @@ import dev.hipposgrumm.kamapreader.util.types.SubBachelorPreviewEntry;
 import dev.hipposgrumm.kamapreader.util.types.Texture;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class TexturesBlock extends Block {
     private ResourceCheckBlock rsck;
@@ -19,7 +18,8 @@ public class TexturesBlock extends Block {
     private ArCkBlock arck;
     private byte[] unknown;
 
-    private final List<Texture> textures = new ArrayList<>();
+    private final List<Texture> textureList = new ArrayList<>();
+    public final Map<Integer, Texture> textures = new HashMap<>();
 
     public TexturesBlock(boolean arckVariant) {
         this.hasArCk = arckVariant;
@@ -33,7 +33,9 @@ public class TexturesBlock extends Block {
         } else unknown = reader.readBytes(12);
 
         while (reader.getRemaining() > 0) {
-            textures.add(new Texture(reader, arck != null));
+            Texture tex = new Texture(reader, arck != null);
+            textures.put(tex.getUid().get(), tex);
+            textureList.add(tex);
         }
     }
 
@@ -43,7 +45,7 @@ public class TexturesBlock extends Block {
         if (arck != null) arck.write(writer.segment());
 
         if (unknown != null) writer.writeBytes(unknown);
-        for (Texture tex:textures) {
+        for (Texture tex:textureList) {
             tex.write(writer.segment());
         }
     }
@@ -51,13 +53,13 @@ public class TexturesBlock extends Block {
     @Override
     public List<? extends DatingProfileEntry<?>> getDatingProfile() {
         return List.of(new SubBachelorPreviewEntry(
-                () -> textures
+                () -> textureList
         ));
     }
 
     @Override
     public List<? extends DatingBachelor> getSubBachelors() {
-        return textures;
+        return textureList;
     }
 
     @Override

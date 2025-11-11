@@ -3,16 +3,16 @@ package dev.hipposgrumm.kamapreader.util.control;
 import dev.hipposgrumm.kamapreader.FirstThing;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.Icon;
 import dev.hipposgrumm.kamapreader.util.control.display.SoundDisplay;
 import dev.hipposgrumm.kamapreader.util.control.display.TexturesDisplay;
-import dev.hipposgrumm.kamapreader.util.types.Previewable;
-import dev.hipposgrumm.kamapreader.util.types.SnSound;
-import dev.hipposgrumm.kamapreader.util.types.SubBachelorPreviewEntry;
-import dev.hipposgrumm.kamapreader.util.types.WorldObjectFlags;
+import dev.hipposgrumm.kamapreader.util.types.*;
 import dev.hipposgrumm.kamapreader.util.types.structs.*;
+import dev.hipposgrumm.kamapreader.util.types.wrappers.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.beans.value.ObservableValueBase;
+import javafx.collections.FXCollections;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -20,6 +20,10 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Pair;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.concurrent.atomic.AtomicReference;
 
 @SuppressWarnings("unchecked")
 public class ObservableDatingValue extends ObservableValueBase<Node> {
@@ -64,18 +68,100 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
             case String s -> text(s, (observable, oldValue, newValue) -> {
                 ((DatingProfileEntry<String>) entry).set(newValue);
             });
+            case UniqueIdentifier s -> {
+                AtomicReference<TextField> text = new AtomicReference<>();
+                text.set(text(s.toString(), (observable, oldValue, newValue) -> {
+                    String val = oldValue;
+                    try {
+                        s.set(Integer.parseInt(newValue, 16));
+                        val = newValue.toUpperCase();
+                    } catch (NumberFormatException ignored) {}
+                    text.get().setText(val);
+                }));
+                yield text.get();
+            }
+            case SizeLimitedString s -> {
+                AtomicReference<TextField> text = new AtomicReference<>();
+                text.set(text(s.toString(), (observable, oldValue, newValue) -> {
+                    if (newValue.length() > s.getSize()) {
+                        newValue = newValue.substring(0, s.getSize());
+                        text.get().setText(newValue);
+                    }
+                    s.setString(newValue);
+                }));
+                yield text.get();
+            }
+            case TextFileString s -> {
+                TextArea text = new TextArea(s.getContents());
+                if (entry.readOnly()) {
+                    text.setEditable(false);
+                } else {
+                    text.textProperty().addListener((observable, oldValue, newValue) -> {
+                        s.setContents(newValue);
+                    });
+                    text.textProperty().addListener(this::markChanged);
+                }
+
+                Button saveButton = new Button("Save File", Icon.export());
+                saveButton.setOnAction(event -> {
+                    try {
+                        String name = s.getName();
+                        int extPos = name.lastIndexOf('.');
+                        String ext = extPos >= 0 ?
+                                name.substring(extPos) :
+                                ".txt";
+                        File file = controller.popupSaveFile("Save File", extPos >= 0 ? name : name+".txt", "Text file ("+ext.substring(1).toUpperCase()+")", ext);
+                        if (file == null) return;
+                        if (!file.getName().endsWith(ext)) file = new File(file.getPath()+ext);
+                        if (!file.createNewFile() && !controller.popupQuestion("Overwrite Warning", "This file already exists!", "Would you like to overwrite the file?")) return;
+
+                        try (FileOutputStream outputStream = new FileOutputStream(file)) {
+                            outputStream.write(s.getContents().getBytes());
+                        }
+                    } catch (Exception e) {
+                        controller.popupError("Error Saving", "An exception was thrown when saving.", e);
+                    }
+                });
+                yield new VBox(text, saveButton);
+            }
             case Boolean b -> checkbox(b, (observable, oldValue, newValue) -> {
                 ((DatingProfileEntry<Boolean>) entry).set(newValue);
+            });
+            case Byte b -> byteSpinner(b, (observable, oldValue, newValue) -> {
+                ((DatingProfileEntry<Integer>) entry).set(newValue);
+            });
+            case UByte b -> ubyteSpinner(b, (observable, oldValue, newValue) -> {
+                ((DatingProfileEntry<Integer>) entry).set(newValue);
+            });
+            case Short s -> shortSpinner(s, (observable, oldValue, newValue) -> {
+                ((DatingProfileEntry<Integer>) entry).set(newValue);
+            });
+            case UShort s -> ushortSpinner(s, (observable, oldValue, newValue) -> {
+                ((DatingProfileEntry<Integer>) entry).set(newValue);
             });
             case Integer i -> intSpinner(i, (observable, oldValue, newValue) -> {
                 ((DatingProfileEntry<Integer>) entry).set(newValue);
             });
-            case Long i -> uintSpinner(i, (observable, oldValue, newValue) -> {
+            case UInteger i -> uintSpinner(i, (observable, oldValue, newValue) -> {
                 ((DatingProfileEntry<Long>) entry).set(newValue);
             });
             case Float f -> floatSpinner(f, (observable, oldValue, newValue) -> {
                 ((DatingProfileEntry<Float>) entry).set(newValue.floatValue());
             });
+            case EnumChoices e -> {
+                // This is gonna explode I can sense it.
+                ComboBox<? extends Enum<?>> dropdown = new ComboBox<>(FXCollections.observableList(e.choices()));
+                ((ComboBox<Enum<?>>) dropdown).setValue(e.getSelf()); // TODO: Does this actually work properly?
+                if (entry.readOnly()) {
+                    dropdown.setDisable(true);
+                } else {
+                    dropdown.valueProperty().addListener((observable, oldValue, newValue) -> {
+                        ((DatingProfileEntry<Enum<?>>) entry).set(newValue);
+                    });
+                    dropdown.valueProperty().addListener(this::markChanged);
+                }
+                yield dropdown;
+            }
             case PR_POINT p -> {
                 Control X = floatSpinner(p.X, (observable, oldValue, newValue) -> {
                     p.X = newValue.floatValue();
@@ -176,22 +262,65 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
                 Control B = floatSpinner(c.B, (observable, oldValue, newValue) -> {
                     c.B = newValue.floatValue();
                 });
-                R.setMaxWidth(90);
-                G.setMaxWidth(90);
-                B.setMaxWidth(90);
+                double width = 90;
                 HBox box = new HBox(0,
                         new Label("R:"), R,
                         new Label(" G:"), G,
                         new Label(" B:"), B
                 );
+                if (c instanceof FLOATCOLOR_RGBA cc) {
+                    Control A = floatSpinner(cc.A, (observable, oldValue, newValue) -> {
+                        c.B = newValue.floatValue();
+                    });
+                    width = 63;
+                    A.setMaxWidth(width);
+                    box.getChildren().addAll(new Label(" A:"), A);
+                }
+                R.setMaxWidth(width);
+                G.setMaxWidth(width);
+                B.setMaxWidth(width);
                 box.setAlignment(Pos.CENTER_LEFT);
                 yield box;
             }
-            case WorldObjectFlags fl -> new VBox(0,
-                    checkbox(fl.getVisible(), "Visible", (observable, oldValue, newValue) -> {
-                        fl.setVisible(newValue);
-                    })
-            );
+            case COLOR_RGBA c -> {
+                Control R = ubyteSpinner(new UByte((short) c.getRed()), (observable, oldValue, newValue) -> {
+                    c.setRed(newValue);
+                });
+                Control G = ubyteSpinner(new UByte((short) c.getGreen()), (observable, oldValue, newValue) -> {
+                    c.setGreen(newValue);
+                });
+                Control B = ubyteSpinner(new UByte((short) c.getBlue()), (observable, oldValue, newValue) -> {
+                    c.setBlue(newValue);
+                });
+                Control A = ubyteSpinner(new UByte((short) c.getAlpha()), (observable, oldValue, newValue) -> {
+                    c.setAlpha(newValue);
+                });
+                R.setMaxWidth(63);
+                G.setMaxWidth(63);
+                B.setMaxWidth(63);
+                A.setMaxWidth(63);
+                HBox box = new HBox(0,
+                        new Label("R:"), R,
+                        new Label(" G:"), G,
+                        new Label(" B:"), B,
+                        new Label(" A:"), A
+                );
+                box.setAlignment(Pos.CENTER_LEFT);
+                yield box;
+            }
+            case Flags fl -> {
+                VBox box = new VBox();
+                for (int i=0;i<32;i++) {
+                    String name = fl.getName(i);
+                    if (name != null) {
+                        final int lambdaSafeIndex = i;
+                        box.getChildren().add(checkbox(fl.get(i), name, (observable, oldValue, newValue) -> {
+                            fl.set(lambdaSafeIndex, newValue);
+                        }));
+                    }
+                }
+                yield box;
+            }
             case BITMAP_TEXTURE[] texArr -> TexturesDisplay.create(controller, item.getValue(), texArr, (DatingProfileEntry<BITMAP_TEXTURE[]>) entry);
             case SnSound sn -> SoundDisplay.create(controller, (DatingProfileEntry<SnSound>) entry);
             default -> new Label(value.toString());
@@ -231,30 +360,45 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
         return check;
     }
 
-    private Control intSpinner(int i, ChangeListener<Integer> listener) {
-        if (entry.readOnly()) return text(Integer.toString(i), ObservableDatingValue::emptyEvent);
-        Spinner<Integer> spinner = new Spinner<>();
-        spinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(Integer.MIN_VALUE, Integer.MAX_VALUE, i));
-        spinner.setEditable(true);
-        spinner.valueProperty().addListener(listener);
-        spinner.valueProperty().addListener(this::markChanged);
-        return spinner;
+    private Control byteSpinner(byte b, ChangeListener<Integer> listener) {
+        if (entry.readOnly()) return text(Byte.toString(b), ObservableDatingValue::emptyEvent);
+        return spinner(listener, new SpinnerValueFactory.IntegerSpinnerValueFactory(Byte.MIN_VALUE, Byte.MAX_VALUE, b));
     }
 
-    private Control uintSpinner(long i, ChangeListener<Long> listener) {
-        if (entry.readOnly()) text(Long.toString(i), ObservableDatingValue::emptyEvent);
-        Spinner<Long> spinner = new Spinner<>();
-        spinner.setValueFactory(new UIntSpinnerValueFactory(0L, 0xFFFFFFFFL, i));
-        spinner.setEditable(true);
-        spinner.valueProperty().addListener(listener);
-        spinner.valueProperty().addListener(this::markChanged);
-        return spinner;
+    private Control ubyteSpinner(UByte b, ChangeListener<Integer> listener) {
+        if (entry.readOnly()) return text(Short.toString(b.get()), ObservableDatingValue::emptyEvent);
+        return spinner(listener, new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 0xFF, b.get()));
+    }
+
+    private Control shortSpinner(short s, ChangeListener<Integer> listener) {
+        if (entry.readOnly()) return text(Short.toString(s), ObservableDatingValue::emptyEvent);
+        return spinner(listener, new SpinnerValueFactory.IntegerSpinnerValueFactory(Short.MIN_VALUE, Short.MAX_VALUE, s));
+    }
+
+    private Control ushortSpinner(UShort s, ChangeListener<Integer> listener) {
+        if (entry.readOnly()) return text(Integer.toString(s.get()), ObservableDatingValue::emptyEvent);
+        return spinner(listener, new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 0xFFFF, s.get()));
+    }
+
+    private Control intSpinner(int i, ChangeListener<Integer> listener) {
+        if (entry.readOnly()) return text(Integer.toString(i), ObservableDatingValue::emptyEvent);
+        return spinner(listener, new SpinnerValueFactory.IntegerSpinnerValueFactory(Integer.MIN_VALUE, Integer.MAX_VALUE, i));
+
+    }
+
+    private Control uintSpinner(UInteger i, ChangeListener<Long> listener) {
+        if (entry.readOnly()) text(Long.toString(i.get()), ObservableDatingValue::emptyEvent);
+        return spinner(listener, new LongSpinnerValueFactory(0L, 0xFFFFFFFFL, i.get()));
     }
 
     private Control floatSpinner(float f, ChangeListener<Double> listener) {
         if (entry.readOnly()) return text(Float.toString(f), ObservableDatingValue::emptyEvent);
-        Spinner<Double> spinner = new Spinner<>();
-        spinner.setValueFactory(new SpinnerValueFactory.DoubleSpinnerValueFactory(Float.MIN_VALUE, Float.MAX_VALUE, f));
+        return spinner(listener, new SpinnerValueFactory.DoubleSpinnerValueFactory(Float.MIN_VALUE, Float.MAX_VALUE, f));
+    }
+
+    private <T> Control spinner(ChangeListener<T> listener, SpinnerValueFactory<T> factory) {
+        Spinner<T> spinner = new Spinner<>();
+        spinner.setValueFactory(factory);
         spinner.setEditable(true);
         spinner.valueProperty().addListener(listener);
         spinner.valueProperty().addListener(this::markChanged);

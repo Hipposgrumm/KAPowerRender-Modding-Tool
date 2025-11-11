@@ -5,6 +5,8 @@ import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.structs.BITMAP_TEXTURE;
+import dev.hipposgrumm.kamapreader.util.types.wrappers.UShort;
+import dev.hipposgrumm.kamapreader.util.types.wrappers.UniqueIdentifier;
 import javafx.scene.Node;
 import javafx.scene.image.ImageView;
 
@@ -17,7 +19,7 @@ import java.util.List;
 public class Texture implements DatingBachelor, Previewable {
     private final byte[] unknown0;
     private final int unknown1;
-    private final int uid;
+    private final UniqueIdentifier uid;
     private final byte[] unknown2;
     private final BITMAP_TEXTURE[] textures;
 
@@ -25,12 +27,12 @@ public class Texture implements DatingBachelor, Previewable {
         if (arckVariant) unknown0 = reader.readBytes(4);
         else unknown0 = null;
         this.unknown1 = reader.readIntLittle();
-        this.uid = reader.readIntLittle();
+        this.uid = new UniqueIdentifier(reader.readIntLittle());
         this.unknown2 = reader.readBytes(87);
         byte b = reader.readByte();
         this.textures = new BITMAP_TEXTURE[b];
         for (int i=0;i<textures.length;i++) {
-            BITMAP_TEXTURE tex = new BITMAP_TEXTURE(reader.readUShortLittle(), reader.readUShortLittle());
+            BITMAP_TEXTURE tex = new BITMAP_TEXTURE(reader.readUShortLittle().get(), reader.readUShortLittle().get());
             tex.UNKNOWN1 = reader.readIntLittle();
             tex.UNKNOWN2 = reader.readIntLittle();
             tex.FORMAT = switch (reader.readIntLittle()) {
@@ -63,12 +65,12 @@ public class Texture implements DatingBachelor, Previewable {
     public void write(BlockWriter writer) throws IOException {
         if (unknown0 != null) writer.writeBytes(unknown0);
         writer.writeIntLittle(unknown1);
-        writer.writeIntLittle(uid);
+        writer.writeIntLittle(uid.get());
         writer.writeBytes(unknown2);
         writer.writeByte((byte) textures.length);
         for (BITMAP_TEXTURE tex:textures) {
-            writer.writeUShortLittle(tex.WIDTH);
-            writer.writeUShortLittle(tex.HEIGHT);
+            writer.writeUShortLittle(new UShort(tex.WIDTH));
+            writer.writeUShortLittle(new UShort(tex.HEIGHT));
             writer.writeIntLittle(tex.UNKNOWN1);
             writer.writeIntLittle(tex.UNKNOWN2);
             writer.writeIntLittle(tex.FORMAT.id);
@@ -89,6 +91,10 @@ public class Texture implements DatingBachelor, Previewable {
             }
             writer.writeBytes(buffer.array());
         }
+    }
+
+    public UniqueIdentifier getUid() {
+        return uid;
     }
 
     @Override
@@ -152,6 +158,6 @@ public class Texture implements DatingBachelor, Previewable {
 
     @Override
     public String toString() {
-        return Integer.toHexString(uid).toUpperCase();
+        return uid.toString();
     }
 }

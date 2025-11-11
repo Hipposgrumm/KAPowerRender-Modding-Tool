@@ -7,18 +7,17 @@ import javafx.beans.property.SimpleLongProperty;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.util.converter.LongStringConverter;
 
-public class UIntSpinnerValueFactory extends SpinnerValueFactory<Long> {
-    public UIntSpinnerValueFactory(long min, long max) {
+/// Based on existing spinner value factories in JavaFX
+public class LongSpinnerValueFactory extends SpinnerValueFactory<Long> {
+    public LongSpinnerValueFactory(long min, long max) {
         this(min, max, min, 1);
     }
 
-    public UIntSpinnerValueFactory(long min, long max, long initial) {
+    public LongSpinnerValueFactory(long min, long max, long initial) {
         this(min, max, initial, 1);
     }
 
-    public UIntSpinnerValueFactory(long min, long max, long initial, int step) {
-        if (min < 0) min = 0;
-        if (max > 0xFFFFFFFFL) max = 0xFFFFFFFFL;
+    public LongSpinnerValueFactory(long min, long max, long initial, int step) {
         setMin(min);
         setMax(max);
         setAmountToStepBy(step);
@@ -39,7 +38,7 @@ public class UIntSpinnerValueFactory extends SpinnerValueFactory<Long> {
     private final LongProperty min = new SimpleLongProperty(this, "min") {
         @Override
         protected void invalidated() {
-            Long currentValue = UIntSpinnerValueFactory.this.getValue();
+            Long currentValue = LongSpinnerValueFactory.this.getValue();
             if (currentValue == null) {
                 return;
             }
@@ -51,7 +50,7 @@ public class UIntSpinnerValueFactory extends SpinnerValueFactory<Long> {
             }
 
             if (currentValue < newMin) {
-                UIntSpinnerValueFactory.this.setValue(newMin);
+                LongSpinnerValueFactory.this.setValue(newMin);
             }
         }
     };
@@ -71,7 +70,7 @@ public class UIntSpinnerValueFactory extends SpinnerValueFactory<Long> {
     private final LongProperty max = new SimpleLongProperty(this, "max") {
         @Override
         protected void invalidated() {
-            Long currentValue = UIntSpinnerValueFactory.this.getValue();
+            Long currentValue = LongSpinnerValueFactory.this.getValue();
             if (currentValue == null) {
                 return;
             }
@@ -83,7 +82,7 @@ public class UIntSpinnerValueFactory extends SpinnerValueFactory<Long> {
             }
 
             if (currentValue > newMax) {
-                UIntSpinnerValueFactory.this.setValue(newMax);
+                LongSpinnerValueFactory.this.setValue(newMax);
             }
         }
     };

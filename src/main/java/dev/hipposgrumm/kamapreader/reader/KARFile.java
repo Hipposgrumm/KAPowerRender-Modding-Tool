@@ -36,6 +36,7 @@ public class KARFile {
                 Block block = switch (blockType) {
                     case "TxFm" -> new TexturesBlock(false);
                     case "TrFm" -> new TexturesBlock(true);
+                    case "MtFm" -> new MaterialsBlock(this);
                     case "SnFm" -> new SoundsBlock();
                     case "ObFm" -> new ObjectsBlock();
                     default -> new UnknownBlock(blockType);

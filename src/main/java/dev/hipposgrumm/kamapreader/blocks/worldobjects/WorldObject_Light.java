@@ -3,6 +3,7 @@ package dev.hipposgrumm.kamapreader.blocks.worldobjects;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.types.EnumChoices;
 import dev.hipposgrumm.kamapreader.util.types.structs.FLOATCOLOR_RGB;
 
 import java.io.IOException;
@@ -92,19 +93,27 @@ public class WorldObject_Light extends WorldObject_Position {
         return items;
     }
 
-    public enum LightType {
-        UNKNOWN("UNKNOWN", -1),
-        UNSET("UNSET", -1),
-        DIRECTIONAL("DIRECTIONAL", 0),
-        POINT("POINT", 1),
-        SPOT("SPOT", 2);
+    public enum LightType implements EnumChoices {
+        UNKNOWN(-1),
+        UNSET(-1),
+        DIRECTIONAL(0),
+        POINT(1),
+        SPOT(2);
 
-        public final String name;
         public final int identifier;
 
-        LightType(String name, int identifier) {
-            this.name = name;
+        LightType(int identifier) {
             this.identifier = identifier;
+        }
+
+        @Override
+        public Enum<? extends EnumChoices> getSelf() {
+            return this;
+        }
+
+        @Override
+        public List<? extends Enum<? extends EnumChoices>> choices() {
+            return List.of(UNSET, DIRECTIONAL, POINT, SPOT);
         }
     }
 }
