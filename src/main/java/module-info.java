@@ -11,6 +11,7 @@ module dev.hipposgrumm.kamapreader {
     exports dev.hipposgrumm.kamapreader.util.control.display;
     exports dev.hipposgrumm.kamapreader.util.types;
     exports dev.hipposgrumm.kamapreader.util.types.structs;
+    exports dev.hipposgrumm.kamapreader.util.types.wrappers;
     exports dev.hipposgrumm.kamapreader.reader;
     exports dev.hipposgrumm.kamapreader.blocks;
     exports dev.hipposgrumm.kamapreader.blocks.subblock;
