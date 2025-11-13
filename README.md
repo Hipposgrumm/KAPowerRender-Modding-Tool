@@ -21,3 +21,5 @@ Anything that is not implemented will remain intact when the modded `KAR` is gen
 Go to [releases](https://github.com/Hipposgrumm/KAPowerRender-Modding-Tool/releases) and download `app.zip`.  
 Unzip `app.zip`, navigate to the `bin` folder inside the extracted folder, and run `app.bat`. It's hidden among the other files but it's there.
 Opening a `KAR` file with the app or dragging one on top of it will show you its contents.
+
+If you want to run this in a development environment, please note to run the actual `run` task (under `application`), instead of attempting to run it directly. (It took me way too long to figure that out after switching to gradle.)
