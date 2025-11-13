@@ -1,6 +1,7 @@
 package dev.hipposgrumm.kamapreader.util.control;
 
 import dev.hipposgrumm.kamapreader.FirstThing;
+import dev.hipposgrumm.kamapreader.blocks.TexturesBlock;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.Icon;
@@ -9,6 +10,7 @@ import dev.hipposgrumm.kamapreader.util.control.display.TexturesDisplay;
 import dev.hipposgrumm.kamapreader.util.types.*;
 import dev.hipposgrumm.kamapreader.util.types.structs.*;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.*;
+import dev.hipposgrumm.kamapreader.util.control.display.MaterialView;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.beans.value.ObservableValueBase;
@@ -16,6 +18,7 @@ import javafx.collections.FXCollections;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -323,6 +326,36 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
             }
             case BITMAP_TEXTURE[] texArr -> TexturesDisplay.create(controller, item.getValue(), texArr, (DatingProfileEntry<BITMAP_TEXTURE[]>) entry);
             case SnSound sn -> SoundDisplay.create(controller, (DatingProfileEntry<SnSound>) entry);
+            case Material mat -> MaterialView.create(mat, 315, 150);
+            case TexturesBlock.TextureRef[] texArr -> {
+                HBox images = new HBox(5);
+                for (int i=0;i<texArr.length;i++) {
+                    if (texArr[i] != null) {
+                        ImageView view = new ImageView(texArr[i].texture().getViewable().getJavaFXImage());
+                        view.setFitWidth(100);
+                        view.setFitHeight(100);
+                        Button refButton = new Button("Go to Reference", Icon.redirect());
+                        boolean found = false;
+                        for (TreeItem<DatingBachelor> block:controller.tree.getRoot().getChildren()) {
+                            if (block.getValue() == texArr[i].block()) {
+                                final int lambdaSafeIndex = i;
+                                refButton.setOnAction(event ->
+                                        controller.tree.getSelectionModel().select(block.getChildren().get(texArr[lambdaSafeIndex].index()))
+                                );
+                                found = true;
+                            }
+                        }
+                        if (!found) refButton.setDisable(true);
+                        images.getChildren().add(new VBox(view, refButton));
+                    } else {
+                        images.getChildren().add(new Label("  empty  "));
+                    }
+                }
+                ScrollPane pane = new ScrollPane(images);
+                pane.maxWidth(315);
+                pane.setMinHeight(145);
+                yield pane;
+            }
             default -> new Label(value.toString());
         };
     }

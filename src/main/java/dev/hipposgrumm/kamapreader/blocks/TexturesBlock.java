@@ -19,7 +19,7 @@ public class TexturesBlock extends Block {
     private byte[] unknown;
 
     private final List<Texture> textureList = new ArrayList<>();
-    public final Map<Integer, Texture> textures = new HashMap<>();
+    public final Map<Integer, TextureRef> textures = new HashMap<>();
 
     public TexturesBlock(boolean arckVariant) {
         this.hasArCk = arckVariant;
@@ -34,7 +34,7 @@ public class TexturesBlock extends Block {
 
         while (reader.getRemaining() > 0) {
             Texture tex = new Texture(reader, arck != null);
-            textures.put(tex.getUid().get(), tex);
+            textures.put(tex.getUid().get(), new TextureRef(tex, this, textureList.size()));
             textureList.add(tex);
         }
     }
@@ -71,4 +71,6 @@ public class TexturesBlock extends Block {
     public String toString() {
         return "Textures ("+getBlockType()+")";
     }
+
+    public record TextureRef(Texture texture, TexturesBlock block, int index) {}
 }

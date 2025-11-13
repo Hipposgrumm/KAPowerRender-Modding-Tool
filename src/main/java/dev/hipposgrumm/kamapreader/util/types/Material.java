@@ -12,8 +12,6 @@ import dev.hipposgrumm.kamapreader.util.types.wrappers.SizeLimitedString;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.UByte;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.UniqueIdentifier;
 import javafx.scene.Node;
-import javafx.scene.control.Label;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
 import java.io.IOException;
@@ -22,7 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Material implements DatingBachelor, Previewable {
-    private final Texture[] textures = new Texture[7];
+    public final TexturesBlock.TextureRef[] textures = new TexturesBlock.TextureRef[7];
     private final SizeLimitedString name;
     private int unknown1;
     private final int[] unknown2 = new int[8];
@@ -30,19 +28,19 @@ public class Material implements DatingBachelor, Previewable {
     private int unknown4;
     private final int[] unknown5 = new int[8];
     private final UByte[] unknown6 = new UByte[8];
-    private FLOATCOLOR_RGBA color;
+    public FLOATCOLOR_RGBA color;
     private UByte unknown7;
-    private float Bump00;
-    private float Bump01;
-    private float Bump10;
-    private float Bump11;
-    private float BumpScale;
-    private FLOATCOLOR_RGBA spectacular;
+    public float Bump00;
+    public float Bump01;
+    public float Bump10;
+    public float Bump11;
+    public float BumpScale;
+    public FLOATCOLOR_RGBA specular;
     private byte[] unknown8;
-    private float spectacular_power;
-    private boolean doublesided;
+    public float specular_power;
+    public boolean doublesided;
     private byte[] internal1;
-    private final RenderStyle renderstyle;
+    public final RenderStyle renderstyle;
     private short internal2;
     private short internal3;
     private UniqueIdentifier uid;
@@ -56,7 +54,7 @@ public class Material implements DatingBachelor, Previewable {
                 .toList();
         for (int i=0;i<7;i++) {
             int texId = reader.readInt();
-            Texture texture = null;
+            TexturesBlock.TextureRef texture = null;
             if (texId != 0) for (TexturesBlock block:textureBlocks) {
                 texture = block.textures.get(texId);
                 if (texture != null) break; // Is this accurate to ingame function?
@@ -84,11 +82,11 @@ public class Material implements DatingBachelor, Previewable {
         Bump10 = reader.readFloat();
         Bump11 = reader.readFloat();
         BumpScale = reader.readFloat();
-        spectacular = new FLOATCOLOR_RGBA(reader.readFloat(), reader.readFloat(), reader.readFloat(), reader.readFloat());
+        specular = new FLOATCOLOR_RGBA(reader.readFloat(), reader.readFloat(), reader.readFloat(), reader.readFloat());
 
         unknown8 = reader.readBytes(16);
 
-        spectacular_power = reader.readFloat();
+        specular_power = reader.readFloat();
         doublesided = reader.readByte() != 0;
         reader.move(3);
 
@@ -105,9 +103,9 @@ public class Material implements DatingBachelor, Previewable {
     }
 
     public void write(BlockWriter writer) throws IOException {
-        for (Texture texture:textures) {
+        for (TexturesBlock.TextureRef texture:textures) {
             if (texture != null) {
-                writer.writeInt(texture.getUid().get());
+                writer.writeInt(texture.texture().getUid().get());
             } else {
                 writer.writeInt(0);
             }
@@ -135,14 +133,14 @@ public class Material implements DatingBachelor, Previewable {
         writer.writeFloat(Bump10);
         writer.writeFloat(Bump11);
         writer.writeFloat(BumpScale);
-        writer.writeFloat(spectacular.R);
-        writer.writeFloat(spectacular.G);
-        writer.writeFloat(spectacular.B);
-        writer.writeFloat(spectacular.A);
+        writer.writeFloat(specular.R);
+        writer.writeFloat(specular.G);
+        writer.writeFloat(specular.B);
+        writer.writeFloat(specular.A);
 
         writer.writeBytes(unknown8);
 
-        writer.writeFloat(spectacular_power);
+        writer.writeFloat(specular_power);
         writer.writeByte((byte) (doublesided ? 1 : 0));
         writer.writeBytes(new byte[] {0,0,0});
 
@@ -167,12 +165,18 @@ public class Material implements DatingBachelor, Previewable {
         return List.of(new DatingProfileEntry<>("UID",
                 () -> uid,
                 null
+        ), new DatingProfileEntry<>("Preview",
+                () -> this,
+                null
         ), new DatingProfileEntry<>("Name",
                 () -> name,
                 null
         ), new DatingProfileEntry<>("Color",
                 () -> color,
                 c -> color = c
+        ), new DatingProfileEntry<>("Textures",
+                () -> textures,
+                null
         ), new DatingProfileEntry<>("Bump00",
                 () -> Bump00,
                 b -> Bump00 = b
@@ -188,12 +192,12 @@ public class Material implements DatingBachelor, Previewable {
         ), new DatingProfileEntry<>("BumpScale",
                 () -> BumpScale,
                 b -> BumpScale = b
-        ), new DatingProfileEntry<>("Spectacular Color",
-                () -> spectacular,
-                c -> spectacular = c
-        ), new DatingProfileEntry<>("Spectacular Power",
-                () -> spectacular_power,
-                p -> spectacular_power = p
+        ), new DatingProfileEntry<>("Specular Color",
+                () -> specular,
+                c -> specular = c
+        ), new DatingProfileEntry<>("Specular Power",
+                () -> specular_power,
+                p -> specular_power = p
         ), new DatingProfileEntry<>("Double-Sided",
                 () -> doublesided,
                 p -> doublesided = p
@@ -207,8 +211,8 @@ public class Material implements DatingBachelor, Previewable {
 
     @Override
     public Node getPreviewGraphic() {
-        if (textures[0] != null) return textures[0].getPreviewGraphic();
-        return new Rectangle(50, 50, Color.color(color.R/255f, color.G/255f, color.B/255f, color.A/255f));
+        if (textures[0] != null) return textures[0].texture().getPreviewGraphic();
+        return new Rectangle(50, 50, color.toJavaFXColor());
     }
 
     @Override
@@ -218,29 +222,29 @@ public class Material implements DatingBachelor, Previewable {
 
     public static class RenderStyle implements DatingBachelor {
         SizeLimitedString name;
-        D3DZBUFFERTYPE enableZ;
-        boolean enableWriteZ;
-        boolean lighting;
-        boolean vertexColors;
-        boolean enableAlphaBlend;
-        boolean enableAlphaTest;
-        boolean enableSpectacular;
-        int alphaRef;
-        int textureFactor;
-        int blendFactor;
-        D3DSHADEMODE shadeMode;
-        D3DBLEND srcBlend;
-        D3DBLEND destBlend;
-        D3DCMPFUNC zFunc;
-        D3DCMPFUNC alphaFunc;
-        D3DMATERIALCOLORSOURCE diffuseMaterialSource;
-        D3DMATERIALCOLORSOURCE spectacularMaterialSource;
-        D3DMATERIALCOLORSOURCE ambientMaterialSource;
-        D3DMATERIALCOLORSOURCE emissiveMaterialSource;
-        Flags colorWriteFlags;
-        D3DBLENDOP blendop;
-        final TextureStage[] textureStages = new TextureStage[8];
-        final SamplerStage[] samplerStages = new SamplerStage[8];
+        public D3DZBUFFERTYPE enableZ;
+        public boolean enableWriteZ;
+        public boolean lighting;
+        public boolean vertexColors;
+        public boolean enableAlphaBlend;
+        public boolean enableAlphaTest;
+        public boolean enableSpecular;
+        public int alphaRef;
+        public int textureFactor;
+        public int blendFactor;
+        public D3DSHADEMODE shadeMode;
+        public D3DBLEND srcBlend;
+        public D3DBLEND destBlend;
+        public D3DCMPFUNC zFunc;
+        public D3DCMPFUNC alphaFunc;
+        public D3DMATERIALCOLORSOURCE diffuseMaterialSource;
+        public D3DMATERIALCOLORSOURCE specularMaterialSource;
+        public D3DMATERIALCOLORSOURCE ambientMaterialSource;
+        public D3DMATERIALCOLORSOURCE emissiveMaterialSource;
+        public Flags colorWriteFlags;
+        public D3DBLENDOP blendop;
+        public final TextureStage[] textureStages = new TextureStage[8];
+        public final SamplerStage[] samplerStages = new SamplerStage[8];
 
         RenderStyle(BlockReader reader) throws IOException {
             name = reader.readStringFixed(0x40);
@@ -250,7 +254,7 @@ public class Material implements DatingBachelor, Previewable {
             vertexColors = reader.readInt() != 0;
             enableAlphaBlend = reader.readInt() != 0;
             enableAlphaTest = reader.readInt() != 0;
-            enableSpectacular = reader.readInt() != 0;
+            enableSpecular = reader.readInt() != 0;
             alphaRef = reader.readInt();
             textureFactor = reader.readInt();
             blendFactor = reader.readInt();
@@ -260,7 +264,7 @@ public class Material implements DatingBachelor, Previewable {
             zFunc = D3DCMPFUNC.from(reader.readInt());
             alphaFunc = D3DCMPFUNC.from(reader.readInt());
             diffuseMaterialSource = D3DMATERIALCOLORSOURCE.from(reader.readInt());
-            spectacularMaterialSource = D3DMATERIALCOLORSOURCE.from(reader.readInt());
+            specularMaterialSource = D3DMATERIALCOLORSOURCE.from(reader.readInt());
             ambientMaterialSource = D3DMATERIALCOLORSOURCE.from(reader.readInt());
             emissiveMaterialSource = D3DMATERIALCOLORSOURCE.from(reader.readInt());
             colorWriteFlags = new Flags(reader.readInt());
@@ -283,7 +287,7 @@ public class Material implements DatingBachelor, Previewable {
             writer.writeInt(vertexColors ? 1 : 0);
             writer.writeInt(enableAlphaBlend ? 1 : 0);
             writer.writeInt(enableAlphaTest ? 1 : 0);
-            writer.writeInt(enableSpectacular ? 1 : 0);
+            writer.writeInt(enableSpecular ? 1 : 0);
             writer.writeInt(alphaRef);
             writer.writeInt(textureFactor);
             writer.writeInt(blendFactor);
@@ -293,7 +297,7 @@ public class Material implements DatingBachelor, Previewable {
             writer.writeInt(zFunc.identifier);
             writer.writeInt(alphaFunc.identifier);
             writer.writeInt(diffuseMaterialSource.identifier);
-            writer.writeInt(spectacularMaterialSource.identifier);
+            writer.writeInt(specularMaterialSource.identifier);
             writer.writeInt(ambientMaterialSource.identifier);
             writer.writeInt(emissiveMaterialSource.identifier);
             writer.writeInt(colorWriteFlags.getValue());
@@ -327,9 +331,9 @@ public class Material implements DatingBachelor, Previewable {
             ), new DatingProfileEntry<>("AlphaTest",
                     () -> enableAlphaTest,
                     b -> enableAlphaTest = b
-            ), new DatingProfileEntry<>("Spectacular",
-                    () -> enableSpectacular,
-                    b -> enableSpectacular = b
+            ), new DatingProfileEntry<>("Specular",
+                    () -> enableSpecular,
+                    b -> enableSpecular = b
             ), new DatingProfileEntry<>("AlphaRef",
                     () -> alphaRef,
                     i -> alphaRef = i
@@ -354,16 +358,16 @@ public class Material implements DatingBachelor, Previewable {
             ), new DatingProfileEntry<>("Alpha-Function",
                     () -> alphaFunc,
                     e -> alphaFunc = e
-            ), new DatingProfileEntry<>("Material Source: Diffuse",
+            ), new DatingProfileEntry<>("MatSrc: Diffuse",
                     () -> diffuseMaterialSource,
                     s -> diffuseMaterialSource = s
-            ), new DatingProfileEntry<>("Material Source: Spectacular",
-                    () -> spectacularMaterialSource,
-                    s -> spectacularMaterialSource = s
-            ), new DatingProfileEntry<>("Material Source: Ambient",
+            ), new DatingProfileEntry<>("MatSrc: Specular",
+                    () -> specularMaterialSource,
+                    s -> specularMaterialSource = s
+            ), new DatingProfileEntry<>("MatSrc: Ambient",
                     () -> ambientMaterialSource,
                     s -> ambientMaterialSource = s
-            ), new DatingProfileEntry<>("Material Source: Emissive",
+            ), new DatingProfileEntry<>("MatSrc: Emissive",
                     () -> emissiveMaterialSource,
                     s -> emissiveMaterialSource = s
             ), new DatingProfileEntry<>("Color Write Flags",
@@ -629,14 +633,14 @@ public class Material implements DatingBachelor, Previewable {
 
         public static class TextureStage implements DatingBachelor {
             private final int i;
-            private D3DTEXTUREOP colorop;
-            private D3DTEXTUREOP alphaop;
-            private TEXARGS colorarg1;
-            private TEXARGS colorarg2;
-            private TEXARGS alphaarg1;
-            private TEXARGS alphaarg2;
-            private TEXINDEX texcoordindex;
-            private D3DTEXTURETRANSFORMFLAGS transformflags;
+            public D3DTEXTUREOP colorop;
+            public D3DTEXTUREOP alphaop;
+            public TEXARGS colorarg1;
+            public TEXARGS colorarg2;
+            public TEXARGS alphaarg1;
+            public TEXARGS alphaarg2;
+            public TEXINDEX texcoordindex;
+            public D3DTEXTURETRANSFORMFLAGS transformflags;
 
             TextureStage(int i, BlockReader reader) throws IOException {
                 this.i = i;
@@ -681,7 +685,7 @@ public class Material implements DatingBachelor, Previewable {
                 ), new DatingProfileEntry<>("AlphaArg2",
                         () -> alphaarg2,
                         a -> alphaarg2 = a
-                ), new DatingProfileEntry<>("Texture Coordinate Index",
+                ), new DatingProfileEntry<>("TexCoord Index",
                         () -> texcoordindex,
                         i -> texcoordindex = i
                 ), new DatingProfileEntry<>("Texture Transform Flags",
@@ -786,21 +790,21 @@ public class Material implements DatingBachelor, Previewable {
                 CURRENT("CURRENT", 0x01),
                 TEXTURE("TEXTURE", 0x02),
                 TFACTOR("TFACTOR", 0x03),
-                SPECTACULAR("SPECTACULAR", 0x04),
+                SPECULAR("SPECULAR", 0x04),
                 TEMP("TEMP", 0x05),
                 CONSTANT("CONSTANT", 0x06),
                 DIFFUSE_COMPLEMENT("DIFFUSE|COMPLEMENT", 0x10),
                 CURRENT_COMPLEMENT("CURRENT|COMPLEMENT", 0x11),
                 TEXTURE_COMPLEMENT("TEXTURE|COMPLEMENT", 0x12),
                 TFACTOR_COMPLEMENT("TFACTOR|COMPLEMENT", 0x13),
-                SPECTACULAR_COMPLEMENT("SPECTACULAR|COMPLEMENT", 0x14),
+                SPECULAR_COMPLEMENT("SPECULAR|COMPLEMENT", 0x14),
                 TEMP_COMPLEMENT("TEMP|COMPLEMENT", 0x15),
                 CONSTANT_COMPLEMENT("CONSTANT|COMPLEMENT", 0x16),
                 DIFFUSE_ALPHAREPLICATE("DIFFUSE|ALPHAREPLICATE", 0x20),
                 CURRENT_ALPHAREPLICATE("CURRENT|ALPHAREPLICATE", 0x21),
                 TEXTURE_ALPHAREPLICATE("TEXTURE|ALPHAREPLICATE", 0x22),
                 TFACTOR_ALPHAREPLICATE("TFACTOR|ALPHAREPLICATE", 0x23),
-                SPECTACULAR_ALPHAREPLICATE("SPECTACULAR|ALPHAREPLICATE", 0x24),
+                SPECULAR_ALPHAREPLICATE("SPECULAR|ALPHAREPLICATE", 0x24),
                 TEMP_ALPHAREPLICATE("TEMP|ALPHAREPLICATE", 0x25),
                 CONSTANT_ALPHAREPLICATE("CONSTANT|ALPHAREPLICATE", 0x26);
 
@@ -823,20 +827,20 @@ public class Material implements DatingBachelor, Previewable {
                         case 0x01 -> CURRENT;
                         case 0x02 -> TEXTURE;
                         case 0x03 -> TFACTOR;
-                        case 0x04 -> SPECTACULAR;
+                        case 0x04 -> SPECULAR;
                         case 0x05 -> TEMP;
                         case 0x10 -> DIFFUSE_COMPLEMENT;
                         case 0x11 -> CURRENT_COMPLEMENT;
                         case 0x12 -> TEXTURE_COMPLEMENT;
                         case 0x13 -> TFACTOR_COMPLEMENT;
-                        case 0x14 -> SPECTACULAR_COMPLEMENT;
+                        case 0x14 -> SPECULAR_COMPLEMENT;
                         case 0x15 -> TEMP_COMPLEMENT;
                         case 0x16 -> CONSTANT_COMPLEMENT;
                         case 0x20 -> DIFFUSE_ALPHAREPLICATE;
                         case 0x21 -> CURRENT_ALPHAREPLICATE;
                         case 0x22 -> TEXTURE_ALPHAREPLICATE;
                         case 0x23 -> TFACTOR_ALPHAREPLICATE;
-                        case 0x24 -> SPECTACULAR_ALPHAREPLICATE;
+                        case 0x24 -> SPECULAR_ALPHAREPLICATE;
                         case 0x25 -> TEMP_ALPHAREPLICATE;
                         case 0x26 -> CONSTANT_ALPHAREPLICATE;
                         default -> CONSTANT;
@@ -852,11 +856,11 @@ public class Material implements DatingBachelor, Previewable {
                 public List<? extends Enum<? extends EnumChoices>> choices() {
                     return List.of(
                             DIFFUSE, CURRENT, TEXTURE, TFACTOR,
-                            SPECTACULAR, TEMP, CONSTANT,
+                            SPECULAR, TEMP, CONSTANT,
                             DIFFUSE_COMPLEMENT, CURRENT_COMPLEMENT, TEXTURE_COMPLEMENT, TFACTOR_COMPLEMENT,
-                            SPECTACULAR_COMPLEMENT, TEMP_COMPLEMENT, CONSTANT_COMPLEMENT,
+                            SPECULAR_COMPLEMENT, TEMP_COMPLEMENT, CONSTANT_COMPLEMENT,
                             DIFFUSE_ALPHAREPLICATE, CURRENT_ALPHAREPLICATE, TEXTURE_ALPHAREPLICATE, TFACTOR_ALPHAREPLICATE,
-                            SPECTACULAR_ALPHAREPLICATE, TEMP_ALPHAREPLICATE, CONSTANT_ALPHAREPLICATE
+                            SPECULAR_ALPHAREPLICATE, TEMP_ALPHAREPLICATE, CONSTANT_ALPHAREPLICATE
                     );
                 }
             }
@@ -963,10 +967,10 @@ public class Material implements DatingBachelor, Previewable {
 
         public static class SamplerStage implements DatingBachelor {
             private final int i;
-            private D3DTEXTUREADDRESS addressU;
-            private D3DTEXTUREADDRESS addressV;
-            private D3DTEXTUREADDRESS addressW;
-            private COLOR_RGBA bordercolor;
+            public D3DTEXTUREADDRESS addressU;
+            public D3DTEXTUREADDRESS addressV;
+            public D3DTEXTUREADDRESS addressW;
+            public COLOR_RGBA bordercolor;
 
             SamplerStage(int i, BlockReader reader) throws IOException {
                 this.i = i;

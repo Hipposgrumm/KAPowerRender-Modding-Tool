@@ -93,6 +93,10 @@ public class Texture implements DatingBachelor, Previewable {
         }
     }
 
+    public BITMAP_TEXTURE getViewable() {
+        return textures[0];
+    }
+
     public UniqueIdentifier getUid() {
         return uid;
     }

@@ -21,7 +21,7 @@ public class MaterialsBlock extends Block {
     private int unknown;
 
     private final List<Material> materialList = new ArrayList<>();
-    public final Map<Integer, Material> materials = new HashMap<>();
+    public final Map<Integer, MaterialRef> materials = new HashMap<>();
 
     public MaterialsBlock(KARFile file) {
         this.file = file;
@@ -37,7 +37,7 @@ public class MaterialsBlock extends Block {
         int count = reader.readInt();
         for (int i=0;i<count;i++) {
             Material mat = new Material(file, reader.segment(0x42c));
-            materials.put(mat.getUid().get(), mat);
+            materials.put(mat.getUid().get(), new MaterialRef(mat, this, materialList.size()));
             materialList.add(mat);
         }
     }
@@ -80,4 +80,6 @@ public class MaterialsBlock extends Block {
     public String toString() {
         return "Materials";
     }
+
+    public record MaterialRef(Material material, MaterialsBlock block, int index) {}
 }
