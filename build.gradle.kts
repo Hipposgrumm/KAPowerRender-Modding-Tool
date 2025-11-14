@@ -3,11 +3,11 @@ plugins {
     application
     id("org.javamodularity.moduleplugin") version "1.8.12"
     id("org.openjfx.javafxplugin") version "0.0.13"
-    id("org.beryx.jlink") version "2.25.0"
+    id("org.beryx.jlink") version "3.1.3"
 }
 
 group = "dev.hipposgrumm"
-version = "0.1.0"
+version = "0.2.0"
 
 repositories {
     mavenCentral()
@@ -47,9 +47,21 @@ tasks.withType<Test> {
 }
 
 jlink {
-    imageZip.set(layout.buildDirectory.file("/distributions/app-${javafx.platform.classifier}.zip"))
+    imageName.set("KAPowerRenderModdingTool")
     options.set(listOf("--strip-debug", "--compress", "2", "--no-header-files", "--no-man-pages"))
     launcher {
         name = "app"
+        noConsole = true
+    }
+}
+
+tasks.withType<org.beryx.jlink.JlinkTask> {
+    doLast {
+        copy {
+            from("/buildextras") {
+                include("run.bat")
+            }
+            into("${layout.buildDirectory.get()}/KAPowerRenderModdingTool")
+        }
     }
 }
