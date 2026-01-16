@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.List;
 
 public class WorldObject_Base extends WorldObject {
-    private Flags flags;
+    private ObjectFlags flags;
     private int base_un1;
     private int base_un2;
     private int base_un3;
@@ -27,8 +27,7 @@ public class WorldObject_Base extends WorldObject {
     @Override
     public void read(BlockReader reader) throws IOException {
         super.read(reader);
-        flags = new Flags(reader.readInt());
-        flags.setName(0, "Visible");
+        flags = new ObjectFlags(reader.readInt());
         base_un1 = reader.readInt();
         base_un2 = reader.readInt();
         base_un3 = reader.readInt();
@@ -56,13 +55,25 @@ public class WorldObject_Base extends WorldObject {
     public List<DatingProfileEntry<?>> getDatingProfile() {
         List<DatingProfileEntry<?>> items = super.getDatingProfile();
         items.add(new DatingProfileEntry<>("Flags",
-                () -> flags,
-                f -> flags = f
+                () -> flags
         ));
         items.add(new DatingProfileEntry<>("Script",
                 () -> script,
                 s -> script = s
         ));
         return items;
+    }
+
+    public static class ObjectFlags extends Flags {
+        public static final BoolEntry VISIBLE = new BoolEntry("Visible", 0);
+
+        public ObjectFlags(int value) {
+            super(value);
+        }
+
+        @Override
+        public Entry[] getEntries() {
+            return new Entry[] {VISIBLE};
+        }
     }
 }

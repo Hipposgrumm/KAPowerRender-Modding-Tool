@@ -10,6 +10,7 @@ module dev.hipposgrumm.kamapreader {
     exports dev.hipposgrumm.kamapreader.util.control;
     exports dev.hipposgrumm.kamapreader.util.control.display;
     exports dev.hipposgrumm.kamapreader.util.types;
+    exports dev.hipposgrumm.kamapreader.util.types.enums;
     exports dev.hipposgrumm.kamapreader.util.types.structs;
     exports dev.hipposgrumm.kamapreader.util.types.wrappers;
     exports dev.hipposgrumm.kamapreader.reader;

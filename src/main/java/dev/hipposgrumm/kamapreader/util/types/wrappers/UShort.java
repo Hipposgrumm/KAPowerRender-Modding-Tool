@@ -18,4 +18,24 @@ public class UShort {
     public final short getShort() {
         return (short) s; // Casting will keep the sign in its existing place.
     }
+
+    public static class Array {
+        private final short[] vals;
+
+        public Array(int size) {
+            this.vals = new short[size];
+        }
+
+        public Array(short[] data) {
+            this.vals = data;
+        }
+
+        public int get(int i) {
+            return vals[i] & 0xFFFF;
+        }
+
+        public short[] array() {
+            return vals;
+        }
+    }
 }

@@ -87,8 +87,7 @@ public class WorldObject_Light extends WorldObject_Position {
                 s -> strength = s
         ));
         items.add(new DatingProfileEntry<>("Color",
-                () -> color,
-                c -> color = c
+                () -> color
         ));
         return items;
     }

@@ -103,9 +103,8 @@ public class Texture implements DatingBachelor, Previewable {
 
     @Override
     public List<? extends DatingProfileEntry<?>> getDatingProfile() {
-        return Arrays.asList(new DatingProfileEntry<>("UID",
-                () -> uid,
-                null
+        return Arrays.asList(new DatingProfileEntry.ReadOnly<>("UID",
+                () -> uid
         ), new DatingProfileEntry<>("Texture",
                 () -> textures,
                 this::changeImage

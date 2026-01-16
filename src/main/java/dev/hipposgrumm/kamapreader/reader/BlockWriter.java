@@ -78,6 +78,14 @@ public class BlockWriter {
     }
 
     /**
+     * @return Pointer current position in entire file.
+     * @throws IOException If there is an IO error.
+     */
+    public int getTruePointer() throws IOException {
+        return (int) writer.getFilePointer();
+    }
+
+    /**
      * Current size of the data in the writer.
      * @implNote This size is NOT the maximum size, as data can be appended to the file.
      * @return Size of Data

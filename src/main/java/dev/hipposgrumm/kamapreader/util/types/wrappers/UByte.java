@@ -18,4 +18,24 @@ public class UByte {
     public final byte getByte() {
         return (byte) b; // Casting will keep the sign in its existing place.
     }
+
+    public static class Array {
+        private final byte[] vals;
+
+        public Array(int size) {
+            this.vals = new byte[size];
+        }
+
+        public Array(byte[] data) {
+            this.vals = data;
+        }
+
+        public short get(int i) {
+            return (short) (vals[i] & 0xFF);
+        }
+
+        public byte[] array() {
+            return vals;
+        }
+    }
 }

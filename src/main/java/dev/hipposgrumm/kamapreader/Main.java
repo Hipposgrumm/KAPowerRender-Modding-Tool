@@ -1,5 +1,6 @@
 package dev.hipposgrumm.kamapreader;
 
+import dev.hipposgrumm.kamapreader.util.ViewerAppHandle;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -20,5 +21,10 @@ public class Main extends Application {
 
     public static void main(String[] args) {
         launch();
+    }
+
+    @Override
+    public void stop() {
+        ViewerAppHandle.terminateProgram();
     }
 }

@@ -34,6 +34,7 @@ public class KARFile {
                 int blockSize = reader.readInt()-4;
                 String blockType = reader.readBlockType();
                 Block block = switch (blockType) {
+                    case "PtFm" -> new PartsBlock();
                     case "TxFm" -> new TexturesBlock(false);
                     case "TrFm" -> new TexturesBlock(true);
                     case "MtFm" -> new MaterialsBlock(this);
@@ -44,8 +45,16 @@ public class KARFile {
                 block.readFull(reader.segment(blockSize));
                 blocks.add(block);
             }
+            MaterialsBlock.MaterialsData[] materials = blocks.stream()
+                    .filter(b -> b instanceof MaterialsBlock)
+                    .map(b -> ((MaterialsBlock)b).data).toArray(MaterialsBlock.MaterialsData[]::new);
+            for (Block block:blocks) {
+                if (block instanceof PartsBlock bl) bl.fillMaterials(materials);
+            }
         } catch (Exception e) {
-            throw new RuntimeException("At "+fileReader.getFilePointer(), e);
+            System.err.println("At "+fileReader.getFilePointer());
+            e.printStackTrace();
+            throw e;
         } finally {
             fileReader.close();
         }

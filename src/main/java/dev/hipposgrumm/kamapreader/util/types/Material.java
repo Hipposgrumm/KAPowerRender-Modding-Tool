@@ -1,12 +1,11 @@
 package dev.hipposgrumm.kamapreader.util.types;
 
-import dev.hipposgrumm.kamapreader.blocks.TexturesBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
-import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
-import dev.hipposgrumm.kamapreader.util.types.structs.COLOR_RGBA;
+import dev.hipposgrumm.kamapreader.util.types.enums.*;
+import dev.hipposgrumm.kamapreader.util.types.structs.INTCOLOR;
 import dev.hipposgrumm.kamapreader.util.types.structs.FLOATCOLOR_RGBA;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.SizeLimitedString;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.UByte;
@@ -18,16 +17,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class Material implements DatingBachelor, Previewable {
-    public final TexturesBlock.TextureRef[] textures = new TexturesBlock.TextureRef[7];
+    public final Texture[] textures = new Texture[7];
     private final SizeLimitedString name;
     private int unknown1;
     private final int[] unknown2 = new int[8];
     private UByte unknown3;
     private int unknown4;
     private final int[] unknown5 = new int[8];
-    private final UByte[] unknown6 = new UByte[8];
+    private final UByte.Array unknown6 = new UByte.Array(8);
     public FLOATCOLOR_RGBA color;
     private UByte unknown7;
     public float Bump00;
@@ -47,16 +47,12 @@ public class Material implements DatingBachelor, Previewable {
     private UniqueIdentifier internal4;
 
     // TODO: Is this always read in little endian? I couldn't find any big endian examples.
-    public Material(KARFile file, BlockReader reader) throws IOException {
-        List<TexturesBlock> textureBlocks = file.blocks.stream()
-                .filter(b -> b instanceof TexturesBlock)
-                .map(b -> (TexturesBlock) b)
-                .toList();
+    public Material(List<Map<Integer, Texture>> textureMaps, BlockReader reader) throws IOException {
         for (int i=0;i<7;i++) {
             int texId = reader.readInt();
-            TexturesBlock.TextureRef texture = null;
-            if (texId != 0) for (TexturesBlock block:textureBlocks) {
-                texture = block.textures.get(texId);
+            Texture texture = null;
+            if (texId != 0) for (Map<Integer, Texture> map:textureMaps) {
+                texture = map.get(texId);
                 if (texture != null) break; // Is this accurate to ingame function?
             }
             textures[i] = texture;
@@ -70,7 +66,8 @@ public class Material implements DatingBachelor, Previewable {
         reader.move(3);
         unknown4 = reader.readInt();
         for (int i=0;i<8;i++) unknown5[i] = reader.readInt();
-        for (int i=0;i<8;i++) unknown6[i] = reader.readUByte();
+        byte[] ubyteArray_unknown6 = unknown6.array();
+        for (int i=0;i<8;i++) ubyteArray_unknown6[i] = reader.readByte();
 
         color = new FLOATCOLOR_RGBA(reader.readFloat(), reader.readFloat(), reader.readFloat(), reader.readFloat());
 
@@ -103,9 +100,9 @@ public class Material implements DatingBachelor, Previewable {
     }
 
     public void write(BlockWriter writer) throws IOException {
-        for (TexturesBlock.TextureRef texture:textures) {
+        for (Texture texture:textures) {
             if (texture != null) {
-                writer.writeInt(texture.texture().getUid().get());
+                writer.writeInt(texture.getUid().get());
             } else {
                 writer.writeInt(0);
             }
@@ -118,7 +115,7 @@ public class Material implements DatingBachelor, Previewable {
         writer.writeBytes(new byte[] {0,0,0});
         writer.writeInt(unknown4);
         for (int i=0;i<8;i++) writer.writeInt(unknown5[i]);
-        for (int i=0;i<8;i++) writer.writeUByte(unknown6[i]);
+        writer.writeBytes(unknown6.array());
 
         writer.writeFloat(color.R);
         writer.writeFloat(color.G);
@@ -162,21 +159,16 @@ public class Material implements DatingBachelor, Previewable {
 
     @Override
     public List<? extends DatingProfileEntry<?>> getDatingProfile() {
-        return List.of(new DatingProfileEntry<>("UID",
-                () -> uid,
-                null
-        ), new DatingProfileEntry<>("Preview",
-                () -> this,
-                null
+        return List.of(new DatingProfileEntry.ReadOnly<>("UID",
+                () -> uid
+        ), new DatingProfileEntry.ReadOnly<>("Preview",
+                () -> this
         ), new DatingProfileEntry<>("Name",
-                () -> name,
-                null
+                () -> name
         ), new DatingProfileEntry<>("Color",
-                () -> color,
-                c -> color = c
+                () -> color
         ), new DatingProfileEntry<>("Textures",
-                () -> textures,
-                null
+                () -> textures
         ), new DatingProfileEntry<>("Bump00",
                 () -> Bump00,
                 b -> Bump00 = b
@@ -193,8 +185,7 @@ public class Material implements DatingBachelor, Previewable {
                 () -> BumpScale,
                 b -> BumpScale = b
         ), new DatingProfileEntry<>("Specular Color",
-                () -> specular,
-                c -> specular = c
+                () -> specular
         ), new DatingProfileEntry<>("Specular Power",
                 () -> specular_power,
                 p -> specular_power = p
@@ -211,7 +202,7 @@ public class Material implements DatingBachelor, Previewable {
 
     @Override
     public Node getPreviewGraphic() {
-        if (textures[0] != null) return textures[0].texture().getPreviewGraphic();
+        if (textures[0] != null) return textures[0].getPreviewGraphic();
         return new Rectangle(50, 50, color.toJavaFXColor());
     }
 
@@ -221,6 +212,7 @@ public class Material implements DatingBachelor, Previewable {
     }
 
     public static class RenderStyle implements DatingBachelor {
+        // TODO: Maybe log something when the enum values are different?
         SizeLimitedString name;
         public D3DZBUFFERTYPE enableZ;
         public boolean enableWriteZ;
@@ -241,7 +233,7 @@ public class Material implements DatingBachelor, Previewable {
         public D3DMATERIALCOLORSOURCE specularMaterialSource;
         public D3DMATERIALCOLORSOURCE ambientMaterialSource;
         public D3DMATERIALCOLORSOURCE emissiveMaterialSource;
-        public Flags colorWriteFlags;
+        public ColorWriteFlags colorWriteFlags;
         public D3DBLENDOP blendop;
         public final TextureStage[] textureStages = new TextureStage[8];
         public final SamplerStage[] samplerStages = new SamplerStage[8];
@@ -267,11 +259,7 @@ public class Material implements DatingBachelor, Previewable {
             specularMaterialSource = D3DMATERIALCOLORSOURCE.from(reader.readInt());
             ambientMaterialSource = D3DMATERIALCOLORSOURCE.from(reader.readInt());
             emissiveMaterialSource = D3DMATERIALCOLORSOURCE.from(reader.readInt());
-            colorWriteFlags = new Flags(reader.readInt());
-            colorWriteFlags.setName(0, "Red");
-            colorWriteFlags.setName(1, "Green");
-            colorWriteFlags.setName(2, "Blue");
-            colorWriteFlags.setName(3, "Alpha");
+            colorWriteFlags = new ColorWriteFlags(reader.readInt());
             blendop = D3DBLENDOP.from(reader.readInt());
             for (int i=0;i<textureStages.length;i++)
                 textureStages[i] = new TextureStage(i, reader.segment(0x20));
@@ -311,8 +299,7 @@ public class Material implements DatingBachelor, Previewable {
         @Override
         public List<? extends DatingProfileEntry<?>> getDatingProfile() {
             return List.of(new DatingProfileEntry<>("Name",
-                    () -> name,
-                    n -> name = n
+                    () -> name
             ), new DatingProfileEntry<>("Z-Enabled",
                     () -> enableZ,
                     b -> enableZ = b
@@ -371,8 +358,7 @@ public class Material implements DatingBachelor, Previewable {
                     () -> emissiveMaterialSource,
                     s -> emissiveMaterialSource = s
             ), new DatingProfileEntry<>("Color Write Flags",
-                    () -> colorWriteFlags,
-                    f -> colorWriteFlags = f
+                    () -> colorWriteFlags
             ), new DatingProfileEntry<>("BlendOp",
                     () -> blendop,
                     o -> blendop = o
@@ -393,241 +379,19 @@ public class Material implements DatingBachelor, Previewable {
             return "RenderStyle: "+name;
         }
 
-        private enum D3DZBUFFERTYPE implements EnumChoices {
-            FALSE(0),
-            TRUE(1),
-            USEW(2);
+        public static class ColorWriteFlags extends Flags {
+            public static final BoolEntry Red = new BoolEntry("Red", 0);
+            public static final BoolEntry Green = new BoolEntry("Green", 1);
+            public static final BoolEntry Blue = new BoolEntry("Blue", 2);
+            public static final BoolEntry Alpha = new BoolEntry("Alpha", 3);
 
-            public final int identifier;
-
-            D3DZBUFFERTYPE(int identifier) {
-                this.identifier = identifier;
-            }
-
-            static D3DZBUFFERTYPE from(int i) {
-                return switch (i) {
-                    case 1 -> TRUE;
-                    case 2 -> USEW;
-                    default -> FALSE;
-                };
+            public ColorWriteFlags(int value) {
+                super(value);
             }
 
             @Override
-            public Enum<? extends EnumChoices> getSelf() {
-                return this;
-            }
-
-            @Override
-            public List<? extends Enum<? extends EnumChoices>> choices() {
-                return List.of(FALSE, TRUE, USEW);
-            }
-        }
-
-        private enum D3DSHADEMODE implements EnumChoices {
-            FLAT(1),
-            GOURAUD(2),
-            PHONG(3);
-
-            public final int identifier;
-
-            D3DSHADEMODE(int identifier) {
-                this.identifier = identifier;
-            }
-
-            static D3DSHADEMODE from(int i) {
-                return switch (i) {
-                    case 1 -> FLAT;
-                    case 3 -> PHONG;
-                    default -> GOURAUD;
-                };
-            }
-
-            @Override
-            public Enum<? extends EnumChoices> getSelf() {
-                return this;
-            }
-
-            @Override
-            public List<? extends Enum<? extends EnumChoices>> choices() {
-                return List.of(FLAT, GOURAUD, PHONG);
-            }
-        }
-
-        private enum D3DBLEND implements EnumChoices {
-            ZERO(1),
-            ONE(2),
-            SRCCOLOR(3),
-            INVSRCCOLOR(4),
-            SRCALPHA(5),
-            INVSRCALPHA(6),
-            DESTALPHA(7),
-            INVDESTALPHA(8),
-            DESTCOLOR(9),
-            INVDESTCOLOR(10),
-            SRCALPHASAT(11),
-            BOTHSRCALPHA(12),
-            BOTHINVSRCALPHA(13),
-            BLENDFACTOR(14),
-            INVBLENDFACTOR(15),
-            SRCCOLOR2(16),
-            INVSRCCOLOR2(17),
-            __(18);
-
-            public final int identifier;
-
-            D3DBLEND(int identifier) {
-                this.identifier = identifier;
-            }
-
-            static D3DBLEND from(int i) {
-                return switch (i) {
-                    case 1 -> ZERO;
-                    case 2 -> ONE;
-                    case 3 -> SRCCOLOR;
-                    case 4 -> INVSRCCOLOR;
-                    case 5 -> SRCALPHA;
-                    case 6 -> INVSRCALPHA;
-                    case 7 -> DESTALPHA;
-                    case 8 -> INVDESTALPHA;
-                    case 9 -> DESTCOLOR;
-                    case 10 -> INVDESTCOLOR;
-                    case 11 -> SRCALPHASAT;
-                    case 12 -> BOTHSRCALPHA;
-                    case 13 -> BOTHINVSRCALPHA;
-                    case 14 -> BLENDFACTOR;
-                    case 15 -> INVBLENDFACTOR;
-                    case 16 -> SRCCOLOR2;
-                    case 17 -> INVSRCCOLOR2;
-                    default -> __;
-                };
-            }
-
-            @Override
-            public Enum<? extends EnumChoices> getSelf() {
-                return this;
-            }
-
-            @Override
-            public List<? extends Enum<? extends EnumChoices>> choices() {
-                return List.of(
-                        ZERO, ONE, SRCCOLOR, INVSRCCOLOR, SRCALPHA, INVSRCALPHA,
-                        DESTALPHA, INVDESTALPHA, DESTCOLOR, INVDESTCOLOR,
-                        SRCALPHASAT, BOTHSRCALPHA, BOTHINVSRCALPHA,
-                        BLENDFACTOR, INVBLENDFACTOR, SRCCOLOR2, INVSRCCOLOR2
-                );
-            }
-        }
-
-        private enum D3DCMPFUNC implements EnumChoices {
-            NEVER(1),
-            LESS(2),
-            EQUAL(3),
-            LESSEQUAL(4),
-            GREATER(5),
-            NOTEQUAL(6),
-            GREATEREQUAL(7),
-            ALWAYS(8),
-            __(9);
-
-            public final int identifier;
-
-            D3DCMPFUNC(int identifier) {
-                this.identifier = identifier;
-            }
-
-            static D3DCMPFUNC from(int i) {
-                return switch (i) {
-                    case 1 -> NEVER;
-                    case 2 -> LESS;
-                    case 3 -> EQUAL;
-                    case 4 -> LESSEQUAL;
-                    case 5 -> GREATER;
-                    case 6 -> NOTEQUAL;
-                    case 7 -> GREATEREQUAL;
-                    case 8 -> ALWAYS;
-                    default -> __;
-                };
-            }
-
-            @Override
-            public Enum<? extends EnumChoices> getSelf() {
-                return this;
-            }
-
-            @Override
-            public List<? extends Enum<? extends EnumChoices>> choices() {
-                return List.of(
-                        NEVER, LESS, EQUAL, LESSEQUAL,
-                        GREATER, NOTEQUAL, GREATEREQUAL, ALWAYS
-                );
-            }
-        }
-
-        private enum D3DMATERIALCOLORSOURCE implements EnumChoices {
-            MATERIAL(0),
-            COLOR1(1),
-            COLOR2(2),
-            __(3);
-
-            public final int identifier;
-
-            D3DMATERIALCOLORSOURCE(int identifier) {
-                this.identifier = identifier;
-            }
-
-            static D3DMATERIALCOLORSOURCE from(int i) {
-                return switch (i) {
-                    case 0 -> MATERIAL;
-                    case 1 -> COLOR1;
-                    case 2 -> COLOR2;
-                    default -> __;
-                };
-            }
-
-            @Override
-            public Enum<? extends EnumChoices> getSelf() {
-                return this;
-            }
-
-            @Override
-            public List<? extends Enum<? extends EnumChoices>> choices() {
-                return List.of(MATERIAL, COLOR1, COLOR2);
-            }
-        }
-
-        private enum D3DBLENDOP implements EnumChoices {
-            ADD(1),
-            SUBTRACT(2),
-            REVSUBTRACT(3),
-            MIN(4),
-            MAX(5),
-            __(6);
-
-            public final int identifier;
-
-            D3DBLENDOP(int identifier) {
-                this.identifier = identifier;
-            }
-
-            static D3DBLENDOP from(int i) {
-                return switch (i) {
-                    case 1 -> ADD;
-                    case 2 -> SUBTRACT;
-                    case 3 -> REVSUBTRACT;
-                    case 4 -> MIN;
-                    case 5 -> MAX;
-                    default -> __;
-                };
-            }
-
-            @Override
-            public Enum<? extends EnumChoices> getSelf() {
-                return this;
-            }
-
-            @Override
-            public List<? extends Enum<? extends EnumChoices>> choices() {
-                return List.of(ADD, SUBTRACT, REVSUBTRACT, MIN, MAX);
+            public Entry[] getEntries() {
+                return new Entry[] {Red, Green, Blue, Alpha};
             }
         }
 
@@ -635,34 +399,34 @@ public class Material implements DatingBachelor, Previewable {
             private final int i;
             public D3DTEXTUREOP colorop;
             public D3DTEXTUREOP alphaop;
-            public TEXARGS colorarg1;
-            public TEXARGS colorarg2;
-            public TEXARGS alphaarg1;
-            public TEXARGS alphaarg2;
+            public TEXARGS.AsFlags colorarg1;
+            public TEXARGS.AsFlags colorarg2;
+            public TEXARGS.AsFlags alphaarg1;
+            public TEXARGS.AsFlags alphaarg2;
             public TEXINDEX texcoordindex;
-            public D3DTEXTURETRANSFORMFLAGS transformflags;
+            public D3DTEXTURETRANSFORMFLAGS.AsFlags transformflags;
 
             TextureStage(int i, BlockReader reader) throws IOException {
                 this.i = i;
                 colorop = D3DTEXTUREOP.from(reader.readInt());
                 alphaop = D3DTEXTUREOP.from(reader.readInt());
-                colorarg1 = TEXARGS.from(reader.readInt());
-                colorarg2 = TEXARGS.from(reader.readInt());
-                alphaarg1 = TEXARGS.from(reader.readInt());
-                alphaarg2 = TEXARGS.from(reader.readInt());
+                colorarg1 = new TEXARGS.AsFlags(reader.readInt());
+                colorarg2 = new TEXARGS.AsFlags(reader.readInt());
+                alphaarg1 = new TEXARGS.AsFlags(reader.readInt());
+                alphaarg2 = new TEXARGS.AsFlags(reader.readInt());
                 texcoordindex = TEXINDEX.from(reader.readInt());
-                transformflags = D3DTEXTURETRANSFORMFLAGS.from(reader.readInt());
+                transformflags = new D3DTEXTURETRANSFORMFLAGS.AsFlags(reader.readInt());
             }
 
             void write(BlockWriter writer) throws IOException {
                 writer.writeInt(colorop.identifier);
                 writer.writeInt(alphaop.identifier);
-                writer.writeInt(colorarg1.identifier);
-                writer.writeInt(colorarg2.identifier);
-                writer.writeInt(alphaarg1.identifier);
-                writer.writeInt(alphaarg2.identifier);
+                writer.writeInt(colorarg1.getValue());
+                writer.writeInt(colorarg2.getValue());
+                writer.writeInt(alphaarg1.getValue());
+                writer.writeInt(alphaarg2.getValue());
                 writer.writeInt(texcoordindex.identifier);
-                writer.writeInt(transformflags.identifier);
+                writer.writeInt(transformflags.getValue());
             }
 
             @Override
@@ -698,271 +462,6 @@ public class Material implements DatingBachelor, Previewable {
             public String toString() {
                 return "TextureStage: "+i;
             }
-
-            private enum D3DTEXTUREOP implements EnumChoices {
-                DISABLE(1),
-                SELECTARG1(2),
-                SELECTARG2(3),
-                MODULATE(4),
-                MODULATE2X(5),
-                MODULATE4X(6),
-                ADD(7),
-                ADDSIGNED(8),
-                ADDSIGNED2X(9),
-                SUBTRACT(10),
-                ADDSMOOTH(11),
-                BLENDDIFFUSEALPHA(12),
-                BLENDTEXTUREALPHA(13),
-                BLENDFACTORALPHA(14),
-                BLENDTEXTUREALPHAPM(15),
-                BLENDCURRENTALPHA(16),
-                PREMODULATE(17),
-                MODULATEALPHA_ADDCOLOR(18),
-                MODULATECOLOR_ADDALPHA(19),
-                MODULATEINVALPHA_ADDCOLOR(20),
-                MODULATEINVCOLOR_ADDALPHA(21),
-                BUMPENVMAP(22),
-                BUMPENVMAPLUMINANCE(23),
-                DOTPRODUCT3(24),
-                MULTIPLYADD(25),
-                LERP(26),
-                __(27);
-
-                public final int identifier;
-
-                D3DTEXTUREOP(int identifier) {
-                    this.identifier = identifier;
-                }
-
-                static D3DTEXTUREOP from(int i) {
-                    return switch (i) {
-                        case 1 -> DISABLE;
-                        case 2 -> SELECTARG1;
-                        case 3 -> SELECTARG2;
-                        case 4 -> MODULATE;
-                        case 5 -> MODULATE2X;
-                        case 6 -> MODULATE4X;
-                        case 7 -> ADD;
-                        case 8 -> ADDSIGNED;
-                        case 9 -> ADDSIGNED2X;
-                        case 10 -> SUBTRACT;
-                        case 11 -> ADDSMOOTH;
-                        case 12 -> BLENDDIFFUSEALPHA;
-                        case 13 -> BLENDTEXTUREALPHA;
-                        case 14 -> BLENDFACTORALPHA;
-                        case 15 -> BLENDTEXTUREALPHAPM;
-                        case 16 -> BLENDCURRENTALPHA;
-                        case 17 -> PREMODULATE;
-                        case 18 -> MODULATEALPHA_ADDCOLOR;
-                        case 19 -> MODULATECOLOR_ADDALPHA;
-                        case 20 -> MODULATEINVALPHA_ADDCOLOR;
-                        case 21 -> MODULATEINVCOLOR_ADDALPHA;
-                        case 22 -> BUMPENVMAP;
-                        case 23 -> BUMPENVMAPLUMINANCE;
-                        case 24 -> DOTPRODUCT3;
-                        case 25 -> MULTIPLYADD;
-                        case 26 -> LERP;
-                        default -> __;
-                    };
-                }
-
-                @Override
-                public Enum<? extends EnumChoices> getSelf() {
-                    return this;
-                }
-
-                @Override
-                public List<? extends Enum<? extends EnumChoices>> choices() {
-                    return List.of(
-                            DISABLE, SELECTARG1, SELECTARG2,
-                            MODULATE, MODULATE2X, MODULATE4X,
-                            ADD, ADDSIGNED, ADDSIGNED2X, SUBTRACT, ADDSMOOTH,
-                            BLENDDIFFUSEALPHA, BLENDTEXTUREALPHA, BLENDFACTORALPHA, BLENDTEXTUREALPHAPM, BLENDCURRENTALPHA,
-                            PREMODULATE, MODULATEALPHA_ADDCOLOR, MODULATECOLOR_ADDALPHA, MODULATEINVALPHA_ADDCOLOR, MODULATEINVCOLOR_ADDALPHA,
-                            BUMPENVMAP, BUMPENVMAPLUMINANCE,
-                            DOTPRODUCT3, MULTIPLYADD, LERP
-                    );
-                }
-            }
-
-            private enum TEXARGS implements EnumChoices {
-                DIFFUSE("DIFFUSE", 0x00),
-                CURRENT("CURRENT", 0x01),
-                TEXTURE("TEXTURE", 0x02),
-                TFACTOR("TFACTOR", 0x03),
-                SPECULAR("SPECULAR", 0x04),
-                TEMP("TEMP", 0x05),
-                CONSTANT("CONSTANT", 0x06),
-                DIFFUSE_COMPLEMENT("DIFFUSE|COMPLEMENT", 0x10),
-                CURRENT_COMPLEMENT("CURRENT|COMPLEMENT", 0x11),
-                TEXTURE_COMPLEMENT("TEXTURE|COMPLEMENT", 0x12),
-                TFACTOR_COMPLEMENT("TFACTOR|COMPLEMENT", 0x13),
-                SPECULAR_COMPLEMENT("SPECULAR|COMPLEMENT", 0x14),
-                TEMP_COMPLEMENT("TEMP|COMPLEMENT", 0x15),
-                CONSTANT_COMPLEMENT("CONSTANT|COMPLEMENT", 0x16),
-                DIFFUSE_ALPHAREPLICATE("DIFFUSE|ALPHAREPLICATE", 0x20),
-                CURRENT_ALPHAREPLICATE("CURRENT|ALPHAREPLICATE", 0x21),
-                TEXTURE_ALPHAREPLICATE("TEXTURE|ALPHAREPLICATE", 0x22),
-                TFACTOR_ALPHAREPLICATE("TFACTOR|ALPHAREPLICATE", 0x23),
-                SPECULAR_ALPHAREPLICATE("SPECULAR|ALPHAREPLICATE", 0x24),
-                TEMP_ALPHAREPLICATE("TEMP|ALPHAREPLICATE", 0x25),
-                CONSTANT_ALPHAREPLICATE("CONSTANT|ALPHAREPLICATE", 0x26);
-
-                private final String name;
-                public final int identifier;
-
-                TEXARGS(String name, int identifier) {
-                    this.name = name;
-                    this.identifier = identifier;
-                }
-
-                @Override
-                public String toString() {
-                    return name;
-                }
-
-                static TEXARGS from(int i) {
-                    return switch (i) {
-                        case 0x00 -> DIFFUSE;
-                        case 0x01 -> CURRENT;
-                        case 0x02 -> TEXTURE;
-                        case 0x03 -> TFACTOR;
-                        case 0x04 -> SPECULAR;
-                        case 0x05 -> TEMP;
-                        case 0x10 -> DIFFUSE_COMPLEMENT;
-                        case 0x11 -> CURRENT_COMPLEMENT;
-                        case 0x12 -> TEXTURE_COMPLEMENT;
-                        case 0x13 -> TFACTOR_COMPLEMENT;
-                        case 0x14 -> SPECULAR_COMPLEMENT;
-                        case 0x15 -> TEMP_COMPLEMENT;
-                        case 0x16 -> CONSTANT_COMPLEMENT;
-                        case 0x20 -> DIFFUSE_ALPHAREPLICATE;
-                        case 0x21 -> CURRENT_ALPHAREPLICATE;
-                        case 0x22 -> TEXTURE_ALPHAREPLICATE;
-                        case 0x23 -> TFACTOR_ALPHAREPLICATE;
-                        case 0x24 -> SPECULAR_ALPHAREPLICATE;
-                        case 0x25 -> TEMP_ALPHAREPLICATE;
-                        case 0x26 -> CONSTANT_ALPHAREPLICATE;
-                        default -> CONSTANT;
-                    };
-                }
-
-                @Override
-                public Enum<? extends EnumChoices> getSelf() {
-                    return this;
-                }
-
-                @Override
-                public List<? extends Enum<? extends EnumChoices>> choices() {
-                    return List.of(
-                            DIFFUSE, CURRENT, TEXTURE, TFACTOR,
-                            SPECULAR, TEMP, CONSTANT,
-                            DIFFUSE_COMPLEMENT, CURRENT_COMPLEMENT, TEXTURE_COMPLEMENT, TFACTOR_COMPLEMENT,
-                            SPECULAR_COMPLEMENT, TEMP_COMPLEMENT, CONSTANT_COMPLEMENT,
-                            DIFFUSE_ALPHAREPLICATE, CURRENT_ALPHAREPLICATE, TEXTURE_ALPHAREPLICATE, TFACTOR_ALPHAREPLICATE,
-                            SPECULAR_ALPHAREPLICATE, TEMP_ALPHAREPLICATE, CONSTANT_ALPHAREPLICATE
-                    );
-                }
-            }
-
-            private enum TEXINDEX implements EnumChoices {
-                _0(0),
-                _1(1),
-                _2(2),
-                _3(3),
-                _4(4),
-                _5(5),
-                _6(6),
-                _7(7),
-                __(8);
-
-                public final int identifier;
-
-                TEXINDEX(int identifier) {
-                    this.identifier = identifier;
-                }
-
-                @Override
-                public String toString() {
-                    return name().substring(1);
-                }
-
-                static TEXINDEX from(int i) {
-                    return switch (i) {
-                        case 0 -> _0;
-                        case 1 -> _1;
-                        case 2 -> _2;
-                        case 3 -> _3;
-                        case 4 -> _4;
-                        case 5 -> _5;
-                        case 6 -> _6;
-                        case 7 -> _7;
-                        default -> __;
-                    };
-                }
-
-                @Override
-                public Enum<? extends EnumChoices> getSelf() {
-                    return this;
-                }
-
-                @Override
-                public List<? extends Enum<? extends EnumChoices>> choices() {
-                    return List.of(_0,_1,_2,_3,_4,_5,_6,_7);
-                }
-            }
-
-            private enum D3DTEXTURETRANSFORMFLAGS implements EnumChoices {
-                DISABLE("DISABLE",0x000),
-                COUNT1("COUNT1", 0x001),
-                COUNT2("COUNT2", 0x002),
-                COUNT3("COUNT3", 0x003),
-                COUNT4("COUNT4", 0x004),
-                COUNT1_PROJECTED("COUNT1|PROJECTED", 0x101),
-                COUNT2_PROJECTED("COUNT2|PROJECTED", 0x102),
-                COUNT3_PROJECTED("COUNT3|PROJECTED", 0x103),
-                COUNT4_PROJECTED("COUNT4|PROJECTED", 0x104);
-
-                private final String name;
-                public final int identifier;
-
-                D3DTEXTURETRANSFORMFLAGS(String name, int identifier) {
-                    this.name = name;
-                    this.identifier = identifier;
-                }
-
-                @Override
-                public String toString() {
-                    return name;
-                }
-
-                static D3DTEXTURETRANSFORMFLAGS from(int i) {
-                    return switch (i) {
-                        case 0x001 -> COUNT1;
-                        case 0x002 -> COUNT2;
-                        case 0x003 -> COUNT3;
-                        case 0x004 -> COUNT4;
-                        case 0x101 -> COUNT1_PROJECTED;
-                        case 0x102 -> COUNT2_PROJECTED;
-                        case 0x103 -> COUNT3_PROJECTED;
-                        case 0x104 -> COUNT4_PROJECTED;
-                        default -> DISABLE;
-                    };
-                }
-
-                @Override
-                public Enum<? extends EnumChoices> getSelf() {
-                    return this;
-                }
-
-                @Override
-                public List<? extends Enum<? extends EnumChoices>> choices() {
-                    return List.of(
-                            DISABLE, COUNT1, COUNT2, COUNT3, COUNT4,
-                            COUNT1_PROJECTED, COUNT2_PROJECTED, COUNT3_PROJECTED, COUNT4_PROJECTED
-                    );
-                }
-            }
         }
 
         public static class SamplerStage implements DatingBachelor {
@@ -970,14 +469,14 @@ public class Material implements DatingBachelor, Previewable {
             public D3DTEXTUREADDRESS addressU;
             public D3DTEXTUREADDRESS addressV;
             public D3DTEXTUREADDRESS addressW;
-            public COLOR_RGBA bordercolor;
+            public final INTCOLOR bordercolor = new INTCOLOR(INTCOLOR.Format.RGBA, -1);
 
             SamplerStage(int i, BlockReader reader) throws IOException {
                 this.i = i;
                 addressU = D3DTEXTUREADDRESS.from(reader.readInt());
                 addressV = D3DTEXTUREADDRESS.from(reader.readInt());
                 addressW = D3DTEXTUREADDRESS.from(reader.readInt());
-                bordercolor = new COLOR_RGBA(reader.readInt());
+                bordercolor.color = reader.readInt();
             }
 
             void write(BlockWriter writer) throws IOException {
@@ -999,50 +498,13 @@ public class Material implements DatingBachelor, Previewable {
                         () -> addressW,
                         a -> addressW = a
                 ), new DatingProfileEntry<>("Border Color",
-                        () -> bordercolor,
-                        c -> bordercolor = c
+                        () -> bordercolor
                 ));
             }
 
             @Override
             public String toString() {
                 return "SampleStage: "+i;
-            }
-
-            private enum D3DTEXTUREADDRESS implements EnumChoices {
-                WRAP(1),
-                MIRROR(2),
-                CLAMP(3),
-                BORDER(4),
-                MIRROR_ONCE(5),
-                __(6);
-
-                public final int identifier;
-
-                D3DTEXTUREADDRESS(int identifier) {
-                    this.identifier = identifier;
-                }
-
-                static D3DTEXTUREADDRESS from(int i) {
-                    return switch (i) {
-                        case 1 -> WRAP;
-                        case 2 -> MIRROR;
-                        case 3 -> CLAMP;
-                        case 4 -> BORDER;
-                        case 5 -> MIRROR_ONCE;
-                        default -> __;
-                    };
-                }
-
-                @Override
-                public Enum<? extends EnumChoices> getSelf() {
-                    return this;
-                }
-
-                @Override
-                public List<? extends Enum<? extends EnumChoices>> choices() {
-                    return List.of(WRAP, MIRROR, CLAMP, BORDER, MIRROR_ONCE);
-                }
             }
         }
     }

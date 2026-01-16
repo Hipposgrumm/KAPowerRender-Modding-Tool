@@ -8,6 +8,12 @@ public class DatingProfileEntry<T> {
     private final Supplier<T> getter;
     private final Consumer<T> setter;
 
+    public DatingProfileEntry(String name, Supplier<T> getter) {
+        this.name = name;
+        this.getter = getter;
+        this.setter = null;
+    }
+
     public DatingProfileEntry(String name, Supplier<T> getter, Consumer<T> setter) {
         this.name = name;
         this.getter = getter;
@@ -23,10 +29,26 @@ public class DatingProfileEntry<T> {
     }
 
     public void set(T value) {
+        if (setter == null) throw new IllegalCallerException("The type "+(value != null ? value.getClass() : "")+" does not use a separate setter.");
         setter.accept(value);
     }
 
     public boolean readOnly() {
-        return setter == null;
+        return false;
+    }
+
+    public static class ReadOnly<T> extends DatingProfileEntry<T> {
+        public ReadOnly(String name, Supplier<T> getter) {
+            super(name, getter, null);
+        }
+
+        @Override
+        public void set(T value) {
+            throw new IllegalStateException("Trying to set a read-only value.");
+        }
+
+        public boolean readOnly() {
+            return true;
+        }
     }
 }

@@ -71,9 +71,8 @@ public class WorldObject implements DatingBachelor {
     @Override
     public List<DatingProfileEntry<?>> getDatingProfile() {
         List<DatingProfileEntry<?>> items = new ArrayList<>();
-        items.add(new DatingProfileEntry<>("Type",
-                () -> type,
-                null
+        items.add(new DatingProfileEntry.ReadOnly<>("Type",
+                () -> type
         ));
         return items;
     }

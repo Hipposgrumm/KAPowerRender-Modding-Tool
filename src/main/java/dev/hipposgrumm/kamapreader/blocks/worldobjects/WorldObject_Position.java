@@ -63,16 +63,13 @@ public class WorldObject_Position extends WorldObject_Base {
     public List<DatingProfileEntry<?>> getDatingProfile() {
         List<DatingProfileEntry<?>> items = super.getDatingProfile();
         items.add(new DatingProfileEntry<>("Rotation",
-                () -> rotation,
-                r -> rotation = r
+                () -> rotation
         ));
         items.add(new DatingProfileEntry<>("Position",
-                () -> position,
-                p -> position = p
+                () -> position
         ));
         items.add(new DatingProfileEntry<>("Scale",
-                () -> scale,
-                s -> scale = s
+                () -> scale
         ));
         return items;
     }

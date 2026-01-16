@@ -43,6 +43,7 @@ public class BlockReader {
      * @throws IndexOutOfBoundsException If file not large enough for the allocated size.
      */
     public BlockReader(RandomAccessFile reader, boolean useLittleEndian, int size) throws IOException {
+        if (size < 0) throw new IndexOutOfBoundsException("Requested reader size is negative.");
         this.reader = reader;
         this.littleEndian = useLittleEndian;
         this.size = size;
@@ -94,6 +95,14 @@ public class BlockReader {
      */
     public int getPointer() throws IOException {
         return (int) (reader.getFilePointer()-startpos);
+    }
+
+    /**
+     * @return Pointer current position in entire file.
+     * @throws IOException If there is an IO error.
+     */
+    public int getTruePointer() throws IOException {
+        return (int) reader.getFilePointer();
     }
 
     /**
@@ -301,7 +310,7 @@ public class BlockReader {
     }
 
     /**
-     * Reads a string until it reaches an end character (NUL) or the end of the specified size.
+     * Reads a string of the specified size clipped by an end character (NUL) (if present).
      * @param size Size of the string.
      * @return Sized String
      * @throws IOException If there is a read error.

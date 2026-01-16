@@ -88,8 +88,7 @@ public class WorldObject_Camera extends WorldObject_Position {
     public List<DatingProfileEntry<?>> getDatingProfile() {
         List<DatingProfileEntry<?>> items = super.getDatingProfile();
         items.add(new DatingProfileEntry<>("Viewport",
-                () -> viewport,
-                v -> viewport = v
+                () -> viewport
         ));
         items.add(new DatingProfileEntry<>("Nearclip",
                 () -> nearclip,
@@ -100,8 +99,7 @@ public class WorldObject_Camera extends WorldObject_Position {
                 c -> farclip = c
         ));
         items.add(new DatingProfileEntry<>("FOV",
-                () -> fov,
-                f -> fov = f
+                () -> fov
         ));
         return items;
     }

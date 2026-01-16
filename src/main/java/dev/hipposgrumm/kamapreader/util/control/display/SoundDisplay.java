@@ -10,6 +10,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
@@ -18,6 +19,8 @@ import java.io.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SoundDisplay {
+    private static boolean loopingMode = false;
+
     private Player player;
     private SoundDisplay(Player player) {
         this.player = player;
@@ -38,10 +41,25 @@ public class SoundDisplay {
             Button stopbtn = new Button("", Icon.stop());
             ToggleButton loopbtn = new ToggleButton("", Icon.loop());
 
+            loopbtn.setSelected(loopingMode);
+            display.player.setLooping(loopingMode);
             playbtn.setOnAction(event -> display.player.resume());
             pausebtn.setOnAction(event -> display.player.pause());
             stopbtn.setOnAction(event -> display.player.stop());
-            loopbtn.setOnAction(event -> display.player.setLooping(loopbtn.isSelected()));
+            loopbtn.setOnAction(event -> {
+                loopingMode = loopbtn.isSelected();
+                display.player.setLooping(loopingMode);
+            });
+            controller.setKeyEventListener(event -> {
+                KeyCode key = event.getCode();
+                if (key == KeyCode.PLAY || key == KeyCode.SPACE) {
+                    if (display.player.isPlaying()) {
+                        display.player.pause();
+                    } else {
+                        display.player.resume();
+                    }
+                }
+            });
 
             AtomicBoolean modifyingState = new AtomicBoolean(false);
             AtomicBoolean playingState = new AtomicBoolean();
@@ -62,6 +80,7 @@ public class SoundDisplay {
                     if (progress.getScene() == null) {
                         stop();
                         display.player.close();
+                        controller.setKeyEventListener(null);
                         return;
                     }
 

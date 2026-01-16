@@ -21,6 +21,7 @@ import javafx.util.Pair;
 import java.io.*;
 import java.net.URL;
 import java.util.*;
+import java.util.function.Consumer;
 
 public class FirstThing implements Initializable {
     Window stage;
@@ -41,6 +42,9 @@ public class FirstThing implements Initializable {
     private final Dialog<String> notice = new Dialog<>();
     private final Dialog<String> popupError = new Dialog<>();
     private final TextArea errorTextbox = new TextArea();
+
+    private boolean keyListenerInitialized = false;
+    private Consumer<KeyEvent> keyListener = null;
 
     @FXML @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -113,6 +117,16 @@ public class FirstThing implements Initializable {
             for (DatingProfileEntry<?> entry : entries)
                 table.getItems().add(new Pair<>(value, entry));
         }
+    }
+
+    public void setKeyEventListener(Consumer<KeyEvent> listener) {
+        if (!keyListenerInitialized) {
+            stage.addEventFilter(KeyEvent.KEY_RELEASED, event -> {
+                if (keyListener != null) keyListener.accept(event);
+            });
+            keyListenerInitialized = true;
+        }
+        keyListener = listener;
     }
 
     @FXML

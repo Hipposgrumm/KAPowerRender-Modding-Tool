@@ -70,7 +70,7 @@ public class MaterialView {
     private static void updateMaterial(Material material, Sphere sphere, PhongMaterial pongMaterial) {
         pongMaterial.setDiffuseColor(material.color.toJavaFXColor());
         if (material.textures[0] != null) // TODO: Multi-layer?
-            pongMaterial.setDiffuseMap(material.textures[0].texture().getViewable().getJavaFXImage());
+            pongMaterial.setDiffuseMap(material.textures[0].getViewable().getJavaFXImage());
         pongMaterial.setSpecularColor(material.specular.toJavaFXColor());
         pongMaterial.setSpecularPower(material.specular_power);
         sphere.setCullFace(material.doublesided ? CullFace.NONE : CullFace.BACK);

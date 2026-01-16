@@ -1,7 +1,6 @@
 package dev.hipposgrumm.kamapreader.util.control;
 
 import dev.hipposgrumm.kamapreader.FirstThing;
-import dev.hipposgrumm.kamapreader.blocks.TexturesBlock;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.Icon;
@@ -22,10 +21,12 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.util.Callback;
 import javafx.util.Pair;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 @SuppressWarnings("unchecked")
@@ -56,10 +57,14 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
                 Button btn = new Button("", box);
                 btn.setMinWidth(75);
                 btn.setMinHeight(100);
-                int index = i;
-                btn.setOnAction(event -> {
-                    controller.tree.getSelectionModel().select((TreeItem<DatingBachelor>) item.getChildren().get(index));
-                });
+                if (pv instanceof DatingBachelor dpv) {
+                    TreeItem<DatingBachelor> found = findInTree(controller.tree.getRoot(), dpv);
+                    if (found != null) {
+                        btn.setOnAction(event ->
+                                controller.tree.getSelectionModel().select(found)
+                        );
+                    } else btn.setDisable(true);
+                } else btn.setDisable(true);
                 grid.add(btn, i%4, i/4);
                 i++;
             }
@@ -152,9 +157,8 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
                 ((DatingProfileEntry<Float>) entry).set(newValue.floatValue());
             });
             case EnumChoices e -> {
-                // This is gonna explode I can sense it.
                 ComboBox<? extends Enum<?>> dropdown = new ComboBox<>(FXCollections.observableList(e.choices()));
-                ((ComboBox<Enum<?>>) dropdown).setValue(e.getSelf()); // TODO: Does this actually work properly?
+                ((ComboBox<Enum<?>>) dropdown).setValue(e.getSelf());
                 if (entry.readOnly()) {
                     dropdown.setDisable(true);
                 } else {
@@ -285,7 +289,7 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
                 box.setAlignment(Pos.CENTER_LEFT);
                 yield box;
             }
-            case COLOR_RGBA c -> {
+            case INTCOLOR c -> {
                 Control R = ubyteSpinner(new UByte((short) c.getRed()), (observable, oldValue, newValue) -> {
                     c.setRed(newValue);
                 });
@@ -312,40 +316,98 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
                 yield box;
             }
             case Flags fl -> {
-                VBox box = new VBox();
-                for (int i=0;i<32;i++) {
-                    String name = fl.getName(i);
-                    if (name != null) {
-                        final int lambdaSafeIndex = i;
-                        box.getChildren().add(checkbox(fl.get(i), name, (observable, oldValue, newValue) -> {
-                            fl.set(lambdaSafeIndex, newValue);
-                        }));
-                    }
+                Flags.Entry[] entries = fl.getEntries();
+                Runnable[] entryUpdaters = new Runnable[entries.length+1];
+                AtomicReference<TextField> field = new AtomicReference<>();
+                String startingval = Integer.toHexString(fl.getValue());
+                field.set(text("0".repeat(8-startingval.length())+startingval, this.entry.readOnly() ?
+                        ObservableDatingValue::emptyEvent :
+                        (observable, oldValue, newValue) -> {
+                    try {
+                        fl.setValue(Integer.parseInt(newValue, 16));
+                    } catch (NumberFormatException ignored) {}
+                    for (Runnable run:entryUpdaters) run.run();
+                }));
+                entryUpdaters[entryUpdaters.length-1] = () -> {
+                    String val = Integer.toHexString(fl.getValue());
+                    field.get().setText("0".repeat(8-val.length())+val);
+                };
+                HBox box2 = new HBox(
+                        new Label("0x"), field.get()
+                );
+                box2.setAlignment(Pos.CENTER_LEFT);
+                VBox box = new VBox(box2);
+                for (int i=0;i<entries.length;i++) {
+                    box.getChildren().add(switch (entries[i]) {
+                        case Flags.BoolEntry be -> {
+                            CheckBox check = checkbox(false, entries[i].name, (observable, oldValue, newValue) -> {
+                                be.apply(fl, newValue);
+                                for (Runnable run:entryUpdaters) run.run();
+                            });
+                            entryUpdaters[i] = () -> check.setSelected(be.from(fl));
+                            yield check;
+                        }
+                        case Flags.ValueEntry ve -> {
+                            Node node;
+                            if (this.entry.readOnly()) node = text(Integer.toString(ve.from(fl)), ObservableDatingValue::emptyEvent);
+                            else {
+                                AtomicReference<Spinner<Integer>> spinner = new AtomicReference<>();
+                                spinner.set(spinner((observable, oldValue, newValue) -> {
+                                    ve.apply(fl, newValue);
+                                    for (Runnable run:entryUpdaters) run.run();
+                                }, new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 1<<ve.size, ve.from(fl))));
+                                entryUpdaters[i] = () -> spinner.get().getValueFactory().setValue(ve.from(fl));
+                                node = spinner.get();
+                            }
+                            yield new HBox(0,
+                                    new Label(entries[i].name), node
+                            );
+                        }
+                        case Flags.EnumEntry ee -> {
+                            ComboBox<Flags.FlagsEnum> dropdown = new ComboBox<>(FXCollections.observableList(new ArrayList<>(ee.values.values())));
+                            dropdown.setValue(ee.from(fl));
+                            dropdown.setCellFactory(new Callback<>() {
+                                @Override
+                                public ListCell<Flags.FlagsEnum> call(ListView<Flags.FlagsEnum> listView) {
+                                    return new ListCell<>() {
+                                        @Override
+                                        public void updateItem(Flags.FlagsEnum item, boolean empty) {
+                                            super.updateItem(item, empty);
+                                            if (item != null) setText(item.getSelf().toString());
+                                        }
+                                    };
+                                }
+                            });
+                            if (this.entry.readOnly()) dropdown.setDisable(true);
+                            else dropdown.valueProperty().addListener((observable, oldValue, newValue) -> {
+                                ee.apply(fl, newValue);
+                                for (Runnable run:entryUpdaters) run.run();
+                            });
+                            entryUpdaters[i] = () -> dropdown.setValue(ee.from(fl));
+                            yield dropdown;
+                        }
+                    });
                 }
+                for (Runnable run:entryUpdaters) run.run();
                 yield box;
             }
             case BITMAP_TEXTURE[] texArr -> TexturesDisplay.create(controller, item.getValue(), texArr, (DatingProfileEntry<BITMAP_TEXTURE[]>) entry);
             case SnSound sn -> SoundDisplay.create(controller, (DatingProfileEntry<SnSound>) entry);
             case Material mat -> MaterialView.create(mat, 315, 150);
-            case TexturesBlock.TextureRef[] texArr -> {
+            case Texture[] texArr -> {
                 HBox images = new HBox(5);
-                for (int i=0;i<texArr.length;i++) {
-                    if (texArr[i] != null) {
-                        ImageView view = new ImageView(texArr[i].texture().getViewable().getJavaFXImage());
+                for (Texture texture:texArr) {
+                    if (texture != null) {
+                        ImageView view = new ImageView(texture.getViewable().getJavaFXImage());
                         view.setFitWidth(100);
                         view.setFitHeight(100);
                         Button refButton = new Button("Go to Reference", Icon.redirect());
-                        boolean found = false;
-                        for (TreeItem<DatingBachelor> block:controller.tree.getRoot().getChildren()) {
-                            if (block.getValue() == texArr[i].block()) {
-                                final int lambdaSafeIndex = i;
-                                refButton.setOnAction(event ->
-                                        controller.tree.getSelectionModel().select(block.getChildren().get(texArr[lambdaSafeIndex].index()))
-                                );
-                                found = true;
-                            }
-                        }
-                        if (!found) refButton.setDisable(true);
+                        TreeItem<DatingBachelor> found = findInTree(controller.tree.getRoot(), texture);
+                        if (found != null) {
+                            refButton.setOnAction(event ->
+                                    controller.tree.getSelectionModel().select(found)
+                            );
+                        } else refButton.setDisable(true);
                         images.getChildren().add(new VBox(view, refButton));
                     } else {
                         images.getChildren().add(new Label("  empty  "));
@@ -364,6 +426,15 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
 
     private void markChanged(ObservableValue<?> observable, Object oldValue, Object newValue) {
         item.setGraphic(new Label("*"));
+    }
+
+    private static TreeItem<DatingBachelor> findInTree(TreeItem<DatingBachelor> root, DatingBachelor target) {
+        if (root.getValue() == target) return root;
+        for (TreeItem<DatingBachelor> item:root.getChildren()) {
+            TreeItem<DatingBachelor> found = findInTree(item, target);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     private TextField text(String s, ChangeListener<String> listener) {
@@ -416,7 +487,6 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
     private Control intSpinner(int i, ChangeListener<Integer> listener) {
         if (entry.readOnly()) return text(Integer.toString(i), ObservableDatingValue::emptyEvent);
         return spinner(listener, new SpinnerValueFactory.IntegerSpinnerValueFactory(Integer.MIN_VALUE, Integer.MAX_VALUE, i));
-
     }
 
     private Control uintSpinner(UInteger i, ChangeListener<Long> listener) {
@@ -429,7 +499,7 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
         return spinner(listener, new SpinnerValueFactory.DoubleSpinnerValueFactory(Float.MIN_VALUE, Float.MAX_VALUE, f));
     }
 
-    private <T> Control spinner(ChangeListener<T> listener, SpinnerValueFactory<T> factory) {
+    private <T> Spinner<T> spinner(ChangeListener<T> listener, SpinnerValueFactory<T> factory) {
         Spinner<T> spinner = new Spinner<>();
         spinner.setValueFactory(factory);
         spinner.setEditable(true);

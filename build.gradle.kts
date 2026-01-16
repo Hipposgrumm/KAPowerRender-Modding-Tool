@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "dev.hipposgrumm"
-version = "0.2.0"
+version = "0.3.0p1"
 
 repositories {
     mavenCentral()
@@ -60,6 +60,12 @@ tasks.withType<org.beryx.jlink.JlinkTask> {
         copy {
             from("/buildextras") {
                 include("run.bat")
+            }
+            into("${layout.buildDirectory.get()}/KAPowerRenderModdingTool")
+        }
+        copy {
+            from("/KAMapViewer") {
+                include("KAMapViewer.jar")
             }
             into("${layout.buildDirectory.get()}/KAPowerRenderModdingTool")
         }
