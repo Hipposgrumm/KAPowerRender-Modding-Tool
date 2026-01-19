@@ -23,6 +23,7 @@ public enum D3DCMPFUNC implements EnumChoices {
 
     public static D3DCMPFUNC from(int i) {
         return switch (i) {
+            case 0 -> __;
             case 1 -> NEVER;
             case 2 -> LESS;
             case 3 -> EQUAL;
@@ -31,7 +32,10 @@ public enum D3DCMPFUNC implements EnumChoices {
             case 6 -> NOTEQUAL;
             case 7 -> GREATEREQUAL;
             case 8 -> ALWAYS;
-            default -> __;
+            default -> {
+                System.err.println("No type of "+i+" in enum D3DCMPFUNC");
+                yield __;
+            }
         };
     }
 

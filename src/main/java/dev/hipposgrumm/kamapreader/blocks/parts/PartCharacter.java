@@ -36,7 +36,7 @@ public class PartCharacter extends Part {
         MYSTERY2 = reader.readBytes(0x7A);
         file_ls = new TextFileString(filename+".LS", reader.readString(reader.readInt()));
         MYSTERY3 = reader.readBytes(0x7A);
-        //PROReader.readPRO(reader.segment(reader.readInt()));
+        PROReader.readPRO(reader.segment(reader.readInt()));
         BYTE_DATA = reader.readBytes(reader.getRemaining());
     }
 

@@ -2,44 +2,44 @@ package dev.hipposgrumm.kamapreader.util.types.enums;
 
 import dev.hipposgrumm.kamapreader.util.types.Flags;
 
-public enum D3DTEXTURETRANSFORMFLAGS implements Flags.FlagsEnum {
-    DISABLE(0x000),
-    COUNT1(0x001),
-    COUNT2(0x002),
-    COUNT3(0x003),
-    COUNT4(0x004),
+public class D3DTEXTURETRANSFORMFLAGS extends Flags {
+    public static final Flags.EnumEntry COUNT = new Flags.EnumEntry(Enumerations.DISABLE, new Flags.FlagsEnum[] {
+            Enumerations.DISABLE, Enumerations.COUNT1, Enumerations.COUNT2, Enumerations.COUNT3, Enumerations.COUNT4
+    }, 0, 4);
+    public static final Flags.BoolEntry PROJECTED = new Flags.BoolEntry("PROJECTED", 8);
 
-    PROJECTED(0x100);
-
-    public final int identifier;
-
-    D3DTEXTURETRANSFORMFLAGS(int identifier) {
-        this.identifier = identifier;
+    public D3DTEXTURETRANSFORMFLAGS(int value) {
+        super(value);
     }
 
     @Override
-    public Enum<? extends Flags.FlagsEnum> getSelf() {
-        return this;
+    public Flags.Entry[] getEntries() {
+        return new Flags.Entry[] {COUNT, PROJECTED};
     }
 
-    @Override
-    public int getValue() {
-        return identifier;
-    }
+    public enum Enumerations implements Flags.FlagsEnum {
+        DISABLE(0x000),
+        COUNT1(0x001),
+        COUNT2(0x002),
+        COUNT3(0x003),
+        COUNT4(0x004),
 
-    public static class AsFlags extends Flags {
-        public static final EnumEntry COUNT = new EnumEntry(DISABLE, new FlagsEnum[] {
-                DISABLE, COUNT1, COUNT2, COUNT3, COUNT4
-        }, 0, 4);
-        public static final BoolEntry PROJECTED = new BoolEntry("PROJECTED", 8);
+        PROJECTED(0x100);
 
-        public AsFlags(int value) {
-            super(value);
+        public final int identifier;
+
+        Enumerations(int identifier) {
+            this.identifier = identifier;
         }
 
         @Override
-        public Entry[] getEntries() {
-            return new Entry[] {COUNT, PROJECTED};
+        public Enum<? extends Flags.FlagsEnum> getSelf() {
+            return this;
+        }
+
+        @Override
+        public int getValue() {
+            return identifier;
         }
     }
 }

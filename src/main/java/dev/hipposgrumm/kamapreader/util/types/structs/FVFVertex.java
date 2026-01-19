@@ -16,10 +16,10 @@ public class FVFVertex {
     public final INTCOLOR Specular = new INTCOLOR(INTCOLOR.Format.ARGB, -1);
     public TexCoords[] TextureCoords;
 
-    public static FVFVertex create(D3DFVF.AsFlags FVF, BlockReader reader) throws IOException {
+    public static FVFVertex create(D3DFVF FVF, BlockReader reader) throws IOException {
         FVFVertex vert = new FVFVertex();
-        D3DFVF Position = (D3DFVF) D3DFVF.AsFlags.Position.from(FVF);
-        if (Position != D3DFVF.__) vert.Pos = new PR_POINT(reader.readFloat(), reader.readFloat(), reader.readFloat());
+        D3DFVF.Enumerations Position = (D3DFVF.Enumerations) D3DFVF.Position.from(FVF);
+        if (Position != D3DFVF.Enumerations.__) vert.Pos = new PR_POINT(reader.readFloat(), reader.readFloat(), reader.readFloat());
         switch (Position) {
             case XYZ -> {}
             case XYZRHW, XYZW -> vert.RHW = reader.readFloat();
@@ -28,22 +28,22 @@ public class FVFVertex {
                 int count = 0;
                 switch (Position) {
                     // This utilizes falldown into the next case.
-                    case D3DFVF.XYZB5: weights[count++] = reader.readFloat();
-                    case D3DFVF.XYZB4: weights[count++] = reader.readFloat();
-                    case D3DFVF.XYZB3: weights[count++] = reader.readFloat();
-                    case D3DFVF.XYZB2: weights[count++] = reader.readFloat();
-                    case D3DFVF.XYZB1: weights[count++] = reader.readFloat();
+                    case XYZB5: weights[count++] = reader.readFloat();
+                    case XYZB4: weights[count++] = reader.readFloat();
+                    case XYZB3: weights[count++] = reader.readFloat();
+                    case XYZB2: weights[count++] = reader.readFloat();
+                    case XYZB1: weights[count++] = reader.readFloat();
                 }
                 vert.Weights = new float[count];
                 System.arraycopy(weights, 0, vert.Weights, 0, count);
             }
         }
-        if (D3DFVF.AsFlags.NORMAL.from(FVF)) vert.Normal = new PR_POINT(reader.readFloat(), reader.readFloat(), reader.readFloat());
-        if (D3DFVF.AsFlags.PSIZE.from(FVF)) vert.PSize = reader.readFloat();
-        if (D3DFVF.AsFlags.DIFFUSE.from(FVF)) vert.Diffuse.color = Integer.reverseBytes(reader.readInt());
-        if (D3DFVF.AsFlags.SPECULAR.from(FVF)) vert.Specular.color = Integer.reverseBytes(reader.readInt());
-        for (int i=0;i<D3DFVF.AsFlags.TEXCOORDNUMS.length;i++) {
-            vert.TextureCoords[i++] = switch ((D3DFVF.TexCoordSize) D3DFVF.AsFlags.TEXCOORDNUMS[i].from(FVF)) {
+        if (D3DFVF.NORMAL.from(FVF)) vert.Normal = new PR_POINT(reader.readFloat(), reader.readFloat(), reader.readFloat());
+        if (D3DFVF.PSIZE.from(FVF)) vert.PSize = reader.readFloat();
+        if (D3DFVF.DIFFUSE.from(FVF)) vert.Diffuse.color = Integer.reverseBytes(reader.readInt());
+        if (D3DFVF.SPECULAR.from(FVF)) vert.Specular.color = Integer.reverseBytes(reader.readInt());
+        for (int i=0;i<D3DFVF.TEXCOORDNUMS.length;i++) {
+            vert.TextureCoords[i++] = switch ((D3DFVF.TexCoordSize) D3DFVF.TEXCOORDNUMS[i].from(FVF)) {
                 case _1 -> new TexCoords1D(reader.readFloat());
                 case _2 -> new TexCoords2D(reader.readFloat(), reader.readFloat());
                 case _3 -> new TexCoords3D(reader.readFloat(), reader.readFloat(), reader.readFloat());

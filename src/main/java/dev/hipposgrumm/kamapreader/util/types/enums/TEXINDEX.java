@@ -37,7 +37,10 @@ public enum TEXINDEX implements EnumChoices {
             case 5 -> _5;
             case 6 -> _6;
             case 7 -> _7;
-            default -> __;
+            default -> {
+                System.err.println("No type of "+i+" in enum TEXINDEX");
+                yield __;
+            }
         };
     }
 

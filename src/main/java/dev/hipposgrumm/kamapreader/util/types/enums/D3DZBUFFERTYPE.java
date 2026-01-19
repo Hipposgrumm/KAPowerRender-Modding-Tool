@@ -17,9 +17,13 @@ public enum D3DZBUFFERTYPE implements EnumChoices {
 
     public static D3DZBUFFERTYPE from(int i) {
         return switch (i) {
+            case 0 -> FALSE;
             case 1 -> TRUE;
             case 2 -> USEW;
-            default -> FALSE;
+            default -> {
+                System.err.println("No type of "+i+" in enum D3DZBUFFERTYPE; defaulting to FALSE");
+                yield FALSE;
+            }
         };
     }
 

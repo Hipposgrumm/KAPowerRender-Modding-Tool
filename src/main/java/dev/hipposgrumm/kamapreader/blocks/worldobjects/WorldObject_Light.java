@@ -29,12 +29,16 @@ public class WorldObject_Light extends WorldObject_Position {
     @Override
     public void read(BlockReader reader) throws IOException {
         super.read(reader);
-        lightmode = switch (reader.readInt()) {
+        int lighttype = reader.readInt();
+        lightmode = switch (lighttype) {
             case 0 -> LightType.DIRECTIONAL;
             case 1 -> LightType.POINT;
             case 2 -> LightType.SPOT;
             case -1 -> LightType.UNSET;
-            default -> LightType.UNKNOWN;
+            default -> {
+                System.err.println("No type of "+lighttype+" in enum LightType");
+                yield LightType.UNKNOWN;
+            }
         };
         coneInner = reader.readFloat();
         coneOuter = reader.readFloat();

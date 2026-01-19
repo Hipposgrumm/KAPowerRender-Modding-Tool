@@ -21,13 +21,17 @@ public enum D3DBLENDOP implements EnumChoices {
 
     public static D3DBLENDOP from(int i) {
         return switch (i) {
+            case 0 -> __;
             case 1 -> ADD;
             case 2 -> SUBTRACT;
             case 3 -> REVSUBTRACT;
             case 4 -> MIN;
             case 5 -> MAX;
             case 13 -> UNKNOWN13;
-            default -> __;
+            default -> {
+                System.err.println("No type of "+i+" in enum D3DBLENDOP");
+                yield __;
+            }
         };
     }
 

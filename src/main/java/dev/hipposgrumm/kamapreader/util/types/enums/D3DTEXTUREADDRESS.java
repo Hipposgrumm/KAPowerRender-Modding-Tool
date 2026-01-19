@@ -20,12 +20,16 @@ public enum D3DTEXTUREADDRESS implements EnumChoices {
 
     public static D3DTEXTUREADDRESS from(int i) {
         return switch (i) {
+            case 0 -> __;
             case 1 -> WRAP;
             case 2 -> MIRROR;
             case 3 -> CLAMP;
             case 4 -> BORDER;
             case 5 -> MIRROR_ONCE;
-            default -> __;
+            default -> {
+                System.err.println("No type of "+i+" in enum D3DTEXTUREADDRESS");
+                yield __;
+            }
         };
     }
 

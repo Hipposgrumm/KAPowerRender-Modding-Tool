@@ -18,8 +18,12 @@ public enum D3DSHADEMODE implements EnumChoices {
     public static D3DSHADEMODE from(int i) {
         return switch (i) {
             case 1 -> FLAT;
+            case 2 -> GOURAUD;
             case 3 -> PHONG;
-            default -> GOURAUD;
+            default -> {
+                System.err.println("No type of "+i+" in enum D3DSHADEMODE; defaulting to GOURAUD");
+                yield GOURAUD;
+            }
         };
     }
 

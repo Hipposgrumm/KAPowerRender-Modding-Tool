@@ -32,6 +32,7 @@ public enum D3DBLEND implements EnumChoices {
 
     public static D3DBLEND from(int i) {
         return switch (i) {
+            case 0 -> __;
             case 1 -> ZERO;
             case 2 -> ONE;
             case 3 -> SRCCOLOR;
@@ -49,7 +50,10 @@ public enum D3DBLEND implements EnumChoices {
             case 15 -> INVBLENDFACTOR;
             case 16 -> SRCCOLOR2;
             case 17 -> INVSRCCOLOR2;
-            default -> __;
+            default -> {
+                System.err.println("No type of "+i+" in enum D3DBLEND");
+                yield __;
+            }
         };
     }
 

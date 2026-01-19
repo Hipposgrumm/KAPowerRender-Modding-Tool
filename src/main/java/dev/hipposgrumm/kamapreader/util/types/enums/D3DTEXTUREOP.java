@@ -41,6 +41,7 @@ public enum D3DTEXTUREOP implements EnumChoices {
 
     public static D3DTEXTUREOP from(int i) {
         return switch (i) {
+            case 0 -> __;
             case 1 -> DISABLE;
             case 2 -> SELECTARG1;
             case 3 -> SELECTARG2;
@@ -67,7 +68,10 @@ public enum D3DTEXTUREOP implements EnumChoices {
             case 24 -> DOTPRODUCT3;
             case 25 -> MULTIPLYADD;
             case 26 -> LERP;
-            default -> __;
+            default -> {
+                System.err.println("No type of "+i+" in enum D3DTEXTUREOP");
+                yield __;
+            }
         };
     }
 

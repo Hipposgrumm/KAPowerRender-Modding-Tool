@@ -9,7 +9,7 @@ public class PR_VERTEXBUFFER {
     public int NumVertices;
     public int NumIndices;
     public VBufFlags Flags = new VBufFlags(0);
-    public D3DFVF.AsFlags FVF;
+    public D3DFVF FVF;
     public int VertexSize;
     public UInteger.Array VertexMapping;
     public FVFVertex[] vertices;

@@ -399,23 +399,23 @@ public class Material implements DatingBachelor, Previewable {
             private final int i;
             public D3DTEXTUREOP colorop;
             public D3DTEXTUREOP alphaop;
-            public TEXARGS.AsFlags colorarg1;
-            public TEXARGS.AsFlags colorarg2;
-            public TEXARGS.AsFlags alphaarg1;
-            public TEXARGS.AsFlags alphaarg2;
+            public TEXARGS colorarg1;
+            public TEXARGS colorarg2;
+            public TEXARGS alphaarg1;
+            public TEXARGS alphaarg2;
             public TEXINDEX texcoordindex;
-            public D3DTEXTURETRANSFORMFLAGS.AsFlags transformflags;
+            public D3DTEXTURETRANSFORMFLAGS transformflags;
 
             TextureStage(int i, BlockReader reader) throws IOException {
                 this.i = i;
                 colorop = D3DTEXTUREOP.from(reader.readInt());
                 alphaop = D3DTEXTUREOP.from(reader.readInt());
-                colorarg1 = new TEXARGS.AsFlags(reader.readInt());
-                colorarg2 = new TEXARGS.AsFlags(reader.readInt());
-                alphaarg1 = new TEXARGS.AsFlags(reader.readInt());
-                alphaarg2 = new TEXARGS.AsFlags(reader.readInt());
+                colorarg1 = new TEXARGS(reader.readInt());
+                colorarg2 = new TEXARGS(reader.readInt());
+                alphaarg1 = new TEXARGS(reader.readInt());
+                alphaarg2 = new TEXARGS(reader.readInt());
                 texcoordindex = TEXINDEX.from(reader.readInt());
-                transformflags = new D3DTEXTURETRANSFORMFLAGS.AsFlags(reader.readInt());
+                transformflags = new D3DTEXTURETRANSFORMFLAGS(reader.readInt());
             }
 
             void write(BlockWriter writer) throws IOException {

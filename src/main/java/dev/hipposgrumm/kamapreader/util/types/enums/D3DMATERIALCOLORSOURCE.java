@@ -21,7 +21,10 @@ public enum D3DMATERIALCOLORSOURCE implements EnumChoices {
             case 0 -> MATERIAL;
             case 1 -> COLOR1;
             case 2 -> COLOR2;
-            default -> __;
+            default -> {
+                System.err.println("No type of "+i+" in enum D3DMATERIALCOLORSOURCE");
+                yield __;
+            }
         };
     }
 
