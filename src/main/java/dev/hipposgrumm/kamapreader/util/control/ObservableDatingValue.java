@@ -340,7 +340,7 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
                 for (int i=0;i<entries.length;i++) {
                     box.getChildren().add(switch (entries[i]) {
                         case Flags.BoolEntry be -> {
-                            CheckBox check = checkbox(false, entries[i].name, (observable, oldValue, newValue) -> {
+                            CheckBox check = checkbox(be.from(fl), entries[i].name, (observable, oldValue, newValue) -> {
                                 be.apply(fl, newValue);
                                 for (Runnable run:entryUpdaters) run.run();
                             });
@@ -388,7 +388,6 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
                         }
                     });
                 }
-                for (Runnable run:entryUpdaters) run.run();
                 yield box;
             }
             case BITMAP_TEXTURE[] texArr -> TexturesDisplay.create(controller, item.getValue(), texArr, (DatingProfileEntry<BITMAP_TEXTURE[]>) entry);

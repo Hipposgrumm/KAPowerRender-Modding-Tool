@@ -1,22 +1,22 @@
 package dev.hipposgrumm.kamapreader.util.types.wrappers;
 
 public class UByte {
-    private final short b;
+    private final byte b;
 
     public UByte(byte b) {
-        this.b = (short) (b & 0xFF); // Casting repurposed negative bit.
+        this.b = b;
     }
 
     public UByte(short b) {
-        this.b = (short) (b & 0xFF);
+        this.b = (byte) (b & 0xFF); // Casting down will keep the sign in its existing place.
     }
 
     public final short get() {
-        return b;
+        return (short) (b & 0xFF); // Casting up repurposes negative bit.
     }
 
     public final byte getByte() {
-        return (byte) b; // Casting will keep the sign in its existing place.
+        return b;
     }
 
     public static class Array {

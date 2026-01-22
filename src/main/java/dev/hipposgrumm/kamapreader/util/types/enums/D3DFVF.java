@@ -103,15 +103,17 @@ public class D3DFVF extends Flags {
     }
 
     public enum TexCoordSize implements Flags.FlagsEnum {
-        _1(3),
-        _2(0),
-        _3(1),
-        _4(2);
+        _1(3,1),
+        _2(0,2),
+        _3(1,3),
+        _4(2,4);
 
         public final int identifier;
+        public final int texCount;
 
-        TexCoordSize(int identifier) {
+        TexCoordSize(int identifier, int count) {
             this.identifier = identifier;
+            this.texCount = count;
         }
 
         @Override

@@ -1,6 +1,7 @@
 package dev.hipposgrumm.kamapreader.util.types.structs;
 
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
+import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.types.enums.D3DFVF;
 
 import java.io.IOException;
@@ -43,49 +44,67 @@ public class FVFVertex {
         if (D3DFVF.DIFFUSE.from(FVF)) vert.Diffuse.color = Integer.reverseBytes(reader.readInt());
         if (D3DFVF.SPECULAR.from(FVF)) vert.Specular.color = Integer.reverseBytes(reader.readInt());
         for (int i=0;i<D3DFVF.TEXCOORDNUMS.length;i++) {
-            vert.TextureCoords[i++] = switch ((D3DFVF.TexCoordSize) D3DFVF.TEXCOORDNUMS[i].from(FVF)) {
-                case _1 -> new TexCoords1D(reader.readFloat());
-                case _2 -> new TexCoords2D(reader.readFloat(), reader.readFloat());
-                case _3 -> new TexCoords3D(reader.readFloat(), reader.readFloat(), reader.readFloat());
-                case _4 -> new TexCoords4D(reader.readFloat(), reader.readFloat(), reader.readFloat(), reader.readFloat());
-            };
+            TexCoords coords = new TexCoords();
+            vert.TextureCoords[i] = coords;
+            int count = ((D3DFVF.TexCoordSize) D3DFVF.TEXCOORDNUMS[i].from(FVF)).texCount;
+            coords.u = reader.readFloat();
+            if (--count == 0) continue;
+            coords.v = reader.readFloat();
+            if (--count == 0) continue;
+            coords.w = reader.readFloat();
+            if (--count == 0) continue;
+            coords.a = reader.readFloat();
         }
         return vert;
     }
 
-    public static abstract sealed class TexCoords permits TexCoords1D, TexCoords2D, TexCoords3D, TexCoords4D {}
-    public static final class TexCoords1D extends TexCoords {
-        public float v;
-
-        TexCoords1D(float v) {
-            this.v = v;
+    public FVFVertex write(D3DFVF FVF, BlockWriter writer) throws IOException {
+        D3DFVF.Enumerations Position = (D3DFVF.Enumerations) D3DFVF.Position.from(FVF);
+        if (Position != D3DFVF.Enumerations.__) {
+            writer.writeFloat(this.Pos.X);
+            writer.writeFloat(this.Pos.Y);
+            writer.writeFloat(this.Pos.Z);
         }
-    }
-    public static final class TexCoords2D extends TexCoords {
-        public float u,v;
-
-        TexCoords2D(float u, float v) {
-            this.u = u;
-            this.v = v;
+        switch (Position) {
+            case XYZ -> {}
+            case XYZRHW, XYZW -> writer.writeFloat(this.RHW);
+            default -> {
+                float[] weights = new float[5];
+                System.arraycopy(this.Weights, 0, weights, 0, this.Weights.length);
+                int count = 0;
+                switch (Position) {
+                    // This utilizes falldown into the next case.
+                    case XYZB5: writer.writeFloat(weights[count++]);
+                    case XYZB4: writer.writeFloat(weights[count++]);
+                    case XYZB3: writer.writeFloat(weights[count++]);
+                    case XYZB2: writer.writeFloat(weights[count++]);
+                    case XYZB1: writer.writeFloat(weights[count]);
+                }
+            }
         }
-    }
-    public static final class TexCoords3D extends TexCoords {
-        public float u,v,w;
-
-        TexCoords3D(float u, float v, float w) {
-            this.u = u;
-            this.v = v;
-            this.w = w;
+        if (D3DFVF.NORMAL.from(FVF)) {
+            writer.writeFloat(this.Normal.X);
+            writer.writeFloat(this.Normal.Y);
+            writer.writeFloat(this.Normal.Z);
         }
+        if (D3DFVF.PSIZE.from(FVF)) writer.writeFloat(this.PSize);
+        if (D3DFVF.DIFFUSE.from(FVF)) writer.writeInt(Integer.reverseBytes(this.Diffuse.color));
+        if (D3DFVF.SPECULAR.from(FVF)) writer.writeInt(Integer.reverseBytes(this.Specular.color));
+        for (int i=0;i<D3DFVF.TEXCOORDNUMS.length;i++) {
+            TexCoords coords = this.TextureCoords[i];
+            int count = ((D3DFVF.TexCoordSize) D3DFVF.TEXCOORDNUMS[i].from(FVF)).texCount;
+            writer.writeFloat(coords.u);
+            if (--count == 0) continue;
+            writer.writeFloat(coords.v);
+            if (--count == 0) continue;
+            writer.writeFloat(coords.w);
+            if (--count == 0) continue;
+            writer.writeFloat(coords.a);
+        }
+        return this;
     }
-    public static final class TexCoords4D extends TexCoords {
+
+    public static final class TexCoords {
         public float u,v,w,a;
-
-        TexCoords4D(float u, float v, float w, float a) {
-            this.u = u;
-            this.v = v;
-            this.w = w;
-            this.a = a;
-        }
     }
 }

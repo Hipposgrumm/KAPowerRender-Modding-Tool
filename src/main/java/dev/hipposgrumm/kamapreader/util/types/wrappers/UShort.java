@@ -1,22 +1,22 @@
 package dev.hipposgrumm.kamapreader.util.types.wrappers;
 
 public class UShort {
-    private final int s;
+    private final short s;
 
     public UShort(short s) {
-        this.s = s & 0xFFFF; // Casting repurposed negative bit.
+        this.s = s;
     }
 
     public UShort(int s) {
-        this.s = s & 0xFFFF;
+        this.s = (short) (s & 0xFFFF); // Casting down will keep the sign in its existing place.
     }
 
     public final int get() {
-        return s;
+        return s & 0xFFFF; // Casting up repurposes negative bit.
     }
 
     public final short getShort() {
-        return (short) s; // Casting will keep the sign in its existing place.
+        return s;
     }
 
     public static class Array {

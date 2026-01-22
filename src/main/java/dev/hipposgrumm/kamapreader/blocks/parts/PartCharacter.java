@@ -5,7 +5,7 @@ import dev.hipposgrumm.kamapreader.blocks.TexturesBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
-import dev.hipposgrumm.kamapreader.util.PROReader;
+import dev.hipposgrumm.kamapreader.reader.PROReader;
 import dev.hipposgrumm.kamapreader.util.types.SubBachelorPreviewEntry;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.SizeLimitedString;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.TextFileString;

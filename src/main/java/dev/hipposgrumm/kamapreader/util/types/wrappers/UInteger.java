@@ -1,22 +1,22 @@
 package dev.hipposgrumm.kamapreader.util.types.wrappers;
 
 public class UInteger {
-    private final long i;
+    private final int i;
 
     public UInteger(int i) {
-        this.i = i & 0xFFFFFFFFL; // Casting repurposed negative bit.
+        this.i = i;
     }
 
     public UInteger(long i) {
-        this.i = i & 0xFFFFFFFFL;
+        this.i = (int) (i & 0xFFFFFFFFL); // Casting down will keep the sign in its existing place.
     }
 
     public final long get() {
-        return i;
+        return i & 0xFFFFFFFFL; // Casting up repurposes negative bit.
     }
 
     public final int getInt() {
-        return (int) i; // Casting will keep the sign in its existing place.
+        return i;
     }
 
     public static class Array {
