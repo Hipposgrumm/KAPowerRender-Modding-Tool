@@ -4,8 +4,6 @@ import dev.hipposgrumm.kamapreader.blocks.UnknownBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 
-import java.io.IOException;
-
 public class ResourceCheckBlock extends UnknownBlock {
     private final int size;
 
@@ -14,7 +12,7 @@ public class ResourceCheckBlock extends UnknownBlock {
         this.size = size;
     }
 
-    public static ResourceCheckBlock read(BlockReader reader, String from) throws IOException {
+    public static ResourceCheckBlock read(BlockReader reader, String from) {
         if (!"RsCk".equals(reader.readBlockType())) throw new IllegalStateException(from+" block is malformed: No RsCk found!");
         ResourceCheckBlock block = new ResourceCheckBlock(reader.readInt());
         block.readFull(reader.segment(block.size));
@@ -22,7 +20,7 @@ public class ResourceCheckBlock extends UnknownBlock {
     }
 
     @Override
-    public void write(BlockWriter writer) throws IOException {
+    public void write(BlockWriter writer) {
         writer.writeRawString("RsCk");
         writer.writeInt(size);
         super.write(writer);

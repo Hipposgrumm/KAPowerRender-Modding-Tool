@@ -13,7 +13,6 @@ import dev.hipposgrumm.kamapreader.util.types.wrappers.UniqueIdentifier;
 import javafx.scene.Node;
 import javafx.scene.shape.Rectangle;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -47,7 +46,7 @@ public class Material implements DatingBachelor, Previewable {
     private UniqueIdentifier internal4;
 
     // TODO: Is this always read in little endian? I couldn't find any big endian examples.
-    public Material(List<Map<Integer, Texture>> textureMaps, BlockReader reader) throws IOException {
+    public Material(List<Map<Integer, Texture>> textureMaps, BlockReader reader) {
         for (int i=0;i<7;i++) {
             int texId = reader.readInt();
             Texture texture = null;
@@ -99,7 +98,7 @@ public class Material implements DatingBachelor, Previewable {
         internal4 = new UniqueIdentifier(reader.readInt()); // for "next pass"; might not actually be internal (possibly just unused)
     }
 
-    public void write(BlockWriter writer) throws IOException {
+    public void write(BlockWriter writer) {
         for (Texture texture:textures) {
             if (texture != null) {
                 writer.writeInt(texture.getUid().get());
@@ -238,7 +237,7 @@ public class Material implements DatingBachelor, Previewable {
         public final TextureStage[] textureStages = new TextureStage[8];
         public final SamplerStage[] samplerStages = new SamplerStage[8];
 
-        RenderStyle(BlockReader reader) throws IOException {
+        RenderStyle(BlockReader reader) {
             name = reader.readStringFixed(0x40);
             enableZ = D3DZBUFFERTYPE.from(reader.readInt());
             enableWriteZ = reader.readInt() != 0;
@@ -267,7 +266,7 @@ public class Material implements DatingBachelor, Previewable {
                 samplerStages[i] = new SamplerStage(i, reader.segment(0x10));
         }
 
-        void write(BlockWriter writer) throws IOException {
+        void write(BlockWriter writer) {
             writer.writeTerminatedStringFixed(name);
             writer.writeInt(enableZ.identifier);
             writer.writeInt(enableWriteZ ? 1 : 0);
@@ -406,7 +405,7 @@ public class Material implements DatingBachelor, Previewable {
             public TEXINDEX texcoordindex;
             public D3DTEXTURETRANSFORMFLAGS transformflags;
 
-            TextureStage(int i, BlockReader reader) throws IOException {
+            TextureStage(int i, BlockReader reader) {
                 this.i = i;
                 colorop = D3DTEXTUREOP.from(reader.readInt());
                 alphaop = D3DTEXTUREOP.from(reader.readInt());
@@ -418,7 +417,7 @@ public class Material implements DatingBachelor, Previewable {
                 transformflags = new D3DTEXTURETRANSFORMFLAGS(reader.readInt());
             }
 
-            void write(BlockWriter writer) throws IOException {
+            void write(BlockWriter writer) {
                 writer.writeInt(colorop.identifier);
                 writer.writeInt(alphaop.identifier);
                 writer.writeInt(colorarg1.getValue());
@@ -471,7 +470,7 @@ public class Material implements DatingBachelor, Previewable {
             public D3DTEXTUREADDRESS addressW;
             public final INTCOLOR bordercolor = new INTCOLOR(INTCOLOR.Format.RGBA, -1);
 
-            SamplerStage(int i, BlockReader reader) throws IOException {
+            SamplerStage(int i, BlockReader reader) {
                 this.i = i;
                 addressU = D3DTEXTUREADDRESS.from(reader.readInt());
                 addressV = D3DTEXTUREADDRESS.from(reader.readInt());
@@ -479,7 +478,7 @@ public class Material implements DatingBachelor, Previewable {
                 bordercolor.color = reader.readInt();
             }
 
-            void write(BlockWriter writer) throws IOException {
+            void write(BlockWriter writer) {
                 writer.writeInt(addressU.identifier);
                 writer.writeInt(addressV.identifier);
                 writer.writeInt(addressW.identifier);

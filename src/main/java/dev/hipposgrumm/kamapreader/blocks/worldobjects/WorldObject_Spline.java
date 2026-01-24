@@ -4,7 +4,6 @@ import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 
-import java.io.IOException;
 import java.util.List;
 
 public class WorldObject_Spline extends WorldObject_Position {
@@ -19,7 +18,7 @@ public class WorldObject_Spline extends WorldObject_Position {
     }
 
     @Override
-    public void read(BlockReader reader) throws IOException {
+    public void read(BlockReader reader) {
         super.read(reader);
         unused_spline = reader.readInt(); // seemingly unused
     }
@@ -30,7 +29,7 @@ public class WorldObject_Spline extends WorldObject_Position {
     }
 
     @Override
-    public void write(BlockWriter writer) throws IOException {
+    public void write(BlockWriter writer) {
         super.write(writer);
         writer.writeInt(unused_spline);
     }

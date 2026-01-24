@@ -8,7 +8,6 @@ import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +19,7 @@ public class PartsBlock extends Block {
     private byte[] neglectedBytes = null;
 
     @Override
-    protected void read(BlockReader reader) throws IOException {
+    protected void read(BlockReader reader) {
         rsck = ResourceCheckBlock.read(reader, "PtFm");
         arck = ArCkBlock.read(reader, "PtFm");
 
@@ -38,7 +37,7 @@ public class PartsBlock extends Block {
     }
 
     @Override
-    public void write(BlockWriter writer) throws IOException {
+    public void write(BlockWriter writer) {
         rsck.write(writer.segment());
         arck.write(writer.segment());
 

@@ -4,8 +4,6 @@ import dev.hipposgrumm.kamapreader.blocks.UnknownBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 
-import java.io.IOException;
-
 public class ArCkBlock extends UnknownBlock {
     private final int size;
 
@@ -14,7 +12,7 @@ public class ArCkBlock extends UnknownBlock {
         this.size = size;
     }
 
-    public static ArCkBlock read(BlockReader reader, String from) throws IOException {
+    public static ArCkBlock read(BlockReader reader, String from) {
         if (!"ArCk".equals(reader.readBlockType())) throw new IllegalStateException(from+" block is malformed: No ArCk found!");
         ArCkBlock block = new ArCkBlock(reader.readInt());
         block.readFull(reader.segment(block.size));
@@ -22,7 +20,7 @@ public class ArCkBlock extends UnknownBlock {
     }
 
     @Override
-    public void write(BlockWriter writer) throws IOException {
+    public void write(BlockWriter writer) {
         writer.writeRawString("ArCk");
         writer.writeInt(size);
         super.write(writer);

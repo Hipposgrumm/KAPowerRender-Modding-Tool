@@ -4,7 +4,6 @@ import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 
-import java.io.IOException;
 import java.util.List;
 
 public class WorldObject_World extends WorldObject_Draw {
@@ -20,7 +19,7 @@ public class WorldObject_World extends WorldObject_Draw {
     }
 
     @Override
-    public void read(BlockReader reader) throws IOException {
+    public void read(BlockReader reader) {
         super.read(reader);
         world_un1 = new float[]{
                 reader.readFloat(),
@@ -37,7 +36,7 @@ public class WorldObject_World extends WorldObject_Draw {
     }
 
     @Override
-    public void write(BlockWriter writer) throws IOException {
+    public void write(BlockWriter writer) {
         super.write(writer);
         writer.writeFloat(world_un1[0]);
         writer.writeFloat(world_un1[1]);

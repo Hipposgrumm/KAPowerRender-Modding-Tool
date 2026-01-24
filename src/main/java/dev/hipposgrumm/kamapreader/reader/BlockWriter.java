@@ -1,44 +1,60 @@
 package dev.hipposgrumm.kamapreader.reader;
 
-import dev.hipposgrumm.kamapreader.blocks.Block;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.SizeLimitedString;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.UByte;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.UInteger;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.UShort;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Writer designed to assist in writing data back into KAR files.
  */
 public class BlockWriter {
-    private final RandomAccessFile writer;
-    private boolean littleEndian;
-    private final long startpos;
+    private static final int INCREMENT = 0x8000;
+    private final SharedBytearray file;
+    private final SharedInt sharedFileSize;
+    private int fileSize; // Mirrors sharedFileSize and used to check if it changed
+    private boolean littleEndian = false;
+    private int pointer;
+    private boolean pointerAtEnd = true;
+    private final int startpos;
 
-    /**
-     * Creates a container for writing the file.
-     * @param writer File to write data to.
-     * @param useLittleEndian Whether the writer starts in little endian.
-     * @throws IOException If there is an IO error.
-     */
-    public BlockWriter(RandomAccessFile writer, boolean useLittleEndian) throws IOException {
-        this.writer = writer;
-        this.littleEndian = useLittleEndian;
-        this.startpos = writer.getFilePointer();
+    /// Creates a container for writing the file.
+    public BlockWriter() {
+        this.file = new SharedBytearray(new byte[INCREMENT]);
+        this.sharedFileSize = new SharedInt(0);
+        this.fileSize = 0;
+        this.pointer = 0;
+        this.startpos = 0;
     }
 
-    /**
-     * @return Whether the writer is currently in little endian mode.
-     */
+    /// @see #segment()
+    private BlockWriter(SharedBytearray file, SharedInt size, int startpos, boolean littleEndian) {
+        this.file = file;
+        this.sharedFileSize = size;
+        this.fileSize = size.value;
+        this.littleEndian = littleEndian;
+        this.startpos = startpos;
+        this.pointer = startpos;
+    }
+
+    /// Write all byte data to a file.
+    public void writeout(File destination) throws IOException {
+        try (FileOutputStream out = new FileOutputStream(destination)) {
+            out.write(file.data, 0, fileSize);
+        }
+    }
+
+    /// @return Whether the writer is currently in little endian mode.
     public boolean isLittleEndian() {
         return littleEndian;
     }
 
-    /**
-     * Set whether the writer is using little endian.
-     */
+    /// Set whether the writer is using little endian.
     public void setLittleEndian(boolean littleEndian) {
         this.littleEndian = littleEndian;
     }
@@ -46,249 +62,316 @@ public class BlockWriter {
     /**
      * Set the file read pointer relative to this writer's start position.
      * @param pos Position to go to, relative to start position.
-     * @throws IOException If there is an IO error.
-     * @throws IndexOutOfBoundsException If the seek index is negative or outside of the file.
+     * @throws IndexOutOfBoundsException If the seek index is negative or outside the file.
      */
-    public void seek(int pos) throws IOException {
-        if (pos < 0) throw new IndexOutOfBoundsException("Seek location cannot be negative.");
-        long newPos = startpos+pos;
-        if (newPos > writer.length()) throw new IndexOutOfBoundsException("Seek location is beyond current scope of file.");
-        this.writer.seek(newPos);
+    public void seek(int pos) {
+        getUpdateSharedFileSize();
+        int newPos = startpos+pos;
+        if (pos < 0) throw new IndexOutOfBoundsException(String.format("Seek is outside block (%s < %s)", newPos, startpos));
+        if (pos > fileSize) throw new IndexOutOfBoundsException(String.format("Seek location is beyond current scope of file (%s > %s)", newPos, fileSize));
+        pointer = newPos;
+        pointerAtEnd = pointer == fileSize;
     }
 
     /**
      * Move the file pointer by an offset.
+     * @apiNote If the pointer is at the end it will automatically increment if
      * @param amount Amount to move; can be positive or negative.
-     * @throws IOException If there is an IO error.
      * @throws IndexOutOfBoundsException If the resulting location would be out of range of the writer or the file.
      */
-    public void move(int amount) throws IOException {
-        long pos = this.writer.getFilePointer()+amount;
-        if (pos < startpos) throw new IndexOutOfBoundsException("Shift location is outside designated area.");
-        if (pos > writer.length()) throw new IndexOutOfBoundsException("Shift location goes beyond current file length.");
-        this.writer.seek(pos);
+    public void move(int amount) {
+        getUpdateSharedFileSize();
+        int pos = pointer+amount;
+        if (pos < startpos) throw new IndexOutOfBoundsException(String.format("Shift location is outside designated area (%s < %s)", pos, startpos));
+        if (pos > fileSize) throw new IndexOutOfBoundsException(String.format("Shift location goes beyond current file length (%s, > %s)", pos, fileSize));
+        pointer = pos;
+        pointerAtEnd = pointer == fileSize;
     }
 
-    /**
-     * @return Current pointer location relative to this writer's start position.
-     * @throws IOException If there is an IO error.
-     */
-    public int getPointer() throws IOException {
-        return (int) (writer.getFilePointer()-startpos);
+    /// @return Current pointer location relative to this writer's start position.
+    public int getPointer() {
+        getUpdateSharedFileSize();
+        return pointer-startpos;
     }
 
-    /**
-     * @return Pointer current position in entire file.
-     * @throws IOException If there is an IO error.
-     */
-    public int getTruePointer() throws IOException {
-        return (int) writer.getFilePointer();
+    /// @return Pointer current position in entire file.
+    public int getTruePointer() {
+        getUpdateSharedFileSize();
+        return pointer;
     }
 
     /**
      * Current size of the data in the writer.
-     * @implNote This size is NOT the maximum size, as data can be appended to the file.
+     * @apiNote This size is NOT the maximum size, as data can be appended to the file.
      * @return Size of Data
-     * @throws IOException If there is an IO error.
      */
-    public int getSize() throws IOException {
-        return (int) (writer.length()-startpos);
+    public int getSize() {
+        getUpdateSharedFileSize();
+        return fileSize-startpos;
+    }
+
+    /// Ensure that the file size is accurate in case it was updated by any sub-writers.
+    private void getUpdateSharedFileSize() {
+        if (sharedFileSize.value == fileSize) return;
+        fileSize = sharedFileSize.value;
+        if (pointerAtEnd) pointer = fileSize;
+    }
+
+    /// Update the file size based on the pointer.
+    private void doUpdateSharedFileSize() {
+        if (pointer <= fileSize) return;
+        fileSize = pointer;
+        sharedFileSize.value = fileSize;
+    }
+
+    /// Ensures that there is the requested amount of usable bytes in the array from the pointer.
+    private void ensureSize(int count) {
+        getUpdateSharedFileSize();
+        if (count == 0) return;
+
+        int neededSize = pointer+count;
+        int currentSize = file.data.length;
+        if (currentSize >= neededSize) return;
+
+        while (currentSize < neededSize) currentSize += INCREMENT;
+        byte[] newArray = new byte[currentSize];
+        System.arraycopy(file.data, 0, newArray, 0, fileSize);
+        file.data = newArray;
     }
 
     /**
      * Write an array of bytes.
      * @param bytes Bytes
-     * @throws IOException If there is a write error.
      */
-    public void writeBytes(byte[] bytes) throws IOException {
-        writer.write(bytes);
+    public void writeBytes(byte[] bytes) {
+        ensureSize(bytes.length);
+        System.arraycopy(bytes, 0, file.data, pointer, bytes.length);
+        pointer += bytes.length;
+        doUpdateSharedFileSize();
     }
 
     /**
      * Write a byte.
      * @param b Byte
-     * @throws IOException If there is a write error.
      */
-    public void writeByte(byte b) throws IOException {
-        writer.writeByte(b);
+    public void writeByte(byte b) {
+        ensureSize(1);
+        file.data[pointer++] = b;
+        doUpdateSharedFileSize();
     }
 
     /**
      * Write an unsigned byte.
      * @param b UByte
-     * @throws IOException If there is a write error.
      */
-    public void writeUByte(UByte b) throws IOException {
+    public void writeUByte(UByte b) {
         writeByte(b.getByte());
     }
 
     /**
      * Write a short.
      * @param s Short
-     * @throws IOException If there is a write error.
      */
-    public void writeShort(short s) throws IOException {
-        if (littleEndian) s = Short.reverseBytes(s);
-        writer.writeShort(s);
+    public void writeShort(short s) {
+        if (littleEndian) writeShortLittle(s);
+        else writeShortBig(s);
     }
 
     /**
      * Writes an unsigned short.
      * @param s UShort
-     * @throws IOException If there is a write error.
      */
-    public void writeUShort(UShort s) throws IOException {
+    public void writeUShort(UShort s) {
         writeShort(s.getShort());
     }
 
     /**
      * Writes an integer.
      * @param i Integer
-     * @throws IOException If there is a write error.
      */
-    public void writeInt(int i) throws IOException {
-        if (littleEndian) i = Integer.reverseBytes(i);
-        writer.writeInt(i);
+    public void writeInt(int i) {
+        if (littleEndian) writeIntLittle(i);
+        else writeIntBig(i);
     }
 
     /**
      * Writes an unsigned integer.
      * @param i UInteger
-     * @throws IOException If there is a write error.
      */
-    public void writeUInt(UInteger i) throws IOException {
+    public void writeUInt(UInteger i) {
         writeInt(i.getInt());
     }
 
     /**
      * Writes a float.
      * @param f Float
-     * @throws IOException If there is a write error.
      */
-    public void writeFloat(float f) throws IOException {
+    public void writeFloat(float f) {
         writeInt(Float.floatToIntBits(f));
     }
 
     /**
      * Write a short, always in little endian.
-     * @param s Short
-     * @throws IOException If there is a write error.
+     * @param s Short (Signed)
      */
-    public void writeShortLittle(short s) throws IOException {
-        s = Short.reverseBytes(s);
-        writer.writeShort(s);
+    public void writeShortLittle(short s) {
+        ensureSize(2);
+        file.data[pointer++] = (byte) (s & 0xFF);
+        file.data[pointer++] = (byte) (s >> 8);
+        doUpdateSharedFileSize();
     }
 
     /**
      * Writes an unsigned short, always in little endian.
-     * @param s Short (Unsigned) -- This value will be casted to short.
-     * @throws IOException If there is a write error.
+     * @param s Short (Unsigned)
      */
-    public void writeUShortLittle(UShort s) throws IOException {
+    public void writeUShortLittle(UShort s) {
         writeShortLittle(s.getShort());
     }
 
     /**
      * Writes an integer, always in little endian.
-     * @param i Integer
-     * @throws IOException If there is a write error.
+     * @param i Integer (Signed)
      */
-    public void writeIntLittle(int i) throws IOException {
-        i = Integer.reverseBytes(i);
-        writer.writeInt(i);
+    public void writeIntLittle(int i) {
+        ensureSize(4);
+        file.data[pointer++] = (byte) (i & 0xFF);
+        file.data[pointer++] = (byte) ((i >> 8) & 0xFF);
+        file.data[pointer++] = (byte) ((i >> 16) & 0xFF);
+        file.data[pointer++] = (byte) (i >> 24);
+        doUpdateSharedFileSize();
     }
 
     /**
      * Writes an unsigned integer, always in little endian.
-     * @param i Integer (Unsigned) -- This value will be casted to int.
-     * @throws IOException If there is a write error.
+     * @param i Integer (Unsigned)
      */
-    public void writeUIntLittle(UInteger i) throws IOException {
+    public void writeUIntLittle(UInteger i) {
         writeIntLittle(i.getInt());
     }
 
     /**
      * Writes a float, always in little endian.
      * @param f Float
-     * @throws IOException If there is a write error.
      */
-    public void writeFloatLittle(float f) throws IOException {
+    public void writeFloatLittle(float f) {
         writeIntLittle(Float.floatToIntBits(f));
+    }
+
+    /**
+     * Write a short, always in big endian.
+     * @param s Short (Signed)
+     */
+    public void writeShortBig(short s) {
+        ensureSize(2);
+        file.data[pointer++] = (byte) (s >> 8);
+        file.data[pointer++] = (byte) (s & 0xFF);
+        doUpdateSharedFileSize();
+    }
+
+    /**
+     * Writes an unsigned short, always in big endian.
+     * @param s Short (Unsigned)
+     */
+    public void writeUShortBig(UShort s) {
+        writeShortBig(s.getShort());
+    }
+
+    /**
+     * Writes an integer, always in big endian.
+     * @param i Integer (Signed)
+     */
+    public void writeIntBig(int i) {
+        ensureSize(4);
+        file.data[pointer++] = (byte) (i >> 24);
+        file.data[pointer++] = (byte) ((i >> 16) & 0xFF);
+        file.data[pointer++] = (byte) ((i >> 8) & 0xFF);
+        file.data[pointer++] = (byte) (i & 0xFF);
+        doUpdateSharedFileSize();
+    }
+
+    /**
+     * Writes an unsigned integer, always in big endian.
+     * @param i Integer (Unsigned)
+     */
+    public void writeUIntBig(UInteger i) {
+        writeIntBig(i.getInt());
+    }
+
+    /**
+     * Writes a float, always in big endian.
+     * @param f Float
+     */
+    public void writeFloatBig(float f) {
+        writeIntBig(Float.floatToIntBits(f));
     }
 
     /**
      * Write string as bytes.
      * @param str Bytes as string.
-     * @throws IOException If there is a write error.
      */
-    public void writeRawString(String str) throws IOException {
-        writer.writeBytes(str);
+    public void writeRawString(String str) {
+        writeBytes(str.getBytes(StandardCharsets.US_ASCII));
     }
 
     /**
      * Write a string with a terminating character (NUL) at the end.
      * @param str String
-     * @throws IOException If there is a write error.
      */
-    public void writeTerminatedString(String str) throws IOException {
-        writer.writeBytes(str);
-        writer.writeByte('\0');
+    public void writeTerminatedString(String str) {
+        writeRawString(str);
+        writeByte((byte)'\0');
     }
 
     /**
      * Write a string with a terminating character (NUL) at the end, but with a specific size anyway.
      * @param str String
-     * @throws IOException If there is a write error.
      * @throws IndexOutOfBoundsException If the string is longer than the allotted space.
      */
-    public void writeTerminatedStringFixed(SizeLimitedString str) throws IOException {
-        writer.writeBytes(str.toString());
-        writeBytes(new byte[(str.getSize()-str.toString().length())+1]);
+    public void writeTerminatedStringFixed(SizeLimitedString str) {
+        writeRawString(str.toString());
+        int stringLen = str.toString().length();
+        int extraBytes = (str.getSize()-stringLen)+1;
+        writeBytes(new byte[extraBytes]);
     }
 
     /**
      * Write a string prefixed with the size.
      * @param str String
-     * @throws IOException If there is a write error.
      */
-    public void writeSizedString(String str) throws IOException {
+    public void writeSizedString(String str) {
         writeInt(str.length());
-        writer.writeBytes(str);
+        writeRawString(str);
     }
 
     /**
      * Write a string prefixed with the size always in little endian.
      * @param str String
-     * @throws IOException If there is a write error.
      */
-    public void writeSizedStringLittle(String str) throws IOException {
+    public void writeSizedStringLittle(String str) {
         writeIntLittle(str.length());
-        writer.writeBytes(str);
+        writeRawString(str);
     }
 
-    /**
-     * Create a sub-writer based on this writer.
-     * @throws IOException If creating the writer results in an IO error.
-     */
-    public BlockWriter segment() throws IOException {
-        return new BlockWriter(writer, littleEndian);
+    /// Create a sub-writer based on this writer.
+    public BlockWriter segment() {
+        getUpdateSharedFileSize();
+        return new BlockWriter(file, sharedFileSize, pointer, littleEndian);
     }
 
-    /**
-     * Writes an entire KAR block.
-     * @param block Block to write.
-     * @throws IOException If there is a write error.
-     */
-    public void writeBlock(Block block) throws IOException {
-        BlockWriter subWriter = segment();
-        if (littleEndian) subWriter.writeRawString("RIFF\0\0\0\0");
-        else subWriter.writeRawString("FORM\0\0\0\0");
-        subWriter.writeRawString(block.getBlockType());
+    private static final class SharedInt {
+        public int value;
 
-        block.write(subWriter);
+        public SharedInt(int i) {
+            this.value = i;
+        }
+    }
 
-        subWriter.seek(4);
-        subWriter.writeInt(subWriter.getSize()-8);
-        subWriter.seek(subWriter.getSize());
+    private static final class SharedBytearray {
+        public byte[] data;
+
+        public SharedBytearray(byte[] start) {
+            this.data = start;
+        }
     }
 }

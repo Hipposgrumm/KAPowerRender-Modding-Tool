@@ -8,7 +8,6 @@ import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.SnSound;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +19,7 @@ public class SoundsBlock extends Block {
     private final List<SnSound> sounds = new ArrayList<>();
 
     @Override
-    protected void read(BlockReader reader) throws IOException {
+    protected void read(BlockReader reader) {
         rsck = ResourceCheckBlock.read(reader, "SnFm");
         arck = ArCkBlock.read(reader, "SnFm");
         while (reader.getRemaining() >= 40) {
@@ -36,7 +35,7 @@ public class SoundsBlock extends Block {
     }
 
     @Override
-    public void write(BlockWriter writer) throws IOException {
+    public void write(BlockWriter writer) {
         rsck.write(writer.segment());
         arck.write(writer.segment());
         for (SnSound snd:sounds) {

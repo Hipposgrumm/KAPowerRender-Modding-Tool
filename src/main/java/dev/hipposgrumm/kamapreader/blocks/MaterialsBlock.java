@@ -10,7 +10,6 @@ import dev.hipposgrumm.kamapreader.util.types.Material;
 import dev.hipposgrumm.kamapreader.util.types.SubBachelorPreviewEntry;
 import dev.hipposgrumm.kamapreader.util.types.Texture;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,13 +28,13 @@ public class MaterialsBlock extends Block {
     }
 
     @Override
-    protected void read(BlockReader reader) throws IOException {
-        rsck = ResourceCheckBlock.read(reader, getBlockType());
+    protected void read(BlockReader reader) {
+        rsck = ResourceCheckBlock.read(reader, "MtFm");
         data = new MaterialsData(reader, textureMaps);
     }
 
     @Override
-    public void write(BlockWriter writer) throws IOException {
+    public void write(BlockWriter writer) {
         rsck.write(writer.segment());
         data.write(writer.segment());
     }
@@ -69,7 +68,7 @@ public class MaterialsBlock extends Block {
         public final List<Material> materialList = new ArrayList<>();
         public final Map<Integer, MaterialRef> materials = new HashMap<>();
 
-        public MaterialsData(BlockReader reader, List<Map<Integer, Texture>> textureMaps) throws IOException {
+        public MaterialsData(BlockReader reader, List<Map<Integer, Texture>> textureMaps) {
             unknown = reader.readInt();
             reader = reader.segment(reader.readInt());
 
@@ -81,7 +80,7 @@ public class MaterialsBlock extends Block {
             }
         }
 
-        public void write(BlockWriter writer) throws IOException {
+        public void write(BlockWriter writer) {
             writer.writeInt(unknown);
             writer.writeInt(0);
 

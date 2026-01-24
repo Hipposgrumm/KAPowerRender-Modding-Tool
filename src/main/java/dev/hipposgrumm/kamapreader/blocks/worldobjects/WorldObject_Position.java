@@ -6,7 +6,6 @@ import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.structs.PR_POINT;
 import dev.hipposgrumm.kamapreader.util.types.structs.PR_QUATERNION;
 
-import java.io.IOException;
 import java.util.List;
 
 public class WorldObject_Position extends WorldObject_Base {
@@ -26,7 +25,7 @@ public class WorldObject_Position extends WorldObject_Base {
     }
 
     @Override
-    public void read(BlockReader reader) throws IOException {
+    public void read(BlockReader reader) {
         super.read(reader);
         rotation = new PR_QUATERNION(reader.readFloat(), reader.readFloat(), reader.readFloat(), reader.readFloat());
         position = new PR_POINT(reader.readFloat(), reader.readFloat(), reader.readFloat());
@@ -42,7 +41,7 @@ public class WorldObject_Position extends WorldObject_Base {
     }
 
     @Override
-    public void write(BlockWriter writer) throws IOException {
+    public void write(BlockWriter writer) {
         super.write(writer);
         writer.writeFloat(rotation.X);
         writer.writeFloat(rotation.Y);

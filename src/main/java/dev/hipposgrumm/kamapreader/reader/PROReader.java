@@ -5,7 +5,6 @@ import dev.hipposgrumm.kamapreader.util.types.structs.*;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.UInteger;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.UShort;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,32 +14,30 @@ public class PROReader {
      * @return Object data
      * @throws IllegalStateException If there was an issue reading the data.
      */
-    public static PROData readPRO(BlockReader reader) throws IOException {
+    public static PROData readPRO(BlockReader reader) {
         if (reader.readShortLittle() != PROCHUNK_SIGNATURE) throw new IllegalStateException("PRO file is not valid.");
         PROData data = new PROData();
-        BlockReader fullReader = reader;
         reader = reader.segment(reader.readIntLittle()-6);
         reader.setLittleEndian(true);
 
         while (reader.getRemaining() > 10) { // size of starting
             short tag = reader.readShort();
             int size = reader.readInt()-6; // size includes the 2 byte tag and 4 byte size value
-            int start = reader.getPointer();
-            if (reader.getRemaining() < size) throw new IllegalStateException("PRO file ends prematurely."+reader.getRemaining()+" < "+size);
+            if (reader.getRemaining() < size) throw new IllegalStateException("PRO file ends prematurely "+reader.getRemaining()+" < "+size+" "+Integer.toHexString(reader.getTruePointer()));
+            BlockReader chunkReader = reader.segment(size);
             data.Blocks.add(tag);
             switch (tag) {
-                case PROCHUNK_VERSION -> data.Version = reader.readFloat();
-                case PROCHUNK_OBJECTNAME -> data.Name = reader.readString();
+                case PROCHUNK_VERSION -> data.Version = chunkReader.readFloat();
+                case PROCHUNK_OBJECTNAME -> data.Name = chunkReader.readString();
                 case PROCHUNK_SEGMENTS -> {
-                    BlockReader segReader = reader.segment(size);
-                    data.Segments = new PROData.Segment[segReader.readInt()];
+                    data.Segments = new PROData.Segment[chunkReader.readInt()];
                     PROData.Segment seg = null;
                     for (int i=0;i<data.Segments.length;) { // not incrementing here allows us to increment on our own terms
-                        if (segReader.getRemaining() < 6) break;
-                        short segTag = segReader.readShort();
-                        int segSize = segReader.readInt()-6;
-                        int segStart = segReader.getPointer();
-                        if (segReader.getRemaining() < segSize) throw new IllegalStateException("Segment in PRO ends prematurely; "+segReader.getRemaining()+" < "+segSize+" "+Integer.toHexString(segReader.getTruePointer()));
+                        if (chunkReader.getRemaining() < 6) break;
+                        short segTag = chunkReader.readShort();
+                        int segSize = chunkReader.readInt()-6;
+                        if (chunkReader.getRemaining() < segSize) throw new IllegalStateException("Segment in PRO ends prematurely; "+chunkReader.getRemaining()+" < "+segSize+" "+Integer.toHexString(chunkReader.getTruePointer()));
+                        BlockReader segReader = chunkReader.segment(segSize);
                         if (segTag == PROCHUNK_SEGMENTNAME) {
                             if (seg != null) i++;
                             seg = new PROData.Segment();
@@ -54,15 +51,15 @@ public class PROReader {
                                 case PROCHUNK_SEGMENTFLAGS -> seg.Flags = segReader.readInt();
                                 case PROCHUNK_SEGMENTBBOX -> {
                                     PR_BOUNDINGINFO bbox = new PR_BOUNDINGINFO();
-                                    bbox.minX = reader.readFloat();
-                                    bbox.maxX = reader.readFloat();
-                                    bbox.minY = reader.readFloat();
-                                    bbox.maxY = reader.readFloat();
-                                    bbox.minZ = reader.readFloat();
-                                    bbox.maxZ = reader.readFloat();
-                                    for (int j=0;j<bbox.bbox.length;j++) bbox.bbox[j] = new PR_POINT(reader.readFloat(), reader.readFloat(), reader.readFloat());
-                                    for (int j=0;j<bbox.tbox.length;j++) bbox.tbox[j] = new PR_POINT(reader.readFloat(), reader.readFloat(), reader.readFloat());
-                                    bbox.radius = reader.readFloat();
+                                    bbox.minX = segReader.readFloat();
+                                    bbox.maxX = segReader.readFloat();
+                                    bbox.minY = segReader.readFloat();
+                                    bbox.maxY = segReader.readFloat();
+                                    bbox.minZ = segReader.readFloat();
+                                    bbox.maxZ = segReader.readFloat();
+                                    for (int j=0;j<bbox.bbox.length;j++) bbox.bbox[j] = new PR_POINT(segReader.readFloat(), segReader.readFloat(), segReader.readFloat());
+                                    for (int j=0;j<bbox.tbox.length;j++) bbox.tbox[j] = new PR_POINT(segReader.readFloat(), segReader.readFloat(), segReader.readFloat());
+                                    bbox.radius = segReader.readFloat();
                                     seg.BBox = bbox;
                                 }
                                 case PROCHUNK_VERTICES -> {
@@ -81,7 +78,7 @@ public class PROReader {
                                                 segReader.readInt(), segReader.readInt(), segReader.readInt(),
                                                 segReader.readFloat(), segReader.readFloat(), segReader.readFloat(), segReader.readFloat(), segReader.readFloat(), segReader.readFloat(),
                                                 segReader.readBytes(144), // Unknown, possibly padding
-                                                new INTCOLOR(INTCOLOR.Format.RGBA, Integer.reverseBytes(segReader.readInt())), new INTCOLOR(INTCOLOR.Format.RGBA, Integer.reverseBytes(segReader.readInt())), new INTCOLOR(INTCOLOR.Format.RGBA, Integer.reverseBytes(segReader.readInt())),
+                                                new INTCOLOR(INTCOLOR.Format.RGBA, segReader.readIntBig()), new INTCOLOR(INTCOLOR.Format.RGBA, segReader.readIntBig()), new INTCOLOR(INTCOLOR.Format.RGBA, segReader.readIntBig()),
                                                 segReader.readBytes(7) // probably normals and flags but can't confirm it
                                         );
                                     }
@@ -110,9 +107,7 @@ public class PROReader {
                                             segbuf.TotalFaces += vbuf.NumIndices / 3;
                                             vbuf.vertices = new FVFVertex[vbuf.NumVertices];
                                             for (int l=0;l<vbuf.NumVertices;l++) {
-                                                BlockReader vertreader = segReader.segment(vbuf.VertexSize);
-                                                vbuf.vertices[l] = FVFVertex.create(vbuf.FVF, vertreader);
-                                                vertreader.move(vertreader.getRemaining());
+                                                vbuf.vertices[l] = FVFVertex.create(vbuf.FVF, segReader.segment(vbuf.VertexSize));
                                             }
                                             vbuf.indices = new UShort.Array(vbuf.NumVertices);
                                             for (int l=0;l<vbuf.NumIndices;l++) {
@@ -128,11 +123,10 @@ public class PROReader {
                                     switch (segTag) {
                                         default -> System.out.println("Unhandled seg tag: 0x"+Integer.toHexString(segTag).toUpperCase());
                                     }
-                                    seg.UnknownBlocks.add(reader.readBytes(segSize));
+                                    seg.UnknownBlocks.add(segReader.readBytes(segSize));
                                 }
                             }
                         }
-                        segReader.seek(segStart+segSize);
                     }
                 }
                 default -> {
@@ -140,20 +134,17 @@ public class PROReader {
                         case PROCHUNK_OBJECTFLAGS -> {} // Not read by the game.
                         default -> System.out.println("Unhandled PRO tag: 0x"+Integer.toHexString(tag).toUpperCase());
                     }
-                    data.UnknownBlocks.add(reader.readBytes(size));
+                    data.UnknownBlocks.add(chunkReader.readBytes(size));
                 }
             }
-            reader.seek(start+size);
         }
-
-        fullReader.move(fullReader.getRemaining());
         return data;
     }
 
-    public static void writePRO(BlockWriter writer, PROData data) throws IOException {
+    public static void writePRO(BlockWriter writer, PROData data) {
+        writer.writeShortLittle(PROCHUNK_SIGNATURE);
         writer = writer.segment();
         writer.setLittleEndian(true);
-        writer.writeShort(PROCHUNK_SIGNATURE);
         writer.writeInt(0); // gets filled in later
         int unknownID = 0;
         for (short tag:data.Blocks) {
@@ -170,8 +161,9 @@ public class PROReader {
                 case PROCHUNK_SEGMENTS -> {
                     BlockWriter segWriter = writer.segment();
                     segWriter.writeInt(0); // fill in after
-                    int segUnknownID = 0;
+                    segWriter.writeInt(data.Segments.length);
                     for (int i=0;i<data.Segments.length;i++) {
+                        int segUnknownID = 0;
                         PROData.Segment seg = data.Segments[i];
                         segWriter.writeShort(PROCHUNK_SEGMENTNAME);
                         segWriter.writeInt(seg.Name.length()+7);
@@ -206,6 +198,7 @@ public class PROReader {
                                 case PROCHUNK_VERTICES -> {
                                     BlockWriter vertWriter = segWriter.segment();
                                     vertWriter.writeInt(0);
+                                    vertWriter.writeInt(seg.Vertices.length);
                                     for (PR_VERTEX vert:seg.Vertices) {
                                         vertWriter.writeFloat(vert.Position.X);
                                         vertWriter.writeFloat(vert.Position.Y);
@@ -215,12 +208,13 @@ public class PROReader {
                                         vertWriter.writeShort(vert.NZ);
                                     }
                                     vertWriter.seek(0);
-                                    vertWriter.writeInt(vertWriter.getSize());
+                                    vertWriter.writeInt(vertWriter.getSize()+2);
                                     vertWriter.seek(vertWriter.getSize());
                                 }
                                 case PROCHUNK_FACES -> {
                                     BlockWriter faceWriter = segWriter.segment();
                                     faceWriter.writeInt(0);
+                                    faceWriter.writeInt(seg.Faces.length);
                                     for (PR_FACE face:seg.Faces) {
                                         faceWriter.writeUShort(face.Material);
                                         faceWriter.writeUShort(face.BackMaterial);
@@ -234,13 +228,13 @@ public class PROReader {
                                         faceWriter.writeFloat(face.U3);
                                         faceWriter.writeFloat(face.V3);
                                         faceWriter.writeBytes(face.UNKNOWN1);
-                                        faceWriter.writeInt(Integer.reverseBytes(face.Col1.color));
-                                        faceWriter.writeInt(Integer.reverseBytes(face.Col2.color));
-                                        faceWriter.writeInt(Integer.reverseBytes(face.Col3.color));
+                                        faceWriter.writeIntBig(face.Col1.color);
+                                        faceWriter.writeIntBig(face.Col2.color);
+                                        faceWriter.writeIntBig(face.Col3.color);
                                         faceWriter.writeBytes(face.UNKNOWN2);
                                     }
                                     faceWriter.seek(0);
-                                    faceWriter.writeInt(faceWriter.getSize());
+                                    faceWriter.writeInt(faceWriter.getSize()+2);
                                     faceWriter.seek(faceWriter.getSize());
                                 }
                                 case PROCHUNK_SEGBUF -> {
@@ -273,18 +267,29 @@ public class PROReader {
                                             }
                                         }
                                     }
+                                    segbufWriter.seek(0);
+                                    segbufWriter.writeInt(segbufWriter.getSize()+2);
                                 }
-                                default -> writer.writeBytes(seg.UnknownBlocks.get(segUnknownID++));
+                                default -> {
+                                    byte[] block = seg.UnknownBlocks.get(segUnknownID++);
+                                    writer.writeInt(block.length+6);
+                                    writer.writeBytes(block);
+                                }
                             }
                         }
                     }
                     segWriter.seek(0);
                     segWriter.writeInt(segWriter.getSize()+2);
-                    segWriter.seek(segWriter.getSize());
                 }
-                default -> writer.writeBytes(data.UnknownBlocks.get(unknownID++));
+                default -> {
+                    byte[] block = data.UnknownBlocks.get(unknownID++);
+                    writer.writeInt(block.length+6);
+                    writer.writeBytes(block);
+                }
             }
         }
+        writer.seek(0);
+        writer.writeInt(writer.getSize()+2);
     }
 
     public static class PROData {

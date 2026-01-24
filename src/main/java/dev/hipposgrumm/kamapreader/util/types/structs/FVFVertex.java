@@ -4,8 +4,6 @@ import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.types.enums.D3DFVF;
 
-import java.io.IOException;
-
 // https://www.flipcode.com/archives/Flexible_Vertex_Format_Generator.shtml
 public class FVFVertex {
     public PR_POINT Pos;
@@ -17,7 +15,7 @@ public class FVFVertex {
     public final INTCOLOR Specular = new INTCOLOR(INTCOLOR.Format.ARGB, -1);
     public TexCoords[] TextureCoords;
 
-    public static FVFVertex create(D3DFVF FVF, BlockReader reader) throws IOException {
+    public static FVFVertex create(D3DFVF FVF, BlockReader reader) {
         FVFVertex vert = new FVFVertex();
         D3DFVF.Enumerations Position = (D3DFVF.Enumerations) D3DFVF.Position.from(FVF);
         if (Position != D3DFVF.Enumerations.__) vert.Pos = new PR_POINT(reader.readFloat(), reader.readFloat(), reader.readFloat());
@@ -41,8 +39,8 @@ public class FVFVertex {
         }
         if (D3DFVF.NORMAL.from(FVF)) vert.Normal = new PR_POINT(reader.readFloat(), reader.readFloat(), reader.readFloat());
         if (D3DFVF.PSIZE.from(FVF)) vert.PSize = reader.readFloat();
-        if (D3DFVF.DIFFUSE.from(FVF)) vert.Diffuse.color = Integer.reverseBytes(reader.readInt());
-        if (D3DFVF.SPECULAR.from(FVF)) vert.Specular.color = Integer.reverseBytes(reader.readInt());
+        if (D3DFVF.DIFFUSE.from(FVF)) vert.Diffuse.color = reader.readIntBig();
+        if (D3DFVF.SPECULAR.from(FVF)) vert.Specular.color = reader.readIntBig();
         for (int i=0;i<D3DFVF.TEXCOORDNUMS.length;i++) {
             TexCoords coords = new TexCoords();
             vert.TextureCoords[i] = coords;
@@ -58,7 +56,7 @@ public class FVFVertex {
         return vert;
     }
 
-    public FVFVertex write(D3DFVF FVF, BlockWriter writer) throws IOException {
+    public FVFVertex write(D3DFVF FVF, BlockWriter writer) {
         D3DFVF.Enumerations Position = (D3DFVF.Enumerations) D3DFVF.Position.from(FVF);
         if (Position != D3DFVF.Enumerations.__) {
             writer.writeFloat(this.Pos.X);
@@ -88,8 +86,8 @@ public class FVFVertex {
             writer.writeFloat(this.Normal.Z);
         }
         if (D3DFVF.PSIZE.from(FVF)) writer.writeFloat(this.PSize);
-        if (D3DFVF.DIFFUSE.from(FVF)) writer.writeInt(Integer.reverseBytes(this.Diffuse.color));
-        if (D3DFVF.SPECULAR.from(FVF)) writer.writeInt(Integer.reverseBytes(this.Specular.color));
+        if (D3DFVF.DIFFUSE.from(FVF)) writer.writeIntBig(this.Diffuse.color);
+        if (D3DFVF.SPECULAR.from(FVF)) writer.writeIntBig(this.Specular.color);
         for (int i=0;i<D3DFVF.TEXCOORDNUMS.length;i++) {
             TexCoords coords = this.TextureCoords[i];
             int count = ((D3DFVF.TexCoordSize) D3DFVF.TEXCOORDNUMS[i].from(FVF)).texCount;

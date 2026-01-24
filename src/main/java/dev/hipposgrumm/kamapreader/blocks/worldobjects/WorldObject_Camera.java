@@ -6,7 +6,6 @@ import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.structs.ASPECTRATIO;
 import dev.hipposgrumm.kamapreader.util.types.structs.PR_VIEWPORT;
 
-import java.io.IOException;
 import java.util.List;
 
 public class WorldObject_Camera extends WorldObject_Position {
@@ -28,7 +27,7 @@ public class WorldObject_Camera extends WorldObject_Position {
     }
 
     @Override
-    public void read(BlockReader reader) throws IOException {
+    public void read(BlockReader reader) {
         super.read(reader);
         cam_un1 = reader.readInt();
         viewport = new PR_VIEWPORT(reader.readInt(), reader.readInt(), reader.readInt(), reader.readInt());
@@ -60,7 +59,7 @@ public class WorldObject_Camera extends WorldObject_Position {
     }
 
     @Override
-    public void write(BlockWriter writer) throws IOException {
+    public void write(BlockWriter writer) {
         super.write(writer);
         writer.writeInt(cam_un1);
         writer.writeInt(viewport.X);

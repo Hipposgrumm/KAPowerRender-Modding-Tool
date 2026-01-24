@@ -4,7 +4,6 @@ import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 
-import java.io.IOException;
 import java.util.List;
 
 public class UnknownBlock extends Block {
@@ -16,12 +15,12 @@ public class UnknownBlock extends Block {
     }
 
     @Override
-    protected void read(BlockReader reader) throws IOException {
+    protected void read(BlockReader reader) {
         data = reader.readBytes(reader.getRemaining());
     }
 
     @Override
-    public void write(BlockWriter writer) throws IOException {
+    public void write(BlockWriter writer) {
         writer.writeBytes(data);
     }
 

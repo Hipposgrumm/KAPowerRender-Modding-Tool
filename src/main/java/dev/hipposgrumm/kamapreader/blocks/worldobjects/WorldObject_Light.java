@@ -6,7 +6,6 @@ import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.EnumChoices;
 import dev.hipposgrumm.kamapreader.util.types.structs.FLOATCOLOR_RGB;
 
-import java.io.IOException;
 import java.util.List;
 
 public class WorldObject_Light extends WorldObject_Position {
@@ -27,7 +26,7 @@ public class WorldObject_Light extends WorldObject_Position {
     }
 
     @Override
-    public void read(BlockReader reader) throws IOException {
+    public void read(BlockReader reader) {
         super.read(reader);
         int lighttype = reader.readInt();
         lightmode = switch (lighttype) {
@@ -54,7 +53,7 @@ public class WorldObject_Light extends WorldObject_Position {
     }
 
     @Override
-    public void write(BlockWriter writer) throws IOException {
+    public void write(BlockWriter writer) {
         super.write(writer);
         writer.writeInt(lightmode.identifier);
         writer.writeFloat(coneInner);

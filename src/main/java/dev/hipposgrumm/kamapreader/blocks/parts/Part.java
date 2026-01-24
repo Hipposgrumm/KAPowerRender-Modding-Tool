@@ -8,7 +8,6 @@ import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.SubBachelorPreviewEntry;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +27,7 @@ public abstract class Part implements DatingBachelor {
         this.materials = materials;
     }
 
-    public static Part read(BlockReader reader) throws IOException {
+    public static Part read(BlockReader reader) {
         int un1 = reader.readIntLittle();
         byte[] un2 = reader.readBytes(reader.readIntLittle());
 
@@ -78,7 +77,6 @@ public abstract class Part implements DatingBachelor {
             BlockReader subReader = reader.segment(endOffset-currentOffset-8);
             part.readData(subReader);
         } catch (Exception e) {
-            if (e instanceof IOException) throw e;
             e.printStackTrace();
             if (part == null) {
                 part = new PartEmpty();
@@ -87,14 +85,13 @@ public abstract class Part implements DatingBachelor {
                 part.TYPE = type;
             }
         }
-        reader.seek(reader.getSize());
         return part;
     }
 
     /// Reads main mesh data excluding texture and material data.
-    protected abstract void readData(BlockReader reader) throws IOException;
+    protected abstract void readData(BlockReader reader);
 
-    public final void write(BlockWriter writer) throws IOException {
+    public final void write(BlockWriter writer) {
         writer.writeIntLittle(UNKNOWN1);
         writer.writeIntLittle(UNKNOWN2.length);
         writer.writeBytes(UNKNOWN2);
@@ -125,7 +122,7 @@ public abstract class Part implements DatingBachelor {
     }
 
     /// Writes main mesh data excluding texture and material data.
-    protected abstract void writeData(BlockWriter writer) throws IOException;
+    protected abstract void writeData(BlockWriter writer);
 
     @Override
     public List<? extends DatingProfileEntry<?>> getDatingProfile() {

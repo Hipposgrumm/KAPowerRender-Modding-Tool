@@ -8,7 +8,6 @@ import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +18,7 @@ public class ObjectsBlock extends Block {
     private final List<WorldObject> objects = new ArrayList<>();
 
     @Override
-    protected void read(BlockReader reader) throws IOException {
+    protected void read(BlockReader reader) {
         rsck = ResourceCheckBlock.read(reader, "ObFm");
         arck = ArCkBlock.read(reader, "ObFm");
 
@@ -46,7 +45,7 @@ public class ObjectsBlock extends Block {
     }
 
     @Override
-    public void write(BlockWriter writer) throws IOException {
+    public void write(BlockWriter writer) {
         rsck.write(writer.segment());
         arck.write(writer.segment());
 

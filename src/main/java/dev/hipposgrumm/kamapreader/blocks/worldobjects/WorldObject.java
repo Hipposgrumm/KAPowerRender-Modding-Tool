@@ -5,7 +5,6 @@ import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +25,7 @@ public class WorldObject implements DatingBachelor {
         this.type = type;
     }
 
-    public void read(BlockReader reader) throws IOException {
+    public void read(BlockReader reader) {
         // Assume type has already been read.
         un1 = reader.readShort();
         childCount = reader.readShort();
@@ -36,7 +35,7 @@ public class WorldObject implements DatingBachelor {
         un3 = reader.readInt();
     }
 
-    public final void readChildren(BlockReader reader) throws IOException {
+    public final void readChildren(BlockReader reader) {
         for (int i=0;i<childCount;i++)
             children.add(new Child(
                     reader.readBlockType(),
@@ -50,7 +49,7 @@ public class WorldObject implements DatingBachelor {
         return 16;
     }
 
-    public void write(BlockWriter writer) throws IOException {
+    public void write(BlockWriter writer) {
         writer.writeShort(type.identifier);
         writer.writeShort(un1);
         writer.writeShort((short) children.size());
@@ -59,7 +58,7 @@ public class WorldObject implements DatingBachelor {
         writer.writeInt(un3);
     }
 
-    public final void writeChildren(BlockWriter writer) throws IOException {
+    public final void writeChildren(BlockWriter writer) {
         for (Child child:children) {
             writer.writeRawString(child.source);
             writer.writeShort(child.index);

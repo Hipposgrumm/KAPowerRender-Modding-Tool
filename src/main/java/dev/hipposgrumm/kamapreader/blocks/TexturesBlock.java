@@ -9,7 +9,6 @@ import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.SubBachelorPreviewEntry;
 import dev.hipposgrumm.kamapreader.util.types.Texture;
 
-import java.io.IOException;
 import java.util.*;
 
 public class TexturesBlock extends Block {
@@ -23,14 +22,14 @@ public class TexturesBlock extends Block {
     }
 
     @Override
-    protected void read(BlockReader reader) throws IOException {
+    protected void read(BlockReader reader) {
         rsck = ResourceCheckBlock.read(reader, getBlockType());
         if (hasArCk) arck = ArCkBlock.read(reader, "TrFm");
         data = new TexturesData(reader, hasArCk);
     }
 
     @Override
-    public void write(BlockWriter writer) throws IOException {
+    public void write(BlockWriter writer) {
         rsck.write(writer.segment());
         if (arck != null) arck.write(writer.segment());
         data.write(writer.segment());
@@ -64,7 +63,7 @@ public class TexturesBlock extends Block {
         public final List<Texture> textureList = new ArrayList<>();
         public final Map<Integer, Texture> textures = new HashMap<>();
 
-        public TexturesData(BlockReader reader, boolean hasArCk) throws IOException {
+        public TexturesData(BlockReader reader, boolean hasArCk) {
             if (!hasArCk) {
                 unknown1 = reader.readIntLittle();
                 reader = reader.segment(reader.readIntLittle());
@@ -78,7 +77,7 @@ public class TexturesBlock extends Block {
             }
         }
 
-        public void write(BlockWriter writer) throws IOException {
+        public void write(BlockWriter writer) {
             if (unknown1 != null) {
                 writer.writeIntLittle(unknown1);
                 writer = writer.segment();

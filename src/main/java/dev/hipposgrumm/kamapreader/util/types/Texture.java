@@ -10,7 +10,6 @@ import dev.hipposgrumm.kamapreader.util.types.wrappers.UniqueIdentifier;
 import javafx.scene.Node;
 import javafx.scene.image.ImageView;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -23,7 +22,7 @@ public class Texture implements DatingBachelor, Previewable {
     private final byte[] unknown2;
     private final BITMAP_TEXTURE[] textures;
 
-    public Texture(BlockReader reader, boolean arckVariant) throws IOException {
+    public Texture(BlockReader reader, boolean arckVariant) {
         if (arckVariant) unknown0 = reader.readBytes(4);
         else unknown0 = null;
         this.unknown1 = reader.readIntLittle();
@@ -62,7 +61,7 @@ public class Texture implements DatingBachelor, Previewable {
         }
     }
 
-    public void write(BlockWriter writer) throws IOException {
+    public void write(BlockWriter writer) {
         if (unknown0 != null) writer.writeBytes(unknown0);
         writer.writeIntLittle(unknown1);
         writer.writeIntLittle(uid.get());
