@@ -68,6 +68,7 @@ public class MaterialsBlock extends Block {
         public final List<Material> materialList = new ArrayList<>();
         public final Map<Integer, MaterialRef> materials = new HashMap<>();
 
+        protected MaterialsData() {}
         public MaterialsData(BlockReader reader, List<Map<Integer, Texture>> textureMaps) {
             unknown = reader.readInt();
             reader = reader.segment(reader.readInt());

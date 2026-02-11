@@ -1,6 +1,7 @@
 package dev.hipposgrumm.kamapreader.reader;
 
 import dev.hipposgrumm.kamapreader.blocks.*;
+import dev.hipposgrumm.kamapreader.util.types.Material;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,9 +44,14 @@ public class KARFile {
             block.readFull(reader.segment(blockSize));
             blocks.add(block);
         }
-        MaterialsBlock.MaterialsData[] materials = blocks.stream()
-                .filter(b -> b instanceof MaterialsBlock)
-                .map(b -> ((MaterialsBlock)b).data).toArray(MaterialsBlock.MaterialsData[]::new);
+
+        Map<Integer, Material> materials = new HashMap<>();
+        for (Block block:blocks) {
+            if (!(block instanceof MaterialsBlock matBlock)) continue;
+            for (Map.Entry<Integer, MaterialsBlock.MaterialRef> entry:matBlock.data.materials.entrySet()) {
+                materials.putIfAbsent(entry.getKey(), entry.getValue().material());
+            }
+        }
         for (Block block:blocks) {
             if (block instanceof PartsBlock bl) bl.fillMaterials(materials);
         }
@@ -68,7 +74,6 @@ public class KARFile {
 
             subWriter.seek(4);
             subWriter.writeInt(subWriter.getSize()-8);
-            subWriter.seek(subWriter.getSize());
         }
 
         writer.setLittleEndian(false);

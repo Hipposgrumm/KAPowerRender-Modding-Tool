@@ -43,7 +43,7 @@ public class WorldObject_Light extends WorldObject_Position {
         coneOuter = reader.readFloat();
         falloff = reader.readFloat();
         strength = reader.readFloat();
-        color = new FLOATCOLOR_RGB(reader.readFloat(), reader.readFloat(), reader.readFloat());
+        color = new FLOATCOLOR_RGB(reader);
         light_unused = reader.readInt(); // seemingly unused
     }
 

@@ -19,6 +19,21 @@ public class UInteger {
         return i;
     }
 
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(i);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof UInteger other && this.i == other.i;
+    }
+
+    @Override
+    public String toString() {
+        return Long.toString(get());
+    }
+
     public static class Array {
         private final int[] vals;
 

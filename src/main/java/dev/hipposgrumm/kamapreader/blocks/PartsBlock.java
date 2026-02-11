@@ -7,9 +7,11 @@ import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.types.Material;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class PartsBlock extends Block {
     private ResourceCheckBlock rsck;
@@ -27,6 +29,7 @@ public class PartsBlock extends Block {
             int pos = reader.getPointer();
             try {
                 Part part = Part.read(reader);
+                if (part == null) break;
                 parts.add(part);
             } catch (Exception e) {
                 reader.seek(pos);
@@ -43,14 +46,15 @@ public class PartsBlock extends Block {
 
         for (Part part:parts) {
             part.write(writer.segment());
-            writer.seek(writer.getSize());
         }
 
         if (neglectedBytes != null) writer.writeBytes(neglectedBytes);
     }
 
-    public void fillMaterials(MaterialsBlock.MaterialsData[] materials) {
-
+    public void fillMaterials(Map<Integer, Material> materials) {
+        for (Part part:parts) {
+            part.fillMaterials(materials);
+        }
     }
 
     @Override

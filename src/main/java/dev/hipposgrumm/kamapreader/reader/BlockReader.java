@@ -140,6 +140,15 @@ public class BlockReader {
     }
 
     /**
+     * Reads an unsigned byte. Returns as short without creating a UByte object.
+     * @return Short
+     * @throws IndexOutOfBoundsException If there is not 1 byte of data to read.
+     */
+    public short readUByteDirect() {
+        return (short) (readByte() & 0xFF);
+    }
+
+    /**
      * Reads a short.
      * @return Short (Signed)
      * @throws IndexOutOfBoundsException If there is not 2 bytes of available data to read as short.
@@ -160,6 +169,15 @@ public class BlockReader {
     }
 
     /**
+     * Reads an unsigned short. Returns value as integer without creating a UShort object.
+     * @return Integer
+     * @throws IndexOutOfBoundsException If there is not 2 bytes of available data to read as short.
+     */
+    public int readUShortDirect() {
+        return readShort() & 0xFFFF;
+    }
+
+    /**
      * Reads an integer.
      * @return Integer (Signed)
      * @throws IndexOutOfBoundsException If there is not 4 bytes of available data to read as int.
@@ -177,6 +195,15 @@ public class BlockReader {
      */
     public UInteger readUInt() {
         return new UInteger(readInt());
+    }
+
+    /**
+     * Reads an unsigned integer. Returns value as long without creating a UInteger object.
+     * @return Long
+     * @throws IndexOutOfBoundsException If there is not 4 bytes of available data to read as int.
+     */
+    public long readUIntDirect() {
+        return readInt() & 0xFFFFFFFFL;
     }
 
     /**
@@ -213,6 +240,15 @@ public class BlockReader {
     }
 
     /**
+     * Reads an unsigned short, always in little endian. Returns value as integer without creating a UShort object.
+     * @return Integer
+     * @throws IndexOutOfBoundsException If there is not 2 bytes of available data to read as short.
+     */
+    public int readUShortLittleDirect() {
+        return readShortLittle() & 0xFFFF;
+    }
+
+    /**
      * Reads an integer, always in little endian.
      * @return Integer (Signed)
      * @throws IndexOutOfBoundsException If there is not 4 bytes of available data to read as int.
@@ -234,6 +270,15 @@ public class BlockReader {
      */
     public UInteger readUIntLittle() {
         return new UInteger(readIntLittle());
+    }
+
+    /**
+     * Reads an unsigned integer, always in little endian. Returns value as long without creating a UInteger object.
+     * @return Long
+     * @throws IndexOutOfBoundsException If there is not 4 bytes of available data to read as int.
+     */
+    public long readUIntLittleDirect() {
+        return readIntLittle() & 0xFFFFFFFFL;
     }
 
     /**
@@ -268,6 +313,15 @@ public class BlockReader {
     }
 
     /**
+     * Reads an unsigned short, always in big endian. Returns value as integer without creating a UShort object.
+     * @return Integer
+     * @throws IndexOutOfBoundsException If there is not 2 bytes of available data to read as short.
+     */
+    public int readUShortBigDirect() {
+        return readShortBig() & 0xFFFF;
+    }
+
+    /**
      * Reads an integer, always in little endian.
      * @return Integer (Signed)
      * @throws IndexOutOfBoundsException If there is not 4 bytes of available data to read as int.
@@ -288,6 +342,15 @@ public class BlockReader {
      */
     public UInteger readUIntBig() {
         return new UInteger(readIntBig());
+    }
+
+    /**
+     * Reads an unsigned integer, always in little endian. Returns value as long without creating a UInteger object.
+     * @return Long
+     * @throws IndexOutOfBoundsException If there is not 4 bytes of available data to read as int.
+     */
+    public long readUIntBigDirect() {
+        return readIntBig() & 0xFFFFFFFFL;
     }
 
     /**

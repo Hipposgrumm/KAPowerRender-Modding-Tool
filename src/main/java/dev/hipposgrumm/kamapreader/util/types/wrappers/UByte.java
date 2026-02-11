@@ -19,6 +19,21 @@ public class UByte {
         return b;
     }
 
+    @Override
+    public int hashCode() {
+        return Byte.hashCode(b);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof UByte other && this.b == other.b;
+    }
+
+    @Override
+    public String toString() {
+        return Short.toString(get());
+    }
+
     public static class Array {
         private final byte[] vals;
 

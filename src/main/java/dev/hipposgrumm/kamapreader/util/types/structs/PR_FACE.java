@@ -1,5 +1,7 @@
 package dev.hipposgrumm.kamapreader.util.types.structs;
 
+import dev.hipposgrumm.kamapreader.reader.BlockReader;
+import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.UShort;
 
 public class PR_FACE {
@@ -20,27 +22,41 @@ public class PR_FACE {
         this.UNKNOWN2 = new byte[7];
     }
 
-    public PR_FACE(UShort Material, UShort BackMaterial,
-                   int vert1, int vert2, int vert3,
-                   float u1, float v1, float u2, float v2, float u3, float v3,
-                   byte[] UNKNOWN1,
-                   INTCOLOR col1, INTCOLOR col2, INTCOLOR col3,
-                   byte[] UNKNOWN2) {
-        this.Material = Material;
-        this.BackMaterial = BackMaterial;
-        this.Vertex1 = vert1;
-        this.Vertex2 = vert2;
-        this.Vertex3 = vert3;
-        this.U1 = u1;
-        this.V1 = v1;
-        this.U2 = u2;
-        this.V2 = v2;
-        this.U3 = u3;
-        this.V3 = v3;
-        this.UNKNOWN1 = UNKNOWN1;
-        this.Col1 = col1;
-        this.Col2 = col2;
-        this.Col3 = col3;
-        this.UNKNOWN2 = UNKNOWN2;
+    public PR_FACE(BlockReader reader) {
+        this.Material = reader.readUShort();
+        this.BackMaterial = reader.readUShort();
+        this.Vertex1 = reader.readInt();
+        this.Vertex2 = reader.readInt();
+        this.Vertex3 = reader.readInt();
+        this.U1 = reader.readFloat();
+        this.V1 = reader.readFloat();
+        this.U2 = reader.readFloat();
+        this.V2 = reader.readFloat();
+        this.U3 = reader.readFloat();
+        this.V3 = reader.readFloat();
+        this.UNKNOWN1 = reader.readBytes(144);
+        this.Col1 = new INTCOLOR(INTCOLOR.Format.RGBA, reader.readIntBig());
+        this.Col2 = new INTCOLOR(INTCOLOR.Format.RGBA, reader.readIntBig());
+        this.Col3 = new INTCOLOR(INTCOLOR.Format.RGBA, reader.readIntBig());
+        this.UNKNOWN2 = reader.readBytes(7); // probably normals and flags but can't confirm it
+    }
+
+    public void write(BlockWriter writer) {
+        writer.writeUShort(Material);
+        writer.writeUShort(BackMaterial);
+        writer.writeInt(Vertex1);
+        writer.writeInt(Vertex2);
+        writer.writeInt(Vertex3);
+        writer.writeFloat(U1);
+        writer.writeFloat(V1);
+        writer.writeFloat(U2);
+        writer.writeFloat(V2);
+        writer.writeFloat(U3);
+        writer.writeFloat(V3);
+        writer.writeBytes(UNKNOWN1);
+        writer.writeIntBig(Col1.color);
+        writer.writeIntBig(Col2.color);
+        writer.writeIntBig(Col3.color);
+        writer.writeBytes(UNKNOWN2);
     }
 }

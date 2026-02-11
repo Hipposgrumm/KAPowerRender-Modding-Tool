@@ -68,7 +68,7 @@ public class Material implements DatingBachelor, Previewable {
         byte[] ubyteArray_unknown6 = unknown6.array();
         for (int i=0;i<8;i++) ubyteArray_unknown6[i] = reader.readByte();
 
-        color = new FLOATCOLOR_RGBA(reader.readFloat(), reader.readFloat(), reader.readFloat(), reader.readFloat());
+        color = new FLOATCOLOR_RGBA(reader);
 
         unknown7 = reader.readUByte();
         reader.move(3);
@@ -78,7 +78,7 @@ public class Material implements DatingBachelor, Previewable {
         Bump10 = reader.readFloat();
         Bump11 = reader.readFloat();
         BumpScale = reader.readFloat();
-        specular = new FLOATCOLOR_RGBA(reader.readFloat(), reader.readFloat(), reader.readFloat(), reader.readFloat());
+        specular = new FLOATCOLOR_RGBA(reader);
 
         unknown8 = reader.readBytes(16);
 
@@ -116,10 +116,7 @@ public class Material implements DatingBachelor, Previewable {
         for (int i=0;i<8;i++) writer.writeInt(unknown5[i]);
         writer.writeBytes(unknown6.array());
 
-        writer.writeFloat(color.R);
-        writer.writeFloat(color.G);
-        writer.writeFloat(color.B);
-        writer.writeFloat(color.A);
+        color.write(writer);
 
         writer.writeUByte(unknown7);
         writer.writeBytes(new byte[] {0,0,0});
@@ -129,10 +126,7 @@ public class Material implements DatingBachelor, Previewable {
         writer.writeFloat(Bump10);
         writer.writeFloat(Bump11);
         writer.writeFloat(BumpScale);
-        writer.writeFloat(specular.R);
-        writer.writeFloat(specular.G);
-        writer.writeFloat(specular.B);
-        writer.writeFloat(specular.A);
+        specular.write(writer);
 
         writer.writeBytes(unknown8);
 
@@ -211,7 +205,6 @@ public class Material implements DatingBachelor, Previewable {
     }
 
     public static class RenderStyle implements DatingBachelor {
-        // TODO: Maybe log something when the enum values are different?
         SizeLimitedString name;
         public D3DZBUFFERTYPE enableZ;
         public boolean enableWriteZ;
@@ -221,8 +214,8 @@ public class Material implements DatingBachelor, Previewable {
         public boolean enableAlphaTest;
         public boolean enableSpecular;
         public int alphaRef;
-        public int textureFactor;
-        public int blendFactor;
+        public final INTCOLOR textureFactor = new INTCOLOR(INTCOLOR.Format.RGBA, -1);
+        public final INTCOLOR blendFactor = new INTCOLOR(INTCOLOR.Format.RGBA, -1);
         public D3DSHADEMODE shadeMode;
         public D3DBLEND srcBlend;
         public D3DBLEND destBlend;
@@ -247,8 +240,8 @@ public class Material implements DatingBachelor, Previewable {
             enableAlphaTest = reader.readInt() != 0;
             enableSpecular = reader.readInt() != 0;
             alphaRef = reader.readInt();
-            textureFactor = reader.readInt();
-            blendFactor = reader.readInt();
+            textureFactor.color = reader.readInt();
+            blendFactor.color = reader.readInt();
             shadeMode = D3DSHADEMODE.from(reader.readInt());
             srcBlend = D3DBLEND.from(reader.readInt());
             destBlend = D3DBLEND.from(reader.readInt());
@@ -276,8 +269,8 @@ public class Material implements DatingBachelor, Previewable {
             writer.writeInt(enableAlphaTest ? 1 : 0);
             writer.writeInt(enableSpecular ? 1 : 0);
             writer.writeInt(alphaRef);
-            writer.writeInt(textureFactor);
-            writer.writeInt(blendFactor);
+            writer.writeInt(textureFactor.color);
+            writer.writeInt(blendFactor.color);
             writer.writeInt(shadeMode.identifier);
             writer.writeInt(srcBlend.identifier);
             writer.writeInt(destBlend.identifier);
@@ -324,11 +317,9 @@ public class Material implements DatingBachelor, Previewable {
                     () -> alphaRef,
                     i -> alphaRef = i
             ), new DatingProfileEntry<>("TextureFactor",
-                    () -> textureFactor,
-                    i -> textureFactor = i
+                    () -> textureFactor
             ), new DatingProfileEntry<>("BlendFactor",
-                    () -> blendFactor,
-                    i -> blendFactor = i
+                    () -> blendFactor
             ), new DatingProfileEntry<>("Shade Mode",
                     () -> shadeMode,
                     e -> shadeMode = e

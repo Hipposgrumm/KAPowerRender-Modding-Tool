@@ -18,7 +18,7 @@ public class FVFVertex {
     public static FVFVertex create(D3DFVF FVF, BlockReader reader) {
         FVFVertex vert = new FVFVertex();
         D3DFVF.Enumerations Position = (D3DFVF.Enumerations) D3DFVF.Position.from(FVF);
-        if (Position != D3DFVF.Enumerations.__) vert.Pos = new PR_POINT(reader.readFloat(), reader.readFloat(), reader.readFloat());
+        if (Position != D3DFVF.Enumerations.__) vert.Pos = new PR_POINT(reader);
         switch (Position) {
             case XYZ -> {}
             case XYZRHW, XYZW -> vert.RHW = reader.readFloat();
@@ -37,11 +37,12 @@ public class FVFVertex {
                 System.arraycopy(weights, 0, vert.Weights, 0, count);
             }
         }
-        if (D3DFVF.NORMAL.from(FVF)) vert.Normal = new PR_POINT(reader.readFloat(), reader.readFloat(), reader.readFloat());
+        if (D3DFVF.NORMAL.from(FVF)) vert.Normal = new PR_POINT(reader);
         if (D3DFVF.PSIZE.from(FVF)) vert.PSize = reader.readFloat();
         if (D3DFVF.DIFFUSE.from(FVF)) vert.Diffuse.color = reader.readIntBig();
         if (D3DFVF.SPECULAR.from(FVF)) vert.Specular.color = reader.readIntBig();
-        for (int i=0;i<D3DFVF.TEXCOORDNUMS.length;i++) {
+        vert.TextureCoords = new TexCoords[D3DFVF.TEXCOORDNUMS.length];
+        for (int i=0;i<vert.TextureCoords.length;i++) {
             TexCoords coords = new TexCoords();
             vert.TextureCoords[i] = coords;
             int count = ((D3DFVF.TexCoordSize) D3DFVF.TEXCOORDNUMS[i].from(FVF)).texCount;
@@ -59,9 +60,7 @@ public class FVFVertex {
     public FVFVertex write(D3DFVF FVF, BlockWriter writer) {
         D3DFVF.Enumerations Position = (D3DFVF.Enumerations) D3DFVF.Position.from(FVF);
         if (Position != D3DFVF.Enumerations.__) {
-            writer.writeFloat(this.Pos.X);
-            writer.writeFloat(this.Pos.Y);
-            writer.writeFloat(this.Pos.Z);
+            this.Pos.write(writer);
         }
         switch (Position) {
             case XYZ -> {}
@@ -81,9 +80,7 @@ public class FVFVertex {
             }
         }
         if (D3DFVF.NORMAL.from(FVF)) {
-            writer.writeFloat(this.Normal.X);
-            writer.writeFloat(this.Normal.Y);
-            writer.writeFloat(this.Normal.Z);
+            this.Normal.write(writer);
         }
         if (D3DFVF.PSIZE.from(FVF)) writer.writeFloat(this.PSize);
         if (D3DFVF.DIFFUSE.from(FVF)) writer.writeIntBig(this.Diffuse.color);

@@ -30,10 +30,10 @@ public class WorldObject_Camera extends WorldObject_Position {
     public void read(BlockReader reader) {
         super.read(reader);
         cam_un1 = reader.readInt();
-        viewport = new PR_VIEWPORT(reader.readInt(), reader.readInt(), reader.readInt(), reader.readInt());
+        viewport = new PR_VIEWPORT(reader);
         nearclip = reader.readFloat();
         farclip = reader.readFloat();
-        fov = new ASPECTRATIO(reader.readFloat(), reader.readFloat());
+        fov = new ASPECTRATIO(reader);
         cam_un2 = reader.readInt();
 
         cam_un3 = new Number[] {
@@ -62,14 +62,10 @@ public class WorldObject_Camera extends WorldObject_Position {
     public void write(BlockWriter writer) {
         super.write(writer);
         writer.writeInt(cam_un1);
-        writer.writeInt(viewport.X);
-        writer.writeInt(viewport.Y);
-        writer.writeInt(viewport.WIDTH);
-        writer.writeInt(viewport.HEIGHT);
+        viewport.write(writer);
         writer.writeFloat(nearclip);
         writer.writeFloat(farclip);
-        writer.writeFloat(fov.X);
-        writer.writeFloat(fov.Y);
+        fov.write(writer);
         writer.writeInt(cam_un2);
         writer.writeFloat((Float) cam_un3[0]);
         writer.writeFloat((Float) cam_un3[1]);

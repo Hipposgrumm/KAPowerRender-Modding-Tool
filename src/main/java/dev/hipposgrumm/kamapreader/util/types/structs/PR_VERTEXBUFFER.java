@@ -13,11 +13,14 @@ public class PR_VERTEXBUFFER {
     public int VertexSize;
     public UInteger.Array VertexMapping;
     public FVFVertex[] vertices;
-    public UShort.Array indices;
+    public int[] indices;
+    public PR_MATRIXPALETTE MatrixPalette;
+    public int MYSTERY1, MYSTERY2;
 
     public static class VBufFlags extends Flags {
         public static final BoolEntry RequiresSoftware = new BoolEntry("RequiresSoftware", 0); // Set within PowerRender; probably always going to be off with today's technology, plus the fact that KA doesn't set the data this flag is tied to.
         public static final BoolEntry NegativeIndices = new BoolEntry("NegativeIndices", 1);
+        public static final BoolEntry Uses32BitIndices = new BoolEntry("32BitIndices", 5);
 
         public VBufFlags(int value) {
             super(value);

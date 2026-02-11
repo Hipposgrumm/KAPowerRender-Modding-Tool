@@ -6,11 +6,19 @@ import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.reader.PROReader;
+import dev.hipposgrumm.kamapreader.util.ViewerAppHandle;
+import dev.hipposgrumm.kamapreader.util.types.Material;
 import dev.hipposgrumm.kamapreader.util.types.SubBachelorPreviewEntry;
+import dev.hipposgrumm.kamapreader.util.types.structs.PR_FACE;
+import dev.hipposgrumm.kamapreader.util.types.structs.PR_VERTEX;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.SizeLimitedString;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.TextFileString;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class PartCharacter extends Part {
     private SizeLimitedString name;
@@ -61,17 +69,36 @@ public class PartCharacter extends Part {
 
     @Override
     public List<? extends DatingProfileEntry<?>> getDatingProfile() {
-        return List.of(new DatingProfileEntry<>("Name",
+        ViewerAppHandle.sendMessage(ViewerAppHandle.Messages.MODELS_CLEAR, new byte[0]);
+        sendMeshData(name.toString(), mesh_data);
+
+        List<DatingProfileEntry<?>> entries = new ArrayList<>();
+        entries.add(new DatingProfileEntry<>("Name",
                 () -> name
-        ), new SubBachelorPreviewEntry("Textures",
+        ));
+        if (textures != null) entries.add(new SubBachelorPreviewEntry("Textures",
                 () -> textures.textureList
-        ), new SubBachelorPreviewEntry("Materials",
+        ));
+        entries.add(new SubBachelorPreviewEntry("Materials",
                 () -> materials.materialList
-        ), new DatingProfileEntry<>("Character Script File",
+        ));
+        entries.add(new DatingProfileEntry<>("Character Script File",
                 () -> file_scr
-        ), new DatingProfileEntry<>("LOD Settings",
+        ));
+        entries.add(new DatingProfileEntry<>("LOD Settings",
                 () -> file_ls
         ));
+        return entries;
+    }
+
+    @Override
+    public void fillMaterials(Map<Integer, Material> mats) {
+        for (PROReader.PROData.MaterialDat dat:mesh_data.Materials) {
+            Material material = mats.get(dat.UID);
+            if (material == null) continue;
+            materials.materials.put(dat.UID, new MaterialsBlock.MaterialRef(material, materials.materialList.size()));
+            materials.materialList.add(material);
+        }
     }
 
     @Override

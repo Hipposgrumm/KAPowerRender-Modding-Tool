@@ -31,7 +31,7 @@ public class Texture implements DatingBachelor, Previewable {
         byte b = reader.readByte();
         this.textures = new BITMAP_TEXTURE[b];
         for (int i=0;i<textures.length;i++) {
-            BITMAP_TEXTURE tex = new BITMAP_TEXTURE(reader.readUShortLittle().get(), reader.readUShortLittle().get());
+            BITMAP_TEXTURE tex = new BITMAP_TEXTURE(reader.readUShortLittleDirect(), reader.readUShortLittleDirect());
             tex.UNKNOWN1 = reader.readIntLittle();
             tex.UNKNOWN2 = reader.readIntLittle();
             tex.FORMAT = switch (reader.readIntLittle()) {
@@ -68,8 +68,8 @@ public class Texture implements DatingBachelor, Previewable {
         writer.writeBytes(unknown2);
         writer.writeByte((byte) textures.length);
         for (BITMAP_TEXTURE tex:textures) {
-            writer.writeUShortLittle(new UShort(tex.WIDTH));
-            writer.writeUShortLittle(new UShort(tex.HEIGHT));
+            writer.writeUShortLittleDirect(tex.WIDTH);
+            writer.writeUShortLittleDirect(tex.HEIGHT);
             writer.writeIntLittle(tex.UNKNOWN1);
             writer.writeIntLittle(tex.UNKNOWN2);
             writer.writeIntLittle(tex.FORMAT.id);

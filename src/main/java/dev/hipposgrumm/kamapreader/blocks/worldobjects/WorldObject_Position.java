@@ -27,9 +27,9 @@ public class WorldObject_Position extends WorldObject_Base {
     @Override
     public void read(BlockReader reader) {
         super.read(reader);
-        rotation = new PR_QUATERNION(reader.readFloat(), reader.readFloat(), reader.readFloat(), reader.readFloat());
-        position = new PR_POINT(reader.readFloat(), reader.readFloat(), reader.readFloat());
-        scale = new PR_POINT(reader.readFloat(), reader.readFloat(), reader.readFloat());
+        rotation = new PR_QUATERNION(reader);
+        position = new PR_POINT(reader);
+        scale = new PR_POINT(reader);
         position_un1 = reader.readInt();
         position_un2 = reader.readInt();
         position_un3 = reader.readInt();
@@ -43,16 +43,9 @@ public class WorldObject_Position extends WorldObject_Base {
     @Override
     public void write(BlockWriter writer) {
         super.write(writer);
-        writer.writeFloat(rotation.X);
-        writer.writeFloat(rotation.Y);
-        writer.writeFloat(rotation.Z);
-        writer.writeFloat(rotation.W);
-        writer.writeFloat(position.X);
-        writer.writeFloat(position.Y);
-        writer.writeFloat(position.Z);
-        writer.writeFloat(scale.X);
-        writer.writeFloat(scale.Y);
-        writer.writeFloat(scale.Z);
+        rotation.write(writer);
+        position.write(writer);
+        scale.write(writer);
         writer.writeInt(position_un1);
         writer.writeInt(position_un2);
         writer.writeInt(position_un3);

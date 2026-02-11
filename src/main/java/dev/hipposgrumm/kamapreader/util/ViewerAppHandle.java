@@ -8,14 +8,15 @@ import java.util.function.Consumer;
 
 public class ViewerAppHandle {
     private static final Map<Integer, Consumer<byte[]>> handlers = new HashMap<>();
-    private static List<byte[]> queue = new ArrayList<>();
+    private static final List<byte[]> queue = new ArrayList<>();
+    private static Thread processAliveThread = null;
     private static Thread processOutThread = null;
     private static Thread processErrThread = null;
     private static Thread socketThread = null;
 
     static {
         enactMessageHandler(Messages.TERMINATE, bytes -> {
-            if (processOutThread == null) return;
+            if (processAliveThread == null) return;
             disconnectProgram();
         });
         enactMessageHandler(Messages.TEST_ECHO, bytes -> {
@@ -25,25 +26,31 @@ public class ViewerAppHandle {
 
     /// Starts the [[3D Viewer App]].
     public static void startProgram() throws IOException {
-        if (processOutThread != null) terminateProgram();
+        if (processAliveThread != null) terminateProgram();
         socketThread = new Thread(() -> {
             try (ServerSocket socket = new ServerSocket(0)) {
                 Process proc = createInstance(socket.getLocalPort());
+                processAliveThread = new Thread(() -> {
+                    while (proc.isAlive()) Thread.onSpinWait();
+                    if (processAliveThread != null) disconnectProgram();
+                }, "KAMapViewer Alive Thread");
                 processOutThread = new Thread(() -> {
                     watchAppOutput(proc.getInputStream(), processOutThread, System.out);
                 }, "KAMapViewer Output Thread");
                 processErrThread = new Thread(() -> {
                     watchAppOutput(proc.getErrorStream(), processErrThread, System.err);
                 }, "KAMapViewer Error Thread");
+                processAliveThread.setDaemon(true);
                 processOutThread.setDaemon(true);
                 processErrThread.setDaemon(true);
+                processAliveThread.start();
                 processOutThread.start();
                 processErrThread.start();
 
                 try (Socket connection = socket.accept()) {
                     InputStream input = connection.getInputStream();
                     OutputStream output = connection.getOutputStream();
-                    while (!socketThread.isInterrupted() && connection.isConnected()) {
+                    while (socketThread != null && !socketThread.isInterrupted() && connection.isConnected()) {
                         if (input.available() >= 8) {
                             int message = (input.read() << 24) |
                                     (input.read() << 16) |
@@ -58,10 +65,11 @@ public class ViewerAppHandle {
                             if (handler != null) handler.accept(data);
                         }
                         if (!queue.isEmpty()) {
-                            List<byte[]> messages = queue;
-                            queue = new ArrayList<>();
-                            for (byte[] message:messages)
-                                output.write(message);
+                            synchronized (queue) {
+                                for (byte[] message:queue)
+                                    output.write(message);
+                                queue.clear();
+                            }
                         }
 
                     }
@@ -101,12 +109,14 @@ public class ViewerAppHandle {
 
     /// Send the [[3D Viewer App]] a termination request.
     public static void terminateProgram() {
-        if (processOutThread == null) return;
+        if (processAliveThread == null) return;
         sendMessage(Messages.TERMINATE, new byte[0]);
         disconnectProgram();
     }
 
     private static void disconnectProgram() {
+        processAliveThread.interrupt();
+        processAliveThread = null;
         processOutThread.interrupt();
         processOutThread = null;
         processErrThread.interrupt();
@@ -134,7 +144,9 @@ public class ViewerAppHandle {
         bytes[6] = (byte)((data.length>>8)&0xFF);
         bytes[7] = (byte)(data.length&0xFF);
         System.arraycopy(data, 0, bytes, 8, data.length);
-        queue.add(bytes);
+        synchronized (queue) {
+            queue.add(bytes);
+        }
     }
 
     public static void enactMessageHandler(int message, Consumer<byte[]> handler) {
@@ -151,6 +163,9 @@ public class ViewerAppHandle {
         public static final int MODEL_START = 0;
         public static final int MODEL_PART = 1;
         public static final int MODEL_END = 2;
+        public static final int MODELS_CLEAR = 3;
+        public static final int LOAD_TEXTURES = 4;
+        public static final int LOAD_MATERIALS = 5;
         public static final int TEST_ECHO = 67;
     }
 }

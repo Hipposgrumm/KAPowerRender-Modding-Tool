@@ -18,7 +18,7 @@ public abstract class Flags {
         this.value = value;
     }
 
-    public void onUpdate(Entry entry) {}
+    protected void onUpdate(Entry entry) {}
 
     public abstract Entry[] getEntries();
 

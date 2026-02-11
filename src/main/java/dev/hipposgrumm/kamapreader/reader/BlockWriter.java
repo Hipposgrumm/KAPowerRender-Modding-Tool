@@ -169,6 +169,15 @@ public class BlockWriter {
     }
 
     /**
+     * Write an unsigned byte. Takes value directly as short without needing to create a UByte object.
+     * @param b Short (1 byte data)
+     */
+    public void writeUByteDirect(short b) {
+        if (b<0 || b>0xFF) throw new IllegalArgumentException(String.format("Direct input for unsigned byte %s does not fit.", b));
+        writeByte((byte)b);
+    }
+
+    /**
      * Write a short.
      * @param s Short
      */
@@ -186,6 +195,15 @@ public class BlockWriter {
     }
 
     /**
+     * Writes an unsigned short. Takes value directly as int without needing to create a UShort object.
+     * @param s Integer (short bytes)
+     */
+    public void writeUShortDirect(int s) {
+        if (s<0 || s>0xFFFF) throw new IllegalArgumentException(String.format("Direct input for unsigned short %s does not fit.", s));
+        writeShort((short)s);
+    }
+
+    /**
      * Writes an integer.
      * @param i Integer
      */
@@ -200,6 +218,15 @@ public class BlockWriter {
      */
     public void writeUInt(UInteger i) {
         writeInt(i.getInt());
+    }
+
+    /**
+     * Writes an unsigned integer. Takes value directly as long without needing to create a UInteger object.
+     * @param i Long (int bytes)
+     */
+    public void writeUIntDirect(long i) {
+        if (i<0 || i>0xFFFFFFFFL) throw new IllegalArgumentException(String.format("Direct input for unsigned integer %s does not fit.", i));
+        writeInt((int) i);
     }
 
     /**
@@ -230,6 +257,15 @@ public class BlockWriter {
     }
 
     /**
+     * Writes an unsigned short, always in little endian. Takes value directly as int without needing to create a UShort object.
+     * @param s Integer (short bytes)
+     */
+    public void writeUShortLittleDirect(int s) {
+        if (s<0 || s>0xFFFF) throw new IllegalArgumentException(String.format("Direct input for unsigned short %s does not fit.", s));
+        writeShortLittle((short)s);
+    }
+
+    /**
      * Writes an integer, always in little endian.
      * @param i Integer (Signed)
      */
@@ -248,6 +284,15 @@ public class BlockWriter {
      */
     public void writeUIntLittle(UInteger i) {
         writeIntLittle(i.getInt());
+    }
+
+    /**
+     * Writes an unsigned integer, always in little endian. Takes value directly as long without needing to create a UInteger object.
+     * @param i Long (int bytes)
+     */
+    public void writeUIntLittleDirect(long i) {
+        if (i<0 || i>0xFFFFFFFFL) throw new IllegalArgumentException(String.format("Direct input for unsigned integer %s does not fit.", i));
+        writeIntLittle((int)i);
     }
 
     /**
@@ -278,6 +323,15 @@ public class BlockWriter {
     }
 
     /**
+     * Writes an unsigned short, always in big endian. Takes value directly as int without needing to create a UShort object.
+     * @param s Integer (short bytes)
+     */
+    public void writeUShortBigDirect(int s) {
+        if (s<0 || s>0xFFFF) throw new IllegalArgumentException(String.format("Direct input for unsigned short %s does not fit.", s));
+        writeShortBig((short)s);
+    }
+
+    /**
      * Writes an integer, always in big endian.
      * @param i Integer (Signed)
      */
@@ -296,6 +350,15 @@ public class BlockWriter {
      */
     public void writeUIntBig(UInteger i) {
         writeIntBig(i.getInt());
+    }
+
+    /**
+     * Writes an unsigned integer, always in big endian. Takes value directly as long without needing to create a UInteger object.
+     * @param i Long (int bytes)
+     */
+    public void writeUIntBigDirect(long i) {
+        if (i<0 || i>0xFFFFFFFFL) throw new IllegalArgumentException(String.format("Direct input for unsigned integer %s does not fit.", i));
+        writeIntBig((int)i);
     }
 
     /**

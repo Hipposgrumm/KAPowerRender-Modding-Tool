@@ -19,6 +19,21 @@ public class UShort {
         return s;
     }
 
+    @Override
+    public int hashCode() {
+        return Short.hashCode(s);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof UShort other && this.s == other.s;
+    }
+
+    @Override
+    public String toString() {
+        return Integer.toString(get());
+    }
+
     public static class Array {
         private final short[] vals;
 
