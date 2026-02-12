@@ -102,7 +102,7 @@ public class PROModelBuilder {
         }
         modelBuilder.node().id = new String(name.toString().getBytes(), StandardCharsets.US_ASCII);
         for (Submesh submesh:submeshes.values()) {
-            HashMap<DefinedVertex, IndexedVertex> submeshVertices = HashMap.newHashMap(submesh.Vertices.size());
+            LinkedHashMap<DefinedVertex, IndexedVertex> submeshVertices = LinkedHashMap.newLinkedHashMap(submesh.Vertices.size());
             int i=0;for (DefinedVertex vert:submesh.Vertices)
                 submeshVertices.put(vert, new IndexedVertex(i++, vert));
             Mesh mesh = new Mesh(true, submesh.Vertices.size(), submesh.Faces.size() * 3, VERTEXATTR);
@@ -154,7 +154,7 @@ public class PROModelBuilder {
     private record IndexedVertex(int index, DefinedVertex Def) {}
     private record DefinedFace(DefinedVertex ve1, DefinedVertex ve2, DefinedVertex ve3) {}
     private static class Submesh {
-        public final HashSet<DefinedVertex> Vertices = new HashSet<>();
+        public final List<DefinedVertex> Vertices = new ArrayList<>();
         public final List<DefinedFace> Faces = new ArrayList<>();
         public final int Materialhash;
         public final PRMaterial Material;

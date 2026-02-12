@@ -2,6 +2,7 @@ package dev.hipposgrumm.kamapviewer.lwjgl3;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
 import dev.hipposgrumm.kamapviewer.Main;
 import dev.hipposgrumm.kamapviewer.util.ReaderAppConnection;
 
@@ -10,7 +11,6 @@ public class Lwjgl3Launcher {
     public static void main(String[] args) {
         if (StartupHelper.startNewJvmIfRequired(args)) return; // This handles macOS support and helps on Windows.
         createLuigiApplication(args);
-        ReaderAppConnection.sendTermination();
     }
 
     private static Lwjgl3Application createLuigiApplication(String[] args) {
@@ -38,6 +38,14 @@ public class Lwjgl3Launcher {
         // You can choose to remove the following line and the mentioned dependency if you want; they
         // are not intended for games that use GL30 (which is compatibility with OpenGL ES 3.0).
         configuration.setOpenGLEmulation(Lwjgl3ApplicationConfiguration.GLEmulation.ANGLE_GLES20, 0, 0);
+
+        configuration.setWindowListener(new Lwjgl3WindowAdapter() {
+            @Override
+            public boolean closeRequested() {
+                ReaderAppConnection.terminateConnection();
+                return super.closeRequested();
+            }
+        });
 
         return new Lwjgl3Application(new Main(args), configuration);
     }

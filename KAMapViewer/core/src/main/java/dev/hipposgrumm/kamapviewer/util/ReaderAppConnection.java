@@ -20,19 +20,20 @@ public class ReaderAppConnection {
     public static Main instance;
 
     public static List<Runnable> actionQueue = new ArrayList<>();
-    private static List<byte[]> queue = null;
+    private static final List<byte[]> queue = new ArrayList<>();
 
     private static Thread socketThread = null;
 
     /// Connect to the parent app.
     public static void connect(int port) {
-        queue = new ArrayList<>();
         socketThread = new Thread(() -> {
             try (Socket connection = new Socket((String)null, port)) {
                 InputStream input = connection.getInputStream();
                 OutputStream output = connection.getOutputStream();
+                int messageID = 0;
+                byte[] messageData = null; int messageDataIndex = 0;
                 while (!socketThread.isInterrupted() && connection.isConnected()) {
-                    if (input.available() >= 8) {
+                    if (messageData == null && input.available() >= 8) {
                         int message = (input.read() << 24) |
                             (input.read() << 16) |
                             (input.read() << 8) |
@@ -41,14 +42,29 @@ public class ReaderAppConnection {
                             (input.read() << 16) |
                             (input.read() << 8) |
                             input.read();
-                        byte[] data = input.readNBytes(size);
-                        actionQueue.add(() -> handleMessage(message, data));
+                        messageID = message;
+                        messageDataIndex = 0;
+                        messageData = new byte[size];
+                    }
+                    if (messageData != null) {
+                        int available = input.available();
+                        int needed = messageData.length-messageDataIndex;
+                        byte[] data = input.readNBytes(Math.min(available, needed));
+                        System.arraycopy(data, 0, messageData, messageDataIndex, data.length);
+                        messageDataIndex += data.length;
+                        if (messageDataIndex >= messageData.length) {
+                            int lambdaSafeMessageID = messageID;
+                            byte[] lambdaSafeMessageData = messageData;
+                            actionQueue.add(() -> handleMessage(lambdaSafeMessageID, lambdaSafeMessageData));
+                            messageData = null;
+                        }
                     }
                     if (!queue.isEmpty()) {
-                        List<byte[]> messages = queue;
-                        queue = new ArrayList<>();
-                        for (byte[] message:messages)
-                            output.write(message);
+                        synchronized (queue) {
+                            for (byte[] message:queue)
+                                output.write(message);
+                            queue.clear();
+                        }
                     }
                 }
             } catch (IOException e) {
@@ -72,13 +88,16 @@ public class ReaderAppConnection {
         bytes[6] = (byte)((data.length>>8)&0xFF);
         bytes[7] = (byte)(data.length&0xFF);
         System.arraycopy(data, 0, bytes, 8, data.length);
-        queue.add(bytes);
+        synchronized (queue) {
+            queue.add(bytes);
+        }
     }
 
     /// Inform the parent app that this app is being closed.
-    public static void sendTermination() {
+    public static void terminateConnection() {
         if (socketThread == null) return;
         sendMessage(Messages.TERMINATE, new byte[0]);
+        socketThread.interrupt();
     }
 
     public static final class Messages {

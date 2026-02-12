@@ -50,8 +50,10 @@ public class ViewerAppHandle {
                 try (Socket connection = socket.accept()) {
                     InputStream input = connection.getInputStream();
                     OutputStream output = connection.getOutputStream();
+                    int messageID = 0;
+                    byte[] messageData = null; int messageDataIndex = 0;
                     while (socketThread != null && !socketThread.isInterrupted() && connection.isConnected()) {
-                        if (input.available() >= 8) {
+                        if (messageData == null && input.available() >= 8) {
                             int message = (input.read() << 24) |
                                     (input.read() << 16) |
                                     (input.read() << 8) |
@@ -60,9 +62,21 @@ public class ViewerAppHandle {
                                     (input.read() << 16) |
                                     (input.read() << 8) |
                                     input.read();
-                            byte[] data = input.readNBytes(size);
-                            Consumer<byte[]> handler = handlers.get(message);
-                            if (handler != null) handler.accept(data);
+                            messageID = message;
+                            messageDataIndex = 0;
+                            messageData = new byte[size];
+                        }
+                        if (messageData != null) {
+                            int available = input.available();
+                            int needed = messageData.length-messageDataIndex;
+                            byte[] data = input.readNBytes(Math.min(available, needed));
+                            System.arraycopy(data, 0, messageData, messageDataIndex, data.length);
+                            messageDataIndex += data.length;
+                            if (messageDataIndex >= messageData.length) {
+                                Consumer<byte[]> handler = handlers.get(messageID);
+                                if (handler != null) handler.accept(messageData);
+                                messageData = null;
+                            }
                         }
                         if (!queue.isEmpty()) {
                             synchronized (queue) {
