@@ -8,12 +8,12 @@ import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.FirstPersonCameraController;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
-import com.badlogic.gdx.graphics.g3d.utils.ShaderProvider;
 import dev.hipposgrumm.kamapviewer.models.GridModel;
 import dev.hipposgrumm.kamapviewer.rendering.PRMaterial;
 import dev.hipposgrumm.kamapviewer.rendering.PowerRenderShaderProvider;
 import dev.hipposgrumm.kamapviewer.util.ReaderAppConnection;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -102,7 +102,7 @@ public class Main extends ApplicationAdapter {
         camController.update();
 
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        Gdx.gl.glClearColor(0f,0f, 0f,1f);
+        Gdx.gl.glClearColor(0.2f,0.5f, 0.75f,1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
         world.begin(cam);
@@ -116,5 +116,80 @@ public class Main extends ApplicationAdapter {
         world.dispose();
         for (Model model:models) model.dispose();
         grid.dispose();
+    }
+
+    public static void loadTextures(byte[] bytes) {
+        textures.clear();
+        ByteBuffer data = ByteBuffer.wrap(bytes);
+        while (data.hasRemaining()) {
+            int uid = data.getInt();
+            int width = data.getInt();
+            int height = data.getInt();
+            Pixmap image = new Pixmap(width, height, Pixmap.Format.RGBA8888);
+            for (int i=0;i<(width*height);i++) {
+                int color = data.getInt();
+                color = ((color&0xFF) << 8) |
+                    ((color&0x0000FF00)<<8) |
+                    ((color<<8)&0xFF000000) |
+                    ((color>>24)&0xFF);
+                image.drawPixel(i%width, i/width, color);
+            }
+            if (textures.containsKey(uid)) System.out.println("WARN: Texture with duplicate UID 0x"+Integer.toHexString(uid).toUpperCase());
+            else {
+                Texture tex = new Texture(image);
+                tex.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+                textures.put(uid, tex);
+            }
+        }
+    }
+
+    public static void loadMaterials(byte[] bytes) {
+        ByteBuffer data = ByteBuffer.wrap(bytes);
+        while (data.hasRemaining()) {
+            int uid = data.getInt();
+            StringBuilder name = new StringBuilder();
+            for (byte b=data.get();b!='\00';b=data.get()) {
+                name.append((char)b);
+            }
+            PRMaterial material = new PRMaterial(name.toString());
+            for (int i=0;i<7;i++) {
+                int texid = data.getInt();
+                if (texid != 0) material.textures[i] = textures.get(texid);
+                else material.textures[i] = null;
+            }
+            material.setColor(data.getFloat(), data.getFloat(), data.getFloat(), data.getFloat());
+            material.setBump(data.getFloat(), data.getFloat(), data.getFloat(), data.getFloat(), data.getFloat());
+            material.setSpecColor(data.getFloat(), data.getFloat(), data.getFloat(), data.getFloat(), data.getFloat());
+            material.setTwoSided(data.get() != 0);
+            material.setRenderStyle(
+                data.get(), data.get() != 0,
+                data.get() != 0, data.get() != 0,
+                data.get() != 0, data.get() != 0, data.get() != 0,
+                data.getShort(), data.getInt(), data.getInt()
+            );
+            material.setRenderFunction(
+                data.get(), data.get(), data.get(),
+                data.get(), data.get(),
+                data.get(), data.get(), data.get(), data.get(),
+                data.get(),
+                data.get()
+            );
+            for (int j=0;j<8;j++) {
+                PRMaterial.RenderStageData texdat = new PRMaterial.RenderStageData();
+                texdat.setTextureStage(
+                    data.get(), data.get(),
+                    data.get(), data.get(),
+                    data.get(), data.get(),
+                    data.get(), data.getShort()
+                );
+                texdat.setSamplerStage(
+                    data.get(), data.get(), data.get(),
+                    data.getInt()
+                );
+                material.renderStages[j] = texdat;
+            }
+            if (textures.containsKey(uid)) System.out.println("WARN: Material with duplicate UID 0x"+Integer.toHexString(uid).toUpperCase());
+            else materials.put(uid, material);
+        }
     }
 }

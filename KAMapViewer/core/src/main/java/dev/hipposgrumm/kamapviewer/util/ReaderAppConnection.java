@@ -1,17 +1,13 @@
 package dev.hipposgrumm.kamapviewer.util;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
 import dev.hipposgrumm.kamapviewer.Main;
 import dev.hipposgrumm.kamapviewer.models.PROModelBuilder;
-import dev.hipposgrumm.kamapviewer.rendering.PRMaterial;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -140,75 +136,8 @@ public class ReaderAppConnection {
                 buildingmesh = null;
             }
             case Messages.MODELS_CLEAR -> instance.clearModels();
-            case Messages.LOAD_TEXTURES -> {
-                Main.textures.clear();
-                ByteBuffer data = ByteBuffer.wrap(bytes);
-                while (data.hasRemaining()) {
-                    int uid = data.getInt();
-                    int width = data.getInt();
-                    int height = data.getInt();
-                    Pixmap image = new Pixmap(width, height, Pixmap.Format.RGBA8888);
-                    for (int i=0;i<(width*height);i++) {
-                        int color = data.getInt();
-                        color = ((color&0xFF) << 8) |
-                            ((color&0x0000FF00)<<8) |
-                            ((color<<8)&0xFF000000) |
-                            ((color>>24)&0xFF);
-                        image.drawPixel(i%width, i/width, color);
-                    }
-                    if (Main.textures.containsKey(uid)) System.out.println("WARN: Texture with duplicate UID 0x"+Integer.toHexString(uid).toUpperCase());
-                    else Main.textures.put(uid, new Texture(image));
-                }
-            }
-            case Messages.LOAD_MATERIALS -> {
-                ByteBuffer data = ByteBuffer.wrap(bytes);
-                while (data.hasRemaining()) {
-                    int uid = data.getInt();
-                    StringBuilder name = new StringBuilder();
-                    for (byte b=data.get();b!='\00';b=data.get()) {
-                        name.append((char)b);
-                    }
-                    PRMaterial material = new PRMaterial(name.toString());
-                    for (int i=0;i<7;i++) {
-                        int texid = data.getInt();
-                        if (texid != 0) material.textures[i] = Main.textures.get(texid);
-                        else material.textures[i] = null;
-                    }
-                    material.setColor(data.getFloat(), data.getFloat(), data.getFloat(), data.getFloat());
-                    material.setBump(data.getFloat(), data.getFloat(), data.getFloat(), data.getFloat(), data.getFloat());
-                    material.setSpecColor(data.getFloat(), data.getFloat(), data.getFloat(), data.getFloat(), data.getFloat());
-                    material.setTwoSided(data.get() != 0);
-                    material.setRenderStyle(
-                        data.get(), data.get() != 0,
-                        data.get() != 0, data.get() != 0,
-                        data.get() != 0, data.get() != 0, data.get() != 0,
-                        data.getShort(), data.getInt(), data.getInt()
-                    );
-                    material.setRenderFunction(
-                        data.get(), data.get(), data.get(),
-                        data.get(), data.get(),
-                        data.get(), data.get(), data.get(), data.get(),
-                        data.get(),
-                        data.get()
-                    );
-                    for (int j=0;j<8;j++) {
-                        PRMaterial.RenderStageData texdat = new PRMaterial.RenderStageData();
-                        texdat.setTextureStage(
-                            data.get(), data.get(),
-                            data.get(), data.get(),
-                            data.get(), data.get(),
-                            data.get(), data.getShort()
-                        );
-                        texdat.setSamplerStage(
-                            data.get(), data.get(), data.get(),
-                            data.getInt()
-                        );
-                        material.renderStages[j] = texdat;
-                    }
-                    if (Main.textures.containsKey(uid)) System.out.println("WARN: Material with duplicate UID 0x"+Integer.toHexString(uid).toUpperCase());
-                    else Main.materials.put(uid, material);
-                }
-            }
+            case Messages.LOAD_TEXTURES -> Main.loadTextures(bytes);
+            case Messages.LOAD_MATERIALS -> Main.loadMaterials(bytes);
         }
     }
 }

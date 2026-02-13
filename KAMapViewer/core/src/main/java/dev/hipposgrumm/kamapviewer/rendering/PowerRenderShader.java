@@ -17,15 +17,18 @@ public class PowerRenderShader implements Shader {
     protected final boolean hasTexture;
     protected final D3DTEXTUREADDRESS wrapX;
     protected final D3DTEXTUREADDRESS wrapY;
+    protected final boolean alphatest;
 
     public PowerRenderShader(RenderMaterial material) {
         this.hasTexture = material.Material.textures[0] != null;
         if (hasTexture) {
             this.wrapX = material.Material.renderStages[0].addressU;
             this.wrapY = material.Material.renderStages[0].addressV;
+            this.alphatest = material.Material.enableAlphaTest;
         } else {
             this.wrapX = D3DTEXTUREADDRESS.__;
             this.wrapY = D3DTEXTUREADDRESS.__;
+            this.alphatest = false;
         }
     }
 
@@ -39,6 +42,7 @@ public class PowerRenderShader implements Shader {
                 (wrapX != instmat.Material.renderStages[0].addressU) ||
                 (wrapY != instmat.Material.renderStages[0].addressV)
             ) return false;
+            if (alphatest != instmat.Material.enableAlphaTest);
         } else if (otherHasTexture) return false;
         return true;
     }
@@ -51,6 +55,7 @@ public class PowerRenderShader implements Shader {
             fragSettings += "#define HAS_TEXTURE\n";
             fragSettings += String.format("#define WRAP_X %s\n", wrapX.identifier);
             fragSettings += String.format("#define WRAP_Y %s\n", wrapY.identifier);
+            if (alphatest) fragSettings += "#define ALPHATEST\n";
         }
         shader = new ShaderProgram(
             vertSettings+Gdx.files.internal("shader/pr.vert").readString(),
@@ -84,7 +89,13 @@ public class PowerRenderShader implements Shader {
             if (wrapX == D3DTEXTUREADDRESS.BORDER || wrapY == D3DTEXTUREADDRESS.BORDER) {
                 shader.setUniformf("u_bordercolor", material.Material.renderStages[0].bordercolor);
             }
+            if (alphatest) {
+                shader.setUniformf("u_alpharef", material.Material.alphaRef/255f);
+            }
+        } else {
+            shader.setUniformf("u_color", material.Material.color);
         }
+        context.setBlending(material.Material.enableAlphaBlend, GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         context.setCullFace(material.Material.twosided ? 0 : GL20.GL_BACK);
         renderable.meshPart.render(shader);
     }
