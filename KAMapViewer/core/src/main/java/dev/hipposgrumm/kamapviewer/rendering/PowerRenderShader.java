@@ -18,13 +18,15 @@ public class PowerRenderShader implements Shader {
     protected final D3DTEXTUREADDRESS wrapX;
     protected final D3DTEXTUREADDRESS wrapY;
     protected final boolean alphatest;
+    protected final boolean alphablend;
 
     public PowerRenderShader(RenderMaterial material) {
-        this.hasTexture = material.Material.textures[0] != null;
+        this.alphablend = material.isBlending();
+        this.hasTexture = Properties.hasTexture(material);
         if (hasTexture) {
-            this.wrapX = material.Material.renderStages[0].addressU;
-            this.wrapY = material.Material.renderStages[0].addressV;
-            this.alphatest = material.Material.enableAlphaTest;
+            this.wrapX = Properties.wrapX(material);
+            this.wrapY = Properties.wrapY(material);
+            this.alphatest = !alphablend && Properties.alphatest(material);
         } else {
             this.wrapX = D3DTEXTUREADDRESS.__;
             this.wrapY = D3DTEXTUREADDRESS.__;
@@ -35,15 +37,17 @@ public class PowerRenderShader implements Shader {
     @Override
     public boolean canRender(Renderable instance) {
         if (!(instance.material instanceof RenderMaterial instmat)) return false;
-        boolean otherHasTexture = instmat.Material.textures[0] != null;
+        if (alphablend != instmat.isBlending()) return false;
         if (hasTexture) {
-            if (!otherHasTexture) return false;
+            if (!Properties.hasTexture(instmat)) return false;
             if (
-                (wrapX != instmat.Material.renderStages[0].addressU) ||
-                (wrapY != instmat.Material.renderStages[0].addressV)
+                (wrapX != Properties.wrapX(instmat)) ||
+                (wrapY != Properties.wrapY(instmat))
             ) return false;
-            if (alphatest != instmat.Material.enableAlphaTest);
-        } else if (otherHasTexture) return false;
+            if (!alphablend && (alphatest != Properties.alphatest(instmat))) return false;
+        } else {
+            if (Properties.hasTexture(instmat)) return false;
+        }
         return true;
     }
 
@@ -95,7 +99,7 @@ public class PowerRenderShader implements Shader {
         } else {
             shader.setUniformf("u_color", material.Material.color);
         }
-        context.setBlending(material.Material.enableAlphaBlend, GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+        context.setBlending(alphablend, GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         context.setCullFace(material.Material.twosided ? 0 : GL20.GL_BACK);
         renderable.meshPart.render(shader);
     }
@@ -106,5 +110,29 @@ public class PowerRenderShader implements Shader {
     @Override
     public void dispose() {
         shader.dispose();
+    }
+
+    public static final class Properties {
+        public static boolean hasTexture(RenderMaterial material) {
+            return material.Material.textures[0] != null;
+        }
+
+        public static D3DTEXTUREADDRESS wrapX(RenderMaterial material) {
+            return material.Material.renderStages[0].addressU;
+        }
+
+        public static D3DTEXTUREADDRESS wrapY(RenderMaterial material) {
+            return material.Material.renderStages[0].addressV;
+        }
+
+        public static boolean alphatest(RenderMaterial material) {
+            return material.Material.enableAlphaTest;
+        }
+
+        public static boolean alphablend(RenderMaterial material, boolean hasTexture) {
+            return material.Material.enableAlphaBlend && (
+                hasTexture || (material.Material.color.a < 1f)
+            );
+        }
     }
 }

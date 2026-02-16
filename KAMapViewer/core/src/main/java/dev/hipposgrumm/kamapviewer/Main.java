@@ -2,6 +2,7 @@ package dev.hipposgrumm.kamapviewer;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g3d.*;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
@@ -11,6 +12,7 @@ import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import dev.hipposgrumm.kamapviewer.models.GridModel;
 import dev.hipposgrumm.kamapviewer.rendering.PRMaterial;
 import dev.hipposgrumm.kamapviewer.rendering.PowerRenderShaderProvider;
+import dev.hipposgrumm.kamapviewer.ui.UIHandler;
 import dev.hipposgrumm.kamapviewer.util.ReaderAppConnection;
 
 import java.nio.ByteBuffer;
@@ -33,6 +35,7 @@ public class Main extends ApplicationAdapter {
     public static Map<Integer, Texture> textures = new HashMap<>();
     public static Map<Integer, PRMaterial> materials = new HashMap<>();
 
+    private UIHandler ui;
     private GridModel grid;
     private Environment environment;
     private PerspectiveCamera cam;
@@ -79,7 +82,6 @@ public class Main extends ApplicationAdapter {
         int flipkey = camController.upKey;
         camController.upKey = camController.downKey;
         camController.downKey = flipkey;
-        Gdx.input.setInputProcessor(camController);
 
         world = new ModelBatch(new PowerRenderShaderProvider());
         grid = new GridModel(GRID_SIZE, VertexAttributes.Usage.Position);
@@ -87,7 +89,17 @@ public class Main extends ApplicationAdapter {
             new Material(ColorAttribute.createDiffuse(Color.PINK)),
             VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
+        ui = new UIHandler();
+
+        Gdx.input.setInputProcessor(new InputMultiplexer(ui.getInput(), camController));
         ReaderAppConnection.instance = this;
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        cam.viewportWidth = width;
+        cam.viewportHeight = height;
+        ui.resize(width, height);
     }
 
     @Override
@@ -109,6 +121,8 @@ public class Main extends ApplicationAdapter {
         world.render(grid.renderable());
         world.render(modelInstances, environment);
         world.end();
+
+        ui.render();
     }
 
     @Override
@@ -116,6 +130,7 @@ public class Main extends ApplicationAdapter {
         world.dispose();
         for (Model model:models) model.dispose();
         grid.dispose();
+        ui.dispose();
     }
 
     public static void loadTextures(byte[] bytes) {
