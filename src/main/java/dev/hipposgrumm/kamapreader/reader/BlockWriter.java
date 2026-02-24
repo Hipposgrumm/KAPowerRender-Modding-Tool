@@ -15,9 +15,7 @@ import java.nio.charset.StandardCharsets;
  */
 public class BlockWriter {
     private static final int INCREMENT = 0x8000;
-    private final SharedBytearray file;
-    private final SharedInt sharedFileSize;
-    private int fileSize; // Mirrors sharedFileSize and used to check if it changed
+    private final SharedFileBytes file;
     private boolean littleEndian = false;
     private int pointer;
     private boolean pointerAtEnd = true;
@@ -25,18 +23,14 @@ public class BlockWriter {
 
     /// Creates a container for writing the file.
     public BlockWriter() {
-        this.file = new SharedBytearray(new byte[INCREMENT]);
-        this.sharedFileSize = new SharedInt(0);
-        this.fileSize = 0;
+        this.file = new SharedFileBytes(INCREMENT);
         this.pointer = 0;
         this.startpos = 0;
     }
 
     /// @see #segment()
-    private BlockWriter(SharedBytearray file, SharedInt size, int startpos, boolean littleEndian) {
+    private BlockWriter(SharedFileBytes file, int startpos, boolean littleEndian) {
         this.file = file;
-        this.sharedFileSize = size;
-        this.fileSize = size.value;
         this.littleEndian = littleEndian;
         this.startpos = startpos;
         this.pointer = startpos;
@@ -45,7 +39,7 @@ public class BlockWriter {
     /// Write all byte data to a file.
     public void writeout(File destination) throws IOException {
         try (FileOutputStream out = new FileOutputStream(destination)) {
-            out.write(file.data, 0, fileSize);
+            out.write(file.compile());
         }
     }
 
@@ -65,7 +59,7 @@ public class BlockWriter {
      * @throws IndexOutOfBoundsException If the seek index is negative or outside the file.
      */
     public void seek(int pos) {
-        getUpdateSharedFileSize();
+        int fileSize = file.getSize();
         int newPos = startpos+pos;
         if (pos < 0) throw new IndexOutOfBoundsException(String.format("Seek is outside block (%s < %s)", newPos, startpos));
         if (pos > fileSize) throw new IndexOutOfBoundsException(String.format("Seek location is beyond current scope of file (%s > %s)", newPos, fileSize));
@@ -80,7 +74,8 @@ public class BlockWriter {
      * @throws IndexOutOfBoundsException If the resulting location would be out of range of the writer or the file.
      */
     public void move(int amount) {
-        getUpdateSharedFileSize();
+        int fileSize = file.getSize();
+        if (pointerAtEnd) pointer = fileSize;
         int pos = pointer+amount;
         if (pos < startpos) throw new IndexOutOfBoundsException(String.format("Shift location is outside designated area (%s < %s)", pos, startpos));
         if (pos > fileSize) throw new IndexOutOfBoundsException(String.format("Shift location goes beyond current file length (%s, > %s)", pos, fileSize));
@@ -90,13 +85,13 @@ public class BlockWriter {
 
     /// @return Current pointer location relative to this writer's start position.
     public int getPointer() {
-        getUpdateSharedFileSize();
+        if (pointerAtEnd) pointer = file.getSize();
         return pointer-startpos;
     }
 
     /// @return Pointer current position in entire file.
     public int getTruePointer() {
-        getUpdateSharedFileSize();
+        if (pointerAtEnd) pointer = file.getSize();
         return pointer;
     }
 
@@ -106,37 +101,7 @@ public class BlockWriter {
      * @return Size of Data
      */
     public int getSize() {
-        getUpdateSharedFileSize();
-        return fileSize-startpos;
-    }
-
-    /// Ensure that the file size is accurate in case it was updated by any sub-writers.
-    private void getUpdateSharedFileSize() {
-        if (sharedFileSize.value == fileSize) return;
-        fileSize = sharedFileSize.value;
-        if (pointerAtEnd) pointer = fileSize;
-    }
-
-    /// Update the file size based on the pointer.
-    private void doUpdateSharedFileSize() {
-        if (pointer <= fileSize) return;
-        fileSize = pointer;
-        sharedFileSize.value = fileSize;
-    }
-
-    /// Ensures that there is the requested amount of usable bytes in the array from the pointer.
-    private void ensureSize(int count) {
-        getUpdateSharedFileSize();
-        if (count == 0) return;
-
-        int neededSize = pointer+count;
-        int currentSize = file.data.length;
-        if (currentSize >= neededSize) return;
-
-        while (currentSize < neededSize) currentSize += INCREMENT;
-        byte[] newArray = new byte[currentSize];
-        System.arraycopy(file.data, 0, newArray, 0, fileSize);
-        file.data = newArray;
+        return file.getSize()-startpos;
     }
 
     /**
@@ -144,10 +109,10 @@ public class BlockWriter {
      * @param bytes Bytes
      */
     public void writeBytes(byte[] bytes) {
-        ensureSize(bytes.length);
-        System.arraycopy(bytes, 0, file.data, pointer, bytes.length);
-        pointer += bytes.length;
-        doUpdateSharedFileSize();
+        if (pointerAtEnd) pointer = file.getSize();
+        for (byte b:bytes) {
+            file.write(pointer++, b);
+        }
     }
 
     /**
@@ -155,9 +120,8 @@ public class BlockWriter {
      * @param b Byte
      */
     public void writeByte(byte b) {
-        ensureSize(1);
-        file.data[pointer++] = b;
-        doUpdateSharedFileSize();
+        if (pointerAtEnd) pointer = file.getSize();
+        file.write(pointer++, b);
     }
 
     /**
@@ -242,10 +206,9 @@ public class BlockWriter {
      * @param s Short (Signed)
      */
     public void writeShortLittle(short s) {
-        ensureSize(2);
-        file.data[pointer++] = (byte) (s & 0xFF);
-        file.data[pointer++] = (byte) (s >> 8);
-        doUpdateSharedFileSize();
+        if (pointerAtEnd) pointer = file.getSize();
+        file.write(pointer++, (byte) (s & 0xFF));
+        file.write(pointer++, (byte) (s >> 8));
     }
 
     /**
@@ -270,12 +233,11 @@ public class BlockWriter {
      * @param i Integer (Signed)
      */
     public void writeIntLittle(int i) {
-        ensureSize(4);
-        file.data[pointer++] = (byte) (i & 0xFF);
-        file.data[pointer++] = (byte) ((i >> 8) & 0xFF);
-        file.data[pointer++] = (byte) ((i >> 16) & 0xFF);
-        file.data[pointer++] = (byte) (i >> 24);
-        doUpdateSharedFileSize();
+        if (pointerAtEnd) pointer = file.getSize();
+        file.write(pointer++, (byte) (i & 0xFF));
+        file.write(pointer++, (byte) ((i >> 8) & 0xFF));
+        file.write(pointer++, (byte) ((i >> 16) & 0xFF));
+        file.write(pointer++, (byte) (i >> 24));
     }
 
     /**
@@ -308,10 +270,9 @@ public class BlockWriter {
      * @param s Short (Signed)
      */
     public void writeShortBig(short s) {
-        ensureSize(2);
-        file.data[pointer++] = (byte) (s >> 8);
-        file.data[pointer++] = (byte) (s & 0xFF);
-        doUpdateSharedFileSize();
+        if (pointerAtEnd) pointer = file.getSize();
+        file.write(pointer++, (byte) (s >> 8));
+        file.write(pointer++, (byte) (s & 0xFF));
     }
 
     /**
@@ -336,12 +297,11 @@ public class BlockWriter {
      * @param i Integer (Signed)
      */
     public void writeIntBig(int i) {
-        ensureSize(4);
-        file.data[pointer++] = (byte) (i >> 24);
-        file.data[pointer++] = (byte) ((i >> 16) & 0xFF);
-        file.data[pointer++] = (byte) ((i >> 8) & 0xFF);
-        file.data[pointer++] = (byte) (i & 0xFF);
-        doUpdateSharedFileSize();
+        if (pointerAtEnd) pointer = file.getSize();
+        file.write(pointer++, (byte) (i >> 24));
+        file.write(pointer++, (byte) ((i >> 16) & 0xFF));
+        file.write(pointer++, (byte) ((i >> 8) & 0xFF));
+        file.write(pointer++, (byte) (i & 0xFF));
     }
 
     /**
@@ -418,23 +378,69 @@ public class BlockWriter {
 
     /// Create a sub-writer based on this writer.
     public BlockWriter segment() {
-        getUpdateSharedFileSize();
-        return new BlockWriter(file, sharedFileSize, pointer, littleEndian);
+        if (pointerAtEnd) pointer = file.getSize();
+        return new BlockWriter(file, pointer, littleEndian);
     }
 
-    private static final class SharedInt {
-        public int value;
+    private static final class SharedFileBytes {
+        private final int INCREMENT;
 
-        public SharedInt(int i) {
-            this.value = i;
+        private byte[][] datas;
+
+        private int index = -1;
+        private int position = 0;
+
+        public SharedFileBytes(int increment) {
+            this.INCREMENT = increment;
+            this.datas = new byte[0][];
+            extend();
         }
-    }
 
-    private static final class SharedBytearray {
-        public byte[] data;
+        public void write(int pos, byte b) {
+            int neededIndex = pos / INCREMENT;
+            int neededPosition = pos % INCREMENT;
 
-        public SharedBytearray(byte[] start) {
-            this.data = start;
+            boolean endPos = false;
+            if (neededIndex == this.index) {
+                endPos = this.position <= neededPosition;
+            } else while (this.index < neededIndex) {
+                endPos = true;
+                extend();
+            }
+
+            this.datas[neededIndex][neededPosition] = b;
+
+            if (endPos) {
+                // this.index is already implicitly set correctly if this case is true
+                this.position = neededPosition+1;
+            }
+        }
+
+        public byte[] compile() {
+            byte[] data = new byte[getSize()];
+            for (int i=0;i<index;i++) {
+                System.arraycopy(this.datas[i], 0, data, INCREMENT*i, INCREMENT);
+            }
+            System.arraycopy(this.datas[index], 0, data, INCREMENT*index, position);
+            return data;
+        }
+
+        public int getSize() {
+            return this.position + (
+                    this.index * INCREMENT
+            );
+        }
+
+        private void extend() {
+            position = 0;
+            index++;
+
+            if (index >= datas.length) {
+                byte[][] newDatas = new byte[datas.length + 10][];
+                System.arraycopy(this.datas, 0, newDatas, 0, datas.length);
+                this.datas = newDatas;
+            }
+            this.datas[index] = new byte[INCREMENT];
         }
     }
 }
