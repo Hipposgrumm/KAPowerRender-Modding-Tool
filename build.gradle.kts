@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "dev.hipposgrumm"
-version = "0.3.0p1"
+version = "0.3.0"
 
 repositories {
     mavenCentral()
