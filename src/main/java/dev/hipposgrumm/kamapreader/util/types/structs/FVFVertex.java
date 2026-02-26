@@ -41,7 +41,7 @@ public class FVFVertex {
         if (D3DFVF.PSIZE.from(FVF)) vert.PSize = reader.readFloat();
         if (D3DFVF.DIFFUSE.from(FVF)) vert.Diffuse.color = reader.readIntBig();
         if (D3DFVF.SPECULAR.from(FVF)) vert.Specular.color = reader.readIntBig();
-        vert.TextureCoords = new TexCoords[D3DFVF.TEXCOORDNUMS.length];
+        vert.TextureCoords = new TexCoords[D3DFVF.TexCoord.from(FVF).getValue()>>8];
         for (int i=0;i<vert.TextureCoords.length;i++) {
             TexCoords coords = new TexCoords();
             vert.TextureCoords[i] = coords;
@@ -85,7 +85,7 @@ public class FVFVertex {
         if (D3DFVF.PSIZE.from(FVF)) writer.writeFloat(this.PSize);
         if (D3DFVF.DIFFUSE.from(FVF)) writer.writeIntBig(this.Diffuse.color);
         if (D3DFVF.SPECULAR.from(FVF)) writer.writeIntBig(this.Specular.color);
-        for (int i=0;i<D3DFVF.TEXCOORDNUMS.length;i++) {
+        for (int i=0;i<this.TextureCoords.length;i++) {
             TexCoords coords = this.TextureCoords[i];
             int count = ((D3DFVF.TexCoordSize) D3DFVF.TEXCOORDNUMS[i].from(FVF)).texCount;
             writer.writeFloat(coords.u);

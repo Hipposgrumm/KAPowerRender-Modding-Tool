@@ -29,7 +29,11 @@ public class PartsBlock extends Block {
             int pos = reader.getPointer();
             try {
                 Part part = Part.read(reader);
-                if (part == null) break;
+                if (part == null) {
+                    reader.seek(pos);
+                    neglectedBytes = reader.readBytes(reader.getRemaining());
+                    break;
+                }
                 parts.add(part);
             } catch (Exception e) {
                 reader.seek(pos);

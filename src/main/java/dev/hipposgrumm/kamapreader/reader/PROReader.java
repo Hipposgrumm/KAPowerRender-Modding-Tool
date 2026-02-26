@@ -234,7 +234,7 @@ public class PROReader {
         // From now on variant is always 0 or 2; this should make thing easier
         boolean secondVariant = variant == 2; // convenience variable; replace if SegBuf2 becomes readable
 
-        if (data.SegBuffers == null) return;
+        if (data.SegBuffers == null) data.SegBuffers = new PR_SEGMENTBUFFER[data.Segments.length];
         PR_SEGMENTBUFFER segbuf = new PR_SEGMENTBUFFER();
         int lodcount = reader.readInt(); // LOD count - unused/unhandled (in Master the Basics)
         if (lodcount != 0) throw new UnsupportedOperationException("LOD data found; was not expecting that!"); // TODO: Check this in 3DVW
@@ -258,7 +258,7 @@ public class PROReader {
                 vbuf.VertexSize = reader.readInt();
                 segbuf.TotalVertices += vbuf.NumVertices;
                 segbuf.TotalFaces += vbuf.NumIndices / 3;
-                if (!segbuf.ShareVertexData || i==0) {
+                if (!segbuf.ShareVertexData || j==0) {
                     if (secondVariant) {
                         vbuf.VertexMapping = new UInteger.Array(vbuf.NumVertices);
                         for (int l = 0; l < vbuf.NumVertices; l++) {
@@ -266,7 +266,7 @@ public class PROReader {
                         }
                     }
                     vbuf.vertices = new FVFVertex[vbuf.NumVertices];
-                    for (int l = 0; l < vbuf.NumVertices; l++) {
+                    for (int l=0;l<vbuf.NumVertices;l++) {
                         vbuf.vertices[l] = FVFVertex.create(vbuf.FVF, reader.segment(vbuf.VertexSize));
                     }
                 } else {
@@ -305,15 +305,16 @@ public class PROReader {
         // From now on variant is always 0 or 2; this should make thing easier
         boolean secondVariant = variant == 2; // convenience variable; replace if SegBuf2 becomes readable
 
+        BlockWriter segbufWriter = writer.segment();
+        segbufWriter.writeInt(0);
         if (data.SegBuffers == null) return;
         PR_SEGMENTBUFFER segbuf = data.SegBuffers[i];
         if (segbuf == null) return;
 
-        BlockWriter segbufWriter = writer.segment();
-        segbufWriter.writeInt(0);
         segbufWriter.writeInt(0); // LOD count - unused/unhandled (in Master the Basics)
         if (secondVariant) segbufWriter.writeInt(segbuf.ShareVertexData ? 1 : 0);
         segbufWriter.writeInt(segbuf.MaterialBuffers.length);
+        boolean firstBuf = true;
         for (PR_MATERIALBUFFER matbuf:segbuf.MaterialBuffers) {
             segbufWriter.writeInt(matbuf.MaterialIndex);
             segbufWriter.writeInt(matbuf.VertexBuffers.length);
@@ -326,7 +327,7 @@ public class PROReader {
                 }
                 segbufWriter.writeInt(vbuf.FVF.getValue());
                 segbufWriter.writeInt(vbuf.VertexSize);
-                if (!segbuf.ShareVertexData || i==0) {
+                if (!segbuf.ShareVertexData || firstBuf) {
                     if (secondVariant) {
                         for (int mapping:vbuf.VertexMapping.array()) {
                             segbufWriter.writeInt(mapping);
@@ -354,6 +355,7 @@ public class PROReader {
                     segbufWriter.writeInt(vbuf.MYSTERY2);
                 }
             }
+            firstBuf = false;
         }
         segbufWriter.seek(0);
         segbufWriter.writeInt(segbufWriter.getSize()+2);
@@ -364,7 +366,7 @@ public class PROReader {
     }
 
     private static void writeSegmentPivot(BlockWriter writer, PROData.Segment seg) {
-        writer.writeInt(12);
+        writer.writeInt(18);
         seg.Pivot.write(writer);
     }
 
@@ -394,11 +396,13 @@ public class PROReader {
     }
 
     private static void writeSegmentLinks(BlockWriter writer, PROData.Segment seg) {
-        writer.writeInt(12);
+        writer.writeInt(18);
         if (seg.Children.length == 0) writer.writeInt(-1);
         else writer.writeInt(seg.Children[0].i);
-        if (seg.Next != null) writer.writeInt(seg.Next.i);
-        if (seg.Parent != null) writer.writeInt(seg.Parent.i);
+        if (seg.Next == null) writer.writeInt(-1);
+        else writer.writeInt(seg.Next.i);
+        if (seg.Parent == null) writer.writeInt(-1);
+        else writer.writeInt(seg.Parent.i);
     }
 
     private static void readMaterials(BlockReader reader, PROData data) {

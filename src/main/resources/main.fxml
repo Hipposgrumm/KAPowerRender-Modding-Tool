@@ -17,7 +17,7 @@
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="dev.hipposgrumm.kamapreader.FirstThing"
       minWidth="800" minHeight="600" stylesheets="@style.css">
-    <MenuBar fx:id="menuBar" onKeyPressed="#handleKeyInput">
+    <MenuBar fx:id="menuBar">
         <Menu text="File">
             <MenuItem text="Open" onAction="#load"/>
             <MenuItem text="Package Mod" onAction="#save"/>

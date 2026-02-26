@@ -10,7 +10,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
@@ -49,10 +48,14 @@ public class FirstThing implements Initializable {
     @FXML @Override
     public void initialize(URL location, ResourceBundle resources) {
         file_chooser = new FileChooser();
+        file_chooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("All Files", "*.*"),
+                new FileChooser.ExtensionFilter("Unset File Type", "*")
+        );
 
         helpPopup.setTitle("Help");
         helpPopup.setHeaderText("This is the Help menu.");
-        helpPopup.setContentText("You're welcome.");
+        helpPopup.setContentText("You're welcome.\n// TODO: Replace this joke with an actual help menu.");
         helpPopup.getDialogPane().getButtonTypes().add(new ButtonType("Thanks!", ButtonBar.ButtonData.CANCEL_CLOSE));
         ButtonType unhelpfulButton = new ButtonType("No, this is not help!", ButtonBar.ButtonData.CANCEL_CLOSE);
         helpPopup.getDialogPane().getButtonTypes().add(unhelpfulButton);
@@ -94,7 +97,12 @@ public class FirstThing implements Initializable {
 
         dragTarget.setOnDragDropped(event -> {
             if (event.getDragboard().hasFiles()) {
-                doLoad(event.getDragboard().getFiles().get(0));
+                File file = event.getDragboard().getFiles().get(0);
+
+                String last = file.getParent();
+                if (last != null) file_chooser_last = last;
+
+                doLoad(file);
             }
             event.setDropCompleted(event.getDragboard().hasFiles());
             event.consume();
@@ -119,19 +127,9 @@ public class FirstThing implements Initializable {
         }
     }
 
-    public void setKeyEventListener(Consumer<KeyEvent> listener) {
-        if (!keyListenerInitialized) {
-            stage.addEventFilter(KeyEvent.KEY_RELEASED, event -> {
-                if (keyListener != null) keyListener.accept(event);
-            });
-            keyListenerInitialized = true;
-        }
-        keyListener = listener;
-    }
-
     @FXML
     protected void load() {
-        File f = popupOpenFile("Open", null, "KAResource", ".kar");
+        File f = popupOpenFile("Open", null, "KAResource", "*.kar");
         if (f != null) doLoad(f);
     }
 
@@ -150,18 +148,9 @@ public class FirstThing implements Initializable {
     }
 
     @FXML
-    protected void handleKeyInput(KeyEvent event) {
-        if (event.isControlDown() && event.getCode().equals(KeyCode.S))
-            save(null);
-    }
-
-    @FXML
     protected void save(ActionEvent actionEvent) {
-        if (karFile == null) {
-
-            return;
-        }
-        File path = popupSaveFile("Save", karFile.file.getName(), "KAResource", ".kar");
+        if (karFile == null) return;
+        File path = popupSaveFile("Save", karFile.file.getName(), "KAResource", "*.kar");
         if (path == null) {
             popupNotice("Save Cancelled", "Cancelled saving.", "You didn't select a save location.");
             return;
@@ -176,11 +165,17 @@ public class FirstThing implements Initializable {
         }
     }
 
-    public File popupOpenFile(String title, String defaultName, String extDesc, String... ext) {
-        file_chooser.setSelectedExtensionFilter(new FileChooser.ExtensionFilter(extDesc, ext));
+    private void setupFileDialog(String title, String defaultName, String extDesc, String... ext) {
+        FileChooser.ExtensionFilter filter = new FileChooser.ExtensionFilter(extDesc, ext);
+        file_chooser.getExtensionFilters().set(1, filter);
+        file_chooser.setSelectedExtensionFilter(filter);
         file_chooser.setInitialFileName(defaultName);
         file_chooser.setTitle(title);
         file_chooser.setInitialDirectory(new File(file_chooser_last));
+    }
+
+    public File popupOpenFile(String title, String defaultName, String extDesc, String... ext) {
+        setupFileDialog(title, defaultName, extDesc, ext);
         File f = file_chooser.showOpenDialog(stage);
 
         if (f != null) {
@@ -192,10 +187,7 @@ public class FirstThing implements Initializable {
     }
 
     public File popupSaveFile(String title, String defaultName, String extDesc, String... ext) {
-        file_chooser.setSelectedExtensionFilter(new FileChooser.ExtensionFilter(extDesc, ext));
-        file_chooser.setInitialFileName(defaultName);
-        file_chooser.setTitle(title);
-        file_chooser.setInitialDirectory(new File(file_chooser_last));
+        setupFileDialog(title, defaultName, extDesc, ext);
         File f = file_chooser.showSaveDialog(stage);
 
         if (f != null) {

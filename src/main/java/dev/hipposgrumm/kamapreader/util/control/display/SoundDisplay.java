@@ -6,11 +6,7 @@ import dev.hipposgrumm.kamapreader.util.Icon;
 import dev.hipposgrumm.kamapreader.util.types.SnSound;
 import javafx.animation.AnimationTimer;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.Slider;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.input.KeyCode;
+import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
@@ -19,6 +15,7 @@ import java.io.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SoundDisplay {
+    private static boolean autoplay = false;
     private static boolean loopingMode = false;
 
     private Player player;
@@ -40,8 +37,10 @@ public class SoundDisplay {
             Button pausebtn = new Button("", Icon.pause());
             Button stopbtn = new Button("", Icon.stop());
             ToggleButton loopbtn = new ToggleButton("", Icon.loop());
+            CheckBox autoplaybtn = new CheckBox("Auto-play");
 
             loopbtn.setSelected(loopingMode);
+            autoplaybtn.setSelected(autoplay);
             display.player.setLooping(loopingMode);
             playbtn.setOnAction(event -> display.player.resume());
             pausebtn.setOnAction(event -> display.player.pause());
@@ -50,15 +49,8 @@ public class SoundDisplay {
                 loopingMode = loopbtn.isSelected();
                 display.player.setLooping(loopingMode);
             });
-            controller.setKeyEventListener(event -> {
-                KeyCode key = event.getCode();
-                if (key == KeyCode.PLAY || key == KeyCode.SPACE) {
-                    if (display.player.isPlaying()) {
-                        display.player.pause();
-                    } else {
-                        display.player.resume();
-                    }
-                }
+            autoplaybtn.setOnAction(event -> {
+                autoplay = autoplaybtn.isSelected();
             });
 
             AtomicBoolean modifyingState = new AtomicBoolean(false);
@@ -80,7 +72,6 @@ public class SoundDisplay {
                     if (progress.getScene() == null) {
                         stop();
                         display.player.close();
-                        controller.setKeyEventListener(null);
                         return;
                     }
 
@@ -88,9 +79,11 @@ public class SoundDisplay {
                 }
             }.start();
 
-            soundInterface = new VBox(10, progress, new HBox(5,
+            soundInterface = new VBox(10, progress, autoplaybtn, new HBox(5,
                     playbtn, pausebtn, stopbtn, loopbtn
             ));
+
+            if (autoplay) display.player.resume();
         } catch (Exception e) {
             e.printStackTrace();
             soundInterface = new Label("Preview could not be loaded.");
@@ -100,7 +93,7 @@ public class SoundDisplay {
         Button changeButton = new Button("Replace Sound", Icon.upload());
         saveButton.setOnAction(event -> {
             try {
-                File file = controller.popupSaveFile("Export File", "sound.ogg", "OGG", ".ogg");
+                File file = controller.popupSaveFile("Export File", "sound.ogg", "OGG", "*.ogg");
                 if (file == null) return;
                 if (!file.getName().endsWith(".ogg")) file = new File(file.getPath()+".ogg");
                 if ((!file.createNewFile() && !controller.popupQuestion("Overwrite Warning", "This file already exists!", "Would you like to overwrite the file?"))) return;
@@ -116,7 +109,7 @@ public class SoundDisplay {
         Slider finalProgressBar = changableProgressBar;
         changeButton.setOnAction(event -> {
             try {
-                File file = controller.popupOpenFile("Choose a File", null, "OGG", ".ogg");
+                File file = controller.popupOpenFile("Choose a File", null, "OGG", "*.ogg");
                 if (file == null) return;
                 try (InputStream input = new FileInputStream(file)) {
                     entry.set(new SnSound(input.readAllBytes()));

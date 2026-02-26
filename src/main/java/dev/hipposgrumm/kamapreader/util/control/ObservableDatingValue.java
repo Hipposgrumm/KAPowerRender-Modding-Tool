@@ -115,9 +115,9 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
                     try {
                         String name = s.getName();
                         int extPos = name.lastIndexOf('.');
-                        String ext = extPos >= 0 ?
+                        String ext = "*"+(extPos >= 0 ?
                                 name.substring(extPos) :
-                                ".txt";
+                                ".txt");
                         File file = controller.popupSaveFile("Save File", extPos >= 0 ? name : name+".txt", "Text file ("+ext.substring(1).toUpperCase()+")", ext);
                         if (file == null) return;
                         if (!file.getName().endsWith(ext)) file = new File(file.getPath()+ext);

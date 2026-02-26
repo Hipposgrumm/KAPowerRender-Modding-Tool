@@ -54,8 +54,8 @@ public abstract class Part implements DatingBachelor {
             part.UNKNOWN2 = un2;
             part.TYPE = null;
             return part;
-        } else if ((type & 0xFF) != 0x01) {
-            System.err.println("Unknown type 0x"+Integer.toHexString(type & 0xFF).toUpperCase()+" at 0x"+Integer.toHexString(reader.getTruePointer()-4).toUpperCase()+" - You can ignore this exception (for now).");
+        } else if (typeFirst != 0x01) {
+            System.err.println("Unknown type 0x"+Integer.toHexString(typeFirst).toUpperCase()+" at 0x"+Integer.toHexString(reader.getTruePointer()-4).toUpperCase()+" - You can ignore this exception (for now).");
             return null;
         }
         reader = reader.segment(reader.readInt());
@@ -88,7 +88,7 @@ public abstract class Part implements DatingBachelor {
             part.UNKNOWN1 = un1;
             part.UNKNOWN2 = un2;
             part.TYPE = type;
-            int endOffset = (texturesOffset>0 ? texturesOffset : (materialsOffset>0 ? materialsOffset : reader.getSize()));
+            int endOffset = (texturesOffset>0 ? texturesOffset : (materialsOffset>0 ? materialsOffset : (reader.getSize()+8)));
             BlockReader subReader = reader.segment(endOffset-currentOffset-8);
             part.readData(subReader);
         } catch (Exception e) {
@@ -114,24 +114,26 @@ public abstract class Part implements DatingBachelor {
         if (TYPE == null) return;
         writer = writer.segment();
         writer.writeIntLittle(TYPE);
+        boolean wasLittleEndian = writer.isLittleEndian();
         writer.setLittleEndian(true);
         writer.writeRawString("\0\0\0\0\0\0\0\0\0\0\0\0"); // Block Size and Texture/Material Offsets - Get filled in later.
         writeData(writer.segment());
         int texPosition;
-        if (textures != null) {
+        if (hasTextures()) {
             texPosition = writer.getPointer();
             textures.write(writer.segment());
         } else texPosition = 0;
         int matPosition;
-        if (materials != null) {
+        if (hasMaterial()) {
             matPosition = writer.getPointer();
             materials.write(writer.segment());
         } else matPosition = 0;
         int endPosition = writer.getPointer()-8;
+        writer.setLittleEndian(wasLittleEndian);
         writer.seek(4);
         writer.writeInt(endPosition);
-        writer.writeInt(texPosition);
-        writer.writeInt(matPosition);
+        writer.writeIntLittle(texPosition);
+        writer.writeIntLittle(matPosition);
     }
 
     /// Writes main mesh data excluding texture and material data.
@@ -140,10 +142,10 @@ public abstract class Part implements DatingBachelor {
     @Override
     public List<? extends DatingProfileEntry<?>> getDatingProfile() {
         List<DatingProfileEntry<?>> list = new ArrayList<>();
-        if (textures != null) list.add(new SubBachelorPreviewEntry("Textures",
+        if (hasTextures()) list.add(new SubBachelorPreviewEntry("Textures",
                 () -> textures.textureList
         ));
-        if (materials != null && !(materials instanceof FillableMaterials)) list.add(new SubBachelorPreviewEntry("Materials",
+        if (hasMaterial()) list.add(new SubBachelorPreviewEntry("Materials",
                 () -> materials.materialList
         ));
         return list;
@@ -152,10 +154,17 @@ public abstract class Part implements DatingBachelor {
     @Override
     public List<? extends DatingBachelor> getSubBachelors() {
         List<DatingBachelor> list = new ArrayList<>();
-        if (textures != null) list.add(new TexturesWrapper(textures));
-        if (materials != null && !(materials instanceof FillableMaterials))
-            list.add(new MaterialsWrapper(materials));
+        if (hasTextures()) list.add(new TexturesWrapper(textures));
+        if (hasMaterial()) list.add(new MaterialsWrapper(materials));
         return list;
+    }
+
+    protected final boolean hasTextures() {
+        return textures != null;
+    }
+
+    protected final boolean hasMaterial() {
+        return materials != null && !(materials instanceof FillableMaterials);
     }
 
     public void fillMaterials(Map<Integer, Material> materials) {}

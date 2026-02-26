@@ -14,7 +14,7 @@ public class D3DFVF extends Flags {
     public static final BoolEntry SPECULAR = new BoolEntry("SPECULAR", 7);
     public static final EnumEntry TexCoord = new EnumEntry(Enumerations.TEX0, new FlagsEnum[] {
             Enumerations.TEX0, Enumerations.TEX1, Enumerations.TEX2, Enumerations.TEX3, Enumerations.TEX4, Enumerations.TEX5, Enumerations.TEX6, Enumerations.TEX7, Enumerations.TEX8
-    }, 0, 3);
+    }, 8, 4);
     public static final EnumEntry LASTBETA = new EnumEntry(Enumerations.__, new FlagsEnum[] {
             Enumerations.LASTBETA_UBYTE4, Enumerations.LASTBETA_D3DCOLOR
     }, 12, 4);
