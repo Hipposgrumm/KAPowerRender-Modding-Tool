@@ -75,7 +75,7 @@ public class Main extends ApplicationAdapter {
         cam.lookAt(0f,0f,0f);
         cam.up.set(0f, 1f, 0f);
         cam.near = 0.1f;
-        cam.far = 300f;
+        cam.far = 100000f;
         cam.update();
 
         camController = new FirstPersonCameraController(cam);

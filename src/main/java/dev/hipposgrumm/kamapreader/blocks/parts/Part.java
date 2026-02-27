@@ -11,9 +11,8 @@ import dev.hipposgrumm.kamapreader.util.ViewerAppHandle;
 import dev.hipposgrumm.kamapreader.util.types.Material;
 import dev.hipposgrumm.kamapreader.util.types.SubBachelorPreviewEntry;
 import dev.hipposgrumm.kamapreader.util.types.Texture;
-import dev.hipposgrumm.kamapreader.util.types.structs.BITMAP_TEXTURE;
-import dev.hipposgrumm.kamapreader.util.types.structs.PR_FACE;
-import dev.hipposgrumm.kamapreader.util.types.structs.PR_VERTEX;
+import dev.hipposgrumm.kamapreader.util.types.enums.D3DFVF;
+import dev.hipposgrumm.kamapreader.util.types.structs.*;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -268,44 +267,100 @@ public abstract class Part implements DatingBachelor {
         sendMaterials();
         ViewerAppHandle.sendMessage(ViewerAppHandle.Messages.MODEL_START, (name+"\0").getBytes(StandardCharsets.US_ASCII));
         try {
-            for (PROReader.PROData.Segment seg:mesh_data.Segments) {
-                ByteBuffer buffer = ByteBuffer.allocate(
-                        9 +
-                                (seg.Name.length()) +
-                                (seg.Vertices.length * 24) +
-                                (seg.Faces.length * 62)
-                );
-                buffer.put(seg.Name.getBytes(StandardCharsets.US_ASCII));
-                buffer.put((byte) 0);
-                buffer.putInt(seg.Vertices.length);
-                for (PR_VERTEX vert : seg.Vertices) {
-                    buffer.putFloat(vert.Position.X);
-                    buffer.putFloat(vert.Position.Y);
-                    buffer.putFloat(vert.Position.Z);
-                    buffer.putFloat(vert.NX);
-                    buffer.putFloat(vert.NY);
-                    buffer.putFloat(vert.NZ);
-                }
-                buffer.putInt(seg.Faces.length);
-                for (PR_FACE face : seg.Faces) {
-                    buffer.putInt(materials.materialList.get(face.Material.get()).getUid().get());
-                    buffer.putInt(materials.materialList.get(face.BackMaterial.get()).getUid().get());
-                    buffer.putInt(face.Vertex1);
-                    buffer.putInt(face.Vertex2);
-                    buffer.putInt(face.Vertex3);
-                    buffer.putFloat(face.U1);
-                    buffer.putFloat(face.V1);
-                    buffer.putInt(face.Col1.color);
-                    buffer.putFloat(face.U2);
-                    buffer.putFloat(face.V2);
-                    buffer.putInt(face.Col2.color);
-                    buffer.putFloat(face.U3);
-                    buffer.putFloat(face.V3);
-                    buffer.putInt(face.Col3.color);
-                    buffer.put(new byte[6]); // normals
-                }
+            for (int i=0;i<mesh_data.Segments.length;i++) {
+                PROReader.PROData.Segment seg = mesh_data.Segments[i];
+                PR_MATERIALBUFFER[] matbufs = mesh_data.SegBuffers[i].MaterialBuffers;
+                for (int j=0;j<matbufs.length;j++) {
+                    PR_VERTEXBUFFER[] vertbufs = matbufs[j].VertexBuffers;
+                    for (int k=0;k<vertbufs.length;k++) {
+                        PR_VERTEXBUFFER vertbuf = vertbufs[k];
+                        boolean stripTriangles = PR_VERTEXBUFFER.VBufFlags.TriangleStripMode.from(vertbuf.Flags);
+                        int faceCount = stripTriangles
+                                ? (vertbuf.NumIndices-2)
+                                : (vertbuf.NumIndices/3);
 
-                ViewerAppHandle.sendMessage(ViewerAppHandle.Messages.MODEL_PART, buffer.array());
+                        String matBufInd = Integer.toString(j);
+                        String vertBufInd = Integer.toString(k);
+                        ByteBuffer buffer = ByteBuffer.allocate(
+                                11 + matBufInd.length() + vertBufInd.length() +
+                                        (seg.Name.length()) +
+                                        (vertbuf.vertices.length * 24) +
+                                        (faceCount * 62)
+                        );
+                        buffer.put(String.format("%s_%s_%s", seg.Name, matBufInd, vertBufInd).getBytes(StandardCharsets.US_ASCII));
+                        buffer.put((byte) 0);
+
+                        buffer.putInt(vertbuf.vertices.length);
+                        for (FVFVertex vert : vertbuf.vertices) {
+                            buffer.putFloat(vert.Pos.X);
+                            buffer.putFloat(vert.Pos.Y);
+                            buffer.putFloat(vert.Pos.Z);
+                            buffer.putFloat(vert.Normal.X);
+                            buffer.putFloat(vert.Normal.Y);
+                            buffer.putFloat(vert.Normal.Z);
+                        }
+
+                        buffer.putInt(faceCount);
+                        int l = stripTriangles ? 2 : 0;
+                        boolean stripFlip = false;
+                        while (l<vertbuf.NumIndices) {
+                            int ind1, ind2, ind3;
+
+                            if (stripTriangles) {
+                                ind1 = vertbuf.indices[l-2];
+                                int in2 = vertbuf.indices[l-1];
+                                int in3 = vertbuf.indices[l-0];
+                                if (stripFlip) {
+                                    // "Notice that the vertices of the second and fourth triangles are out of order; this is required to make sure that all the triangles are drawn in a clockwise orientation."
+                                    // - D3D Documentation
+                                    ind2 = in3;
+                                    ind3 = in2;
+                                } else {
+                                    ind2 = in2;
+                                    ind3 = in3;
+                                }
+                                stripFlip = !stripFlip;
+                            } else {
+                                ind1 = vertbuf.indices[l+0];
+                                ind2 = vertbuf.indices[l+1];
+                                ind3 = vertbuf.indices[l+2];
+                            }
+
+                            FVFVertex vert1 = vertbuf.vertices[ind1];
+                            FVFVertex vert2 = vertbuf.vertices[ind2];
+                            FVFVertex vert3 = vertbuf.vertices[ind3];
+                            buffer.putInt(materials.materialList.get(matbufs[j].MaterialIndex).getUid().get());
+                            buffer.putInt(0);
+                            //buffer.putInt(materials.materialList.get(face.Material.get()).getUid().get());
+                            //buffer.putInt(materials.materialList.get(face.BackMaterial.get()).getUid().get());
+                            buffer.putInt(ind1);
+                            buffer.putInt(ind2);
+                            buffer.putInt(ind3);
+                            boolean hasTexCoord = (D3DFVF.TexCoord.from(vertbuf.FVF).getValue()>>8) > 0;
+                            if (hasTexCoord) {
+                                buffer.putFloat(vert1.TextureCoords[0].u);
+                                buffer.putFloat(vert1.TextureCoords[0].v);
+                            } else buffer.putLong(0L); // Same length in bytes.
+                            buffer.putInt(vert1.Diffuse.color);
+                            if (hasTexCoord) {
+                                buffer.putFloat(vert2.TextureCoords[0].u);
+                                buffer.putFloat(vert2.TextureCoords[0].v);
+                            } else buffer.putLong(0L);
+                            buffer.putInt(vert2.Diffuse.color);
+                            if (hasTexCoord) {
+                                buffer.putFloat(vert3.TextureCoords[0].u);
+                                buffer.putFloat(vert3.TextureCoords[0].v);
+                            } else buffer.putLong(0L);
+                            buffer.putInt(vert3.Diffuse.color);
+                            buffer.put(new byte[6]); // normals
+
+                            if (stripTriangles) l++;
+                            else l += 3;
+                        }
+
+                        ViewerAppHandle.sendMessage(ViewerAppHandle.Messages.MODEL_PART, buffer.array());
+                    }
+                }
             }
         } finally {
             ViewerAppHandle.sendMessage(ViewerAppHandle.Messages.MODEL_END, new byte[0]);

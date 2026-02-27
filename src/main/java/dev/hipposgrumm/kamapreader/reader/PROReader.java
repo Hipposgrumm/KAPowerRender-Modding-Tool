@@ -252,7 +252,7 @@ public class PROReader {
                 vbuf.NumIndices = reader.readInt();
                 if (vbuf.NumIndices < 0) {
                     vbuf.NumIndices = -vbuf.NumIndices;
-                    PR_VERTEXBUFFER.VBufFlags.NegativeIndices.apply(vbuf.Flags, true);
+                    PR_VERTEXBUFFER.VBufFlags.TriangleStripMode.apply(vbuf.Flags, true);
                 }
                 vbuf.FVF = new D3DFVF(reader.readInt());
                 vbuf.VertexSize = reader.readInt();
@@ -271,6 +271,7 @@ public class PROReader {
                     }
                 } else {
                     vbuf.VertexMapping = segbuf.MaterialBuffers[0].VertexBuffers[0].VertexMapping;
+                    vbuf.vertices = segbuf.MaterialBuffers[0].VertexBuffers[0].vertices;
                 }
                 vbuf.indices = new int[vbuf.NumIndices];
                 if (secondVariant && vbuf.NumVertices > 0xFFFF) {
@@ -320,7 +321,7 @@ public class PROReader {
             segbufWriter.writeInt(matbuf.VertexBuffers.length);
             for (PR_VERTEXBUFFER vbuf:matbuf.VertexBuffers) {
                 segbufWriter.writeInt(vbuf.NumVertices);
-                if (PR_VERTEXBUFFER.VBufFlags.NegativeIndices.from(vbuf.Flags)) {
+                if (PR_VERTEXBUFFER.VBufFlags.TriangleStripMode.from(vbuf.Flags)) {
                     segbufWriter.writeInt(-vbuf.NumIndices);
                 } else {
                     segbufWriter.writeInt(vbuf.NumIndices);

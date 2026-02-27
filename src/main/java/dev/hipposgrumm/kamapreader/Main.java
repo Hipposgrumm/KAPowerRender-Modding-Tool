@@ -17,6 +17,8 @@ public class Main extends Application {
         stage.setTitle("KAPowerRender Modding Tool");
         stage.setScene(scene);
         stage.show();
+
+        System.out.println("Hello o/");
     }
 
     public static void main(String[] args) {

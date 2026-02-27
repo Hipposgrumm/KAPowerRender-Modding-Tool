@@ -41,6 +41,16 @@ public class INTCOLOR {
         color = (color & (0xFF<<format.SHIFT_A)) | ((a & 0xFF) << format.SHIFT_A);
     }
 
+    public INTCOLOR as(Format format) {
+        if (format == this.format) return this;
+        INTCOLOR color = new INTCOLOR(format, -1);
+        color.setRed(getRed());
+        color.setGreen(getGreen());
+        color.setBlue(getBlue());
+        color.setAlpha(getAlpha());
+        return color;
+    }
+
     public enum Format {
         RGBA(3, 2, 1, 0),
         ARGB(2, 1, 0, 3);
