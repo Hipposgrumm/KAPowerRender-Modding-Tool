@@ -2,12 +2,14 @@ package dev.hipposgrumm.kamapviewer.rendering;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Camera;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g3d.Renderable;
 import com.badlogic.gdx.graphics.g3d.Shader;
 import com.badlogic.gdx.graphics.g3d.utils.RenderContext;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.GdxRuntimeException;
+import dev.hipposgrumm.kamapviewer.Main;
 import dev.hipposgrumm.kamapviewer.util.enums.D3DTEXTUREADDRESS;
 
 // https://xoppa.github.io/blog/creating-a-shader-with-libgdx/
@@ -17,11 +19,13 @@ public class PowerRenderShader implements Shader {
     protected final boolean hasTexture;
     protected final D3DTEXTUREADDRESS wrapX;
     protected final D3DTEXTUREADDRESS wrapY;
+    protected final boolean vertexcolor;
     protected final boolean alphatest;
     protected final boolean alphablend;
 
     public PowerRenderShader(RenderMaterial material) {
         this.alphablend = material.isBlending();
+        this.vertexcolor = Properties.vertexcolor(material);
         this.hasTexture = Properties.hasTexture(material);
         if (hasTexture) {
             this.wrapX = Properties.wrapX(material);
@@ -38,11 +42,12 @@ public class PowerRenderShader implements Shader {
     public boolean canRender(Renderable instance) {
         if (!(instance.material instanceof RenderMaterial instmat)) return false;
         if (alphablend != instmat.isBlending()) return false;
+        if (vertexcolor != Properties.vertexcolor(instmat)) return false;
         if (hasTexture) {
             if (!Properties.hasTexture(instmat)) return false;
             if (
                 (wrapX != Properties.wrapX(instmat)) ||
-                (wrapY != Properties.wrapY(instmat))
+                    (wrapY != Properties.wrapY(instmat))
             ) return false;
             if (!alphablend && (alphatest != Properties.alphatest(instmat))) return false;
         } else {
@@ -60,6 +65,11 @@ public class PowerRenderShader implements Shader {
             fragSettings += String.format("#define WRAP_X %s\n", wrapX.identifier);
             fragSettings += String.format("#define WRAP_Y %s\n", wrapY.identifier);
             if (alphatest) fragSettings += "#define ALPHATEST\n";
+        }
+        if (vertexcolor) {
+            String vertcolor = "#define VERTEXCOLOR\n";
+            vertSettings += vertcolor;
+            fragSettings += vertcolor;
         }
         shader = new ShaderProgram(
             vertSettings+Gdx.files.internal("shader/pr.vert").readString(),
@@ -87,20 +97,24 @@ public class PowerRenderShader implements Shader {
     public void render(Renderable renderable) {
         RenderMaterial material = (RenderMaterial) renderable.material;
         shader.setUniformMatrix("u_worldTrans", renderable.worldTransform);
-        if (material.Material.textures[0] != null) {
-            material.Material.textures[0].bind(0);
-            shader.setUniformi("u_texture", 0);
-            if (wrapX == D3DTEXTUREADDRESS.BORDER || wrapY == D3DTEXTUREADDRESS.BORDER) {
-                shader.setUniformf("u_bordercolor", material.Material.renderStages[0].bordercolor);
-            }
-            if (alphatest) {
-                shader.setUniformf("u_alpharef", material.Material.alphaRef/255f);
-            }
+        if (forceVertexColorOnly()) {
+            shader.setUniformf("u_color", Color.WHITE);
         } else {
-            shader.setUniformf("u_color", material.Material.color);
+            if (hasTexture) {
+                material.Material.textures[0].bind(0);
+                shader.setUniformi("u_texture", 0);
+                if (wrapX == D3DTEXTUREADDRESS.BORDER || wrapY == D3DTEXTUREADDRESS.BORDER) {
+                    shader.setUniformf("u_bordercolor", material.Material.renderStages[0].bordercolor);
+                }
+                if (alphatest) {
+                    shader.setUniformf("u_alpharef", material.Material.alphaRef/255f);
+                }
+            } else {
+                shader.setUniformf("u_color", material.Material.color);
+            }
         }
         context.setBlending(alphablend, GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-        context.setCullFace(material.Material.twosided ? 0 : GL20.GL_BACK);
+        context.setCullFace((Main.usertoggle_doubleside || material.Material.twosided) ? 0 : GL20.GL_BACK);
         renderable.meshPart.render(shader);
     }
 
@@ -112,8 +126,13 @@ public class PowerRenderShader implements Shader {
         shader.dispose();
     }
 
+    private static boolean forceVertexColorOnly() {
+        return Main.usertoggle_vertcolors == Main.VERTCOLORTOGGLE_ONLY;
+    }
+
     public static final class Properties {
         public static boolean hasTexture(RenderMaterial material) {
+            if (forceVertexColorOnly()) return false;
             return material.Material.textures[0] != null;
         }
 
@@ -123,6 +142,11 @@ public class PowerRenderShader implements Shader {
 
         public static D3DTEXTUREADDRESS wrapY(RenderMaterial material) {
             return material.Material.renderStages[0].addressV;
+        }
+
+        public static boolean vertexcolor(RenderMaterial material) {
+            //return material.Material.vertexColors;
+            return Main.usertoggle_vertcolors != Main.VERTCOLORTOGGLE_OFF;
         }
 
         public static boolean alphatest(RenderMaterial material) {

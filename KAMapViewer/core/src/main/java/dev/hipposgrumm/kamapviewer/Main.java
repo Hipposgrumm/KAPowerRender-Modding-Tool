@@ -9,9 +9,11 @@ import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.FirstPersonCameraController;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import dev.hipposgrumm.kamapviewer.models.EmptyModel;
 import dev.hipposgrumm.kamapviewer.models.GridModel;
 import dev.hipposgrumm.kamapviewer.rendering.PRMaterial;
 import dev.hipposgrumm.kamapviewer.rendering.PowerRenderShaderProvider;
+import dev.hipposgrumm.kamapviewer.ui.OtherKeysHandler;
 import dev.hipposgrumm.kamapviewer.ui.UIHandler;
 import dev.hipposgrumm.kamapviewer.util.ReaderAppConnection;
 
@@ -30,6 +32,18 @@ public class Main extends ApplicationAdapter {
     public static final int WINDOW_WIDTH = 1280;
     public static final int WINDOW_HEIGHT = 720;
 
+    public static final int VERTCOLORTOGGLE_OFF = 0;
+    public static final int VERTCOLORTOGGLE_BLENDED = 1;
+    public static final int VERTCOLORTOGGLE_ONLY = 2;
+
+    public static boolean usertoggle_hideUI = false;
+    public static boolean usertoggle_grid = true;
+    public static int usertoggle_vertcolors = VERTCOLORTOGGLE_OFF;
+    public static boolean usertoggle_doubleside = false;
+    public static float usertoggle_camspeed = 5f;
+
+    private float usertoggle_camspeed_last = usertoggle_camspeed;
+
     private final List<Model> models = new ArrayList<>();
     private final List<ModelInstance> modelInstances = new ArrayList<>();
     public static Map<Integer, Texture> textures = new HashMap<>();
@@ -37,6 +51,7 @@ public class Main extends ApplicationAdapter {
 
     private UIHandler ui;
     private GridModel grid;
+    private EmptyModel nogrid;
     private Environment environment;
     private PerspectiveCamera cam;
     private FirstPersonCameraController camController;
@@ -85,13 +100,14 @@ public class Main extends ApplicationAdapter {
 
         world = new ModelBatch(new PowerRenderShaderProvider());
         grid = new GridModel(GRID_SIZE, VertexAttributes.Usage.Position);
+        nogrid = new EmptyModel(VertexAttributes.Usage.Position);
         addModel(new ModelBuilder().createBox(5f, 5f, 5f,
             new Material(ColorAttribute.createDiffuse(Color.PINK)),
             VertexAttributes.Usage.Position | VertexAttributes.Usage.Normal));
 
         ui = new UIHandler();
 
-        Gdx.input.setInputProcessor(new InputMultiplexer(ui.getInput(), camController));
+        Gdx.input.setInputProcessor(new InputMultiplexer(ui.getInput(), new OtherKeysHandler(), camController));
         ReaderAppConnection.instance = this;
     }
 
@@ -111,6 +127,10 @@ public class Main extends ApplicationAdapter {
             for (Runnable run : actions) run.run();
         }
 
+        if (usertoggle_camspeed_last != usertoggle_camspeed) {
+            usertoggle_camspeed_last = usertoggle_camspeed;
+            camController.setVelocity(usertoggle_camspeed);
+        }
         camController.update();
 
         Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -118,9 +138,10 @@ public class Main extends ApplicationAdapter {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
         world.begin(cam);
-        world.render(grid.renderable());
+        if (usertoggle_grid) world.render(grid.renderable());
+        else world.render(nogrid.renderable());
         world.render(modelInstances, environment);
-        world.end();
+        world.end(); // End the world
 
         ui.render();
     }
@@ -130,6 +151,7 @@ public class Main extends ApplicationAdapter {
         world.dispose();
         for (Model model:models) model.dispose();
         grid.dispose();
+        nogrid.dispose();
         ui.dispose();
     }
 

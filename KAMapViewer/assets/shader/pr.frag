@@ -22,7 +22,9 @@ uniform sampler2D u_texture;
 uniform vec4 u_color;
 #endif // HAS_TEXTURE
 
+#ifdef VERTEXCOLOR
 varying vec4 v_vertcolor;
+#endif
 varying vec2 v_texCoord0;
 
 #ifdef HAS_TEXTURE
@@ -122,6 +124,8 @@ void main() {
     if (!ignoreAlphatest && col.a <= u_alpharef) discard;
     #endif // defined(HAS_TEXTURE) && defined(ALPHATEST)
 
-    col.a *= v_vertcolor.a;
+    #ifdef VERTEXCOLOR
+    col *= v_vertcolor;
+    #endif
     gl_FragColor = col;
 }
