@@ -37,7 +37,7 @@ public class KARFile {
                 case "TxFm" -> new TexturesBlock(false);
                 case "TrFm" -> new TexturesBlock(true);
                 case "MtFm" -> new MaterialsBlock(this);
-                case "SnFm" -> new SoundsBlock();
+                case "SnFm" -> new SoundsBlock(file.getName(), this);
                 case "ObFm" -> new ObjectsBlock();
                 default -> new UnknownBlock(blockType);
             };

@@ -17,7 +17,10 @@ public class SnSound implements DatingBachelor {
     public byte[] DATA_DECODED;
     public AudioFormat FORMAT;
 
-    public SnSound(byte[] data) {
+    public final String exportFileName;
+
+    public SnSound(String exportFileName, byte[] data) {
+        this.exportFileName = exportFileName;
         setData(data);
     }
 
@@ -60,6 +63,6 @@ public class SnSound implements DatingBachelor {
 
     @Override
     public String toString() {
-        return "sound";
+        return exportFileName;
     }
 }

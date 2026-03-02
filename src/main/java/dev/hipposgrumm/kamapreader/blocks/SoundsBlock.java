@@ -4,6 +4,7 @@ import dev.hipposgrumm.kamapreader.blocks.subblock.ArCkBlock;
 import dev.hipposgrumm.kamapreader.blocks.subblock.ResourceCheckBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
+import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.SnSound;
@@ -17,16 +18,34 @@ public class SoundsBlock extends Block {
     private byte[] tailingbytes;
 
     private final List<SnSound> sounds = new ArrayList<>();
+    private final String soundPrefix;
+
+    public SoundsBlock(String filename, KARFile file) {
+        int index = (int) file.blocks.stream()
+                .filter(b -> b instanceof SoundsBlock)
+                .count();
+
+        int extPos = filename.lastIndexOf('.');
+        filename = filename.substring(0, extPos);
+
+        StringBuilder pref = new StringBuilder();
+        if (filename.endsWith("DynSnd")) pref.append("DynSnd");
+        else if (filename.endsWith("Snd")) pref.append("Snd");
+        else pref.append("sound");
+        pref.append(index);
+        pref.append('_');
+        soundPrefix = pref.toString();
+    }
 
     @Override
     protected void read(BlockReader reader) {
         rsck = ResourceCheckBlock.read(reader, "SnFm");
         arck = ArCkBlock.read(reader, "SnFm");
-        while (reader.getRemaining() >= 40) {
+        int i=0;while (reader.getRemaining() >= 40) {
             byte[] un = reader.readBytes(40);
             int size = reader.readIntLittle();
             int un2 = reader.readIntLittle();
-            SnSound snd = new SnSound(reader.readBytes(size));
+            SnSound snd = new SnSound(soundPrefix+(i++), reader.readBytes(size));
             snd.UNKNOWN1 = un;
             snd.UNKNOWN2 = un2;
             sounds.add(snd);

@@ -24,11 +24,13 @@ public class SoundDisplay {
     }
 
     public static Node create(FirstThing controller, DatingProfileEntry<SnSound> entry) {
+        SnSound sn = entry.get();
+
         Node soundInterface;
         SoundDisplay changableDisplay = null;
         Slider changableProgressBar = null;
         try {
-            SoundDisplay display = new SoundDisplay(new Player(entry.get()));
+            SoundDisplay display = new SoundDisplay(new Player(sn));
             Slider progress = new Slider(0, display.player.length(), 0);
             changableDisplay = display; // Lambda moment
             changableProgressBar = progress;
@@ -93,13 +95,13 @@ public class SoundDisplay {
         Button changeButton = new Button("Replace Sound", Icon.upload());
         saveButton.setOnAction(event -> {
             try {
-                File file = controller.popupSaveFile("Export File", "sound.ogg", "OGG", "*.ogg");
+                File file = controller.popupSaveFile("Export File", sn.exportFileName+".ogg", "OGG", "*.ogg");
                 if (file == null) return;
                 if (!file.getName().endsWith(".ogg")) file = new File(file.getPath()+".ogg");
                 if ((!file.createNewFile() && !controller.popupQuestion("Overwrite Warning", "This file already exists!", "Would you like to overwrite the file?"))) return;
 
                 try (FileOutputStream outputStream = new FileOutputStream(file)) {
-                    outputStream.write(entry.get().getData());
+                    outputStream.write(sn.getData());
                 }
             } catch (Exception e) {
                 controller.popupError("Error Saving", "An exception was thrown when exporting.", e);
@@ -112,10 +114,13 @@ public class SoundDisplay {
                 File file = controller.popupOpenFile("Choose a File", null, "OGG", "*.ogg");
                 if (file == null) return;
                 try (InputStream input = new FileInputStream(file)) {
-                    entry.set(new SnSound(input.readAllBytes()));
+                    String name = file.getName();
+                    int extPos = name.lastIndexOf('.');
+                    name = name.substring(0, extPos);
+                    entry.set(new SnSound(name, input.readAllBytes()));
                     if (finalDisplay != null) {
                         finalDisplay.player.close();
-                        finalDisplay.player = new Player(entry.get());
+                        finalDisplay.player = new Player(sn);
                         finalProgressBar.setMax(finalDisplay.player.length());
                     }
                 }
@@ -226,6 +231,7 @@ public class SoundDisplay {
         }
 
         public void resume() {
+            if (playing) return;
             synchronized (lock) {
                 playing = true;
                 line.start();
@@ -234,11 +240,13 @@ public class SoundDisplay {
         }
 
         public void pause() {
+            if (!playing) return;
             playing = false;
             line.stop();
         }
 
         public void stop() {
+            if (!playing) return;
             pause();
             line.flush();
             startPosition = 0;

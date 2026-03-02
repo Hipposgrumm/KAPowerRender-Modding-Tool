@@ -31,6 +31,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @SuppressWarnings("unchecked")
 public class ObservableDatingValue extends ObservableValueBase<Node> {
+    private static ObservableDatingValue lastValue = null;
+    private static Node lastResult = null;
+
     private final FirstThing controller;
     private final TreeItem<?> item;
     private final DatingProfileEntry<?> entry;
@@ -44,6 +47,9 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
     @SuppressWarnings("unchecked")
     @Override
     public Node getValue() {
+        if (this == lastValue) return lastResult;
+        lastValue = this;
+
         if (entry instanceof SubBachelorPreviewEntry pvs) {
             GridPane grid = new GridPane();
 
@@ -68,10 +74,11 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
                 grid.add(btn, i%4, i/4);
                 i++;
             }
-            return grid;
+            lastResult = grid;
+            return lastResult;
         }
         Object value = entry.get();
-        return switch (value) {
+        lastResult = switch (value) {
             case null -> new Label("null");
             case String s -> text(s, (observable, oldValue, newValue) -> {
                 ((DatingProfileEntry<String>) entry).set(newValue);
@@ -419,6 +426,7 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
             }
             default -> new Label(value.toString());
         };
+        return lastResult;
     }
 
     private static void emptyEvent(ObservableValue<?> observable, Object oldValue, Object newValue) {}
