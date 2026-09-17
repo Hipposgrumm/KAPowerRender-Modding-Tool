@@ -13,26 +13,14 @@ import javafx.scene.layout.VBox;
 
 import javax.imageio.ImageIO;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class TexturesDisplay {
-    private static final boolean HAS_AWT;
-
-    static {
-        boolean awt;
-        try {
-            Class.forName("java.awt.Image");
-            awt = true;
-        } catch(ClassNotFoundException e) {
-            awt = false;
-        }
-        HAS_AWT = awt;
-    }
-
     public static VBox create(FirstThing controller, Object parent, BITMAP_TEXTURE[] texArr, DatingProfileEntry<BITMAP_TEXTURE[]> entry) {
         HBox[] images = new HBox[texArr.length];
         ImageView[] imageViews = new ImageView[images.length];
-        Tooltip noAWTTooltip = new Tooltip("java.awt is not available. You're probably on a Mac.");
+        Tooltip noAWTTooltip = new Tooltip(Texture.NO_AWT_MSG);
         for (int i=0;i<texArr.length;i++) {
             int lambdaSafeIndex = i;
             ImageView image = new ImageView(texArr[i].getJavaFXImage());
@@ -43,7 +31,7 @@ public class TexturesDisplay {
                 controller.tableValue.setMinWidth(image.getImage().getWidth() + 150);
                 controller.tableValue.setMinWidth(minwidth);
             }
-            if (HAS_AWT) {
+            if (Texture.HAS_AWT) {
                 saveButton.setOnAction(event -> saveOne(controller, parent, texArr[lambdaSafeIndex]));
             } else {
                 saveButton.setTooltip(noAWTTooltip);
@@ -51,7 +39,7 @@ public class TexturesDisplay {
             if (entry.readOnly()) {
                 changeButton.setDisable(true);
             } else {
-                if (HAS_AWT) {
+                if (Texture.HAS_AWT) {
                     changeButton.setOnAction(event -> changeOne(controller, texArr[lambdaSafeIndex], lambdaSafeIndex, imageViews, entry));
                 } else {
                     changeButton.setTooltip(noAWTTooltip);
@@ -65,7 +53,7 @@ public class TexturesDisplay {
         }
         Button saveButton = new Button("Save All", Icon.download());
         Button changeButton = new Button("Change All", Icon.upload());
-        if (HAS_AWT) {
+        if (Texture.HAS_AWT) {
             saveButton.setOnAction(event -> saveAll(controller, parent, texArr));
         } else {
             saveButton.setTooltip(noAWTTooltip);
@@ -73,7 +61,7 @@ public class TexturesDisplay {
         if (texArr.length == 0 || entry.readOnly()) {
             changeButton.setDisable(true);
         } else {
-            if (HAS_AWT) {
+            if (Texture.HAS_AWT) {
                 changeButton.setOnAction(event -> changeAll(controller, texArr[0], imageViews, entry));
             } else {
                 changeButton.setTooltip(noAWTTooltip);
@@ -95,9 +83,9 @@ public class TexturesDisplay {
             if (!file.getName().endsWith(".png")) file = new File(file.getPath()+".png");
             if ((!file.createNewFile() && !controller.popupQuestion("Overwrite Warning", "This file already exists!", "Would you like to overwrite the file?"))) return;
 
-            java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(tex.WIDTH, tex.HEIGHT, java.awt.image.BufferedImage.TYPE_INT_ARGB);
-            image.setRGB(0, 0, tex.WIDTH, tex.HEIGHT, tex.getImage(), 0, tex.WIDTH);
-            ImageIO.write(image, "PNG", file);
+            try (FileOutputStream outputStream = new FileOutputStream(file)) {
+                Texture.saveTexture(tex, outputStream);
+            }
         } catch (Exception e) {
             controller.popupError("Error Saving", "An exception was thrown when exporting.", e);
         }
@@ -105,7 +93,7 @@ public class TexturesDisplay {
 
     private static void saveAll(FirstThing controller, Object parent, BITMAP_TEXTURE[] textures) {
         String defname = null;
-        if (parent instanceof Texture t) defname = t+".png";
+        if (parent instanceof Texture t) defname = t.getFileName()+".png";
         try {
             File file = controller.popupSaveFile("Save Textures", defname, "PNG", "*.png");
             if (file == null) return;
@@ -125,9 +113,10 @@ public class TexturesDisplay {
                                     : path+"_LOD"+lod
                     );
                 }
-                java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(tex.WIDTH, tex.HEIGHT, java.awt.image.BufferedImage.TYPE_INT_ARGB);
-                image.setRGB(0, 0, tex.WIDTH, tex.HEIGHT, tex.getImage(), 0, tex.WIDTH);
-                ImageIO.write(image, "PNG", out);
+
+                try (FileOutputStream outputStream = new FileOutputStream(out)) {
+                    Texture.saveTexture(tex, outputStream);
+                }
                 lod++;
             }
         } catch (Exception e) {

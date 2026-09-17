@@ -2,14 +2,17 @@ package dev.hipposgrumm.kamapreader.util.types;
 
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.Exportable;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import java.io.ByteArrayInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.List;
 
-public class SnSound implements DatingBachelor {
+public class SnSound implements DatingBachelor, Exportable {
     public byte[] UNKNOWN1;
     public int UNKNOWN2;
     private byte[] DATA;
@@ -59,6 +62,28 @@ public class SnSound implements DatingBachelor {
             //UNKNOWN2 = snd.UNKNOWN2;
             setData(snd.DATA);
         }));
+    }
+
+    @Override
+    public ContextMenuOption[] getContextMenu() {
+        return new ContextMenuOption[] {
+                new ContextMenuOption("Export", Exportable::massExport)
+        };
+    }
+
+    @Override
+    public String getFileName() {
+        return exportFileName;
+    }
+
+    @Override
+    public String getFileExtension() {
+        return "ogg";
+    }
+
+    @Override
+    public void writeExportData(FileOutputStream outputStream) throws IOException {
+        outputStream.write(getData());
     }
 
     @Override

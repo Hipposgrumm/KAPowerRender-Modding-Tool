@@ -4,18 +4,36 @@ import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.Exportable;
 import dev.hipposgrumm.kamapreader.util.types.structs.BITMAP_TEXTURE;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.UShort;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.UniqueIdentifier;
 import javafx.scene.Node;
 import javafx.scene.image.ImageView;
 
+import javax.imageio.ImageIO;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.List;
 
-public class Texture implements DatingBachelor, Previewable {
+public class Texture implements DatingBachelor, Previewable, Exportable {
+    public static final boolean HAS_AWT;
+    public static final String NO_AWT_MSG = "java.awt is not available. You're probably on a Mac.";
+
+    static {
+        boolean awt;
+        try {
+            Class.forName("java.awt.Image");
+            awt = true;
+        } catch(ClassNotFoundException e) {
+            awt = false;
+        }
+        HAS_AWT = awt;
+    }
+
     private final byte[] unknown0;
     private final int unknown1;
     private final UniqueIdentifier uid;
@@ -156,6 +174,35 @@ public class Texture implements DatingBachelor, Previewable {
             textures[i] = smaller;
             base = smaller;
         }
+    }
+
+    @Override
+    public ContextMenuOption[] getContextMenu() {
+        return new ContextMenuOption[] {
+                new ContextMenuOption("Export", Exportable::massExport)
+        };
+    }
+
+    @Override
+    public String getFileName() {
+        return uid.toString();
+    }
+
+    @Override
+    public String getFileExtension() {
+        return "png";
+    }
+
+    @Override
+    public void writeExportData(FileOutputStream outputStream) throws IOException {
+        if (!HAS_AWT) throw new IllegalStateException("awt is missing. Image cannot be exported. It should not have got this far.");
+        saveTexture(textures[0], outputStream);
+    }
+
+    public static void saveTexture(BITMAP_TEXTURE tex, FileOutputStream outputStream) throws IOException {
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(tex.WIDTH, tex.HEIGHT, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        image.setRGB(0, 0, tex.WIDTH, tex.HEIGHT, tex.getImage(), 0, tex.WIDTH);
+        ImageIO.write(image, "PNG", outputStream);
     }
 
     @Override

@@ -101,7 +101,7 @@ public class SoundDisplay {
                 if ((!file.createNewFile() && !controller.popupQuestion("Overwrite Warning", "This file already exists!", "Would you like to overwrite the file?"))) return;
 
                 try (FileOutputStream outputStream = new FileOutputStream(file)) {
-                    outputStream.write(sn.getData());
+                    sn.writeExportData(outputStream);
                 }
             } catch (Exception e) {
                 controller.popupError("Error Saving", "An exception was thrown when exporting.", e);

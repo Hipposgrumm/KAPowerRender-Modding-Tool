@@ -13,6 +13,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.Pair;
@@ -27,6 +28,7 @@ public class FirstThing implements Initializable {
     private KARFile karFile;
     private String file_chooser_last = System.getProperty("user.home");
     private FileChooser file_chooser;
+    private DirectoryChooser directory_chooser;
 
     @FXML private MenuBar menuBar;
     @FXML private HBox dragTarget;
@@ -52,6 +54,7 @@ public class FirstThing implements Initializable {
                 new FileChooser.ExtensionFilter("All Files", "*.*"),
                 new FileChooser.ExtensionFilter("Unset File Type", "*")
         );
+        directory_chooser = new DirectoryChooser();
 
         helpPopup.setTitle("Help");
         helpPopup.setHeaderText("This is the Help menu.");
@@ -83,10 +86,12 @@ public class FirstThing implements Initializable {
         tableValue.setSortable(false);
         tableValue.setReorderable(false);
         table.setSelectionModel(null);
+        tree.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         tree.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue == null) return;
             selectElement(newValue);
         });
+        tree.setCellFactory(treeView -> new BatchelorTreeCell(this));
 
         dragTarget.setOnDragOver(event -> {
             if (event.getGestureSource() != dragTarget && event.getDragboard().hasFiles()) {
@@ -198,6 +203,19 @@ public class FirstThing implements Initializable {
         return f;
     }
 
+    public File popupSaveDirectory(String title) {
+        directory_chooser.setTitle(title);
+        directory_chooser.setInitialDirectory(new File(file_chooser_last));
+        File f = directory_chooser.showDialog(stage);
+
+        if (f != null) {
+            String last = f.getParent();
+            if (last != null) file_chooser_last = last;
+        }
+
+        return f;
+    }
+
     public boolean popupQuestion(String title, String header, String message) {
         question.setTitle(title);
         question.setHeaderText(header);
@@ -250,6 +268,37 @@ public class FirstThing implements Initializable {
         @Override
         public List<? extends DatingProfileEntry<?>> getDatingProfile() {
             return null;
+        }
+    }
+
+    private static class BatchelorTreeCell extends TreeCell<DatingBachelor> {
+        private final FirstThing controller;
+
+        public BatchelorTreeCell(FirstThing controller) {
+            this.controller = controller;
+        }
+
+        @Override
+        protected void updateItem(DatingBachelor item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) {
+                setText(null);
+                return;
+            }
+
+            setText(item.toString());
+            ContextMenu menu = new ContextMenu();
+            for (DatingBachelor.ContextMenuOption option:item.getContextMenu()) {
+                MenuItem menuItem = new MenuItem(option.name());
+                menuItem.setOnAction(e -> {
+                    List<TreeItem<DatingBachelor>> items = getTreeView().selectionModelProperty().get().getSelectedItems();
+                    DatingBachelor[] objects = new DatingBachelor[items.size()];
+                    for (int i=0;i<objects.length;i++) objects[i] = items.get(i).getValue();
+                    option.function().accept(controller, objects);
+                });
+                menu.getItems().add(menuItem);
+            }
+            setContextMenu(menu);
         }
     }
 }
