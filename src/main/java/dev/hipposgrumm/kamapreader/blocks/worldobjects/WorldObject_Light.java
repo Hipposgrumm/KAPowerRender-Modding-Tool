@@ -30,9 +30,9 @@ public class WorldObject_Light extends WorldObject_Position {
         super.read(reader);
         int lighttype = reader.readInt();
         lightmode = switch (lighttype) {
-            case 0 -> LightType.DIRECTIONAL;
             case 1 -> LightType.POINT;
             case 2 -> LightType.SPOT;
+            case 3 -> LightType.DIRECTIONAL;
             case -1 -> LightType.UNSET;
             default -> {
                 System.err.println("No type of "+lighttype+" in enum LightType");
@@ -98,9 +98,9 @@ public class WorldObject_Light extends WorldObject_Position {
     public enum LightType implements EnumChoices {
         UNKNOWN(-1),
         UNSET(-1),
-        DIRECTIONAL(0),
         POINT(1),
-        SPOT(2);
+        SPOT(2),
+        DIRECTIONAL(3);
 
         public final int identifier;
 
@@ -115,7 +115,7 @@ public class WorldObject_Light extends WorldObject_Position {
 
         @Override
         public List<? extends Enum<? extends EnumChoices>> choices() {
-            return List.of(UNSET, DIRECTIONAL, POINT, SPOT);
+            return List.of(UNSET, POINT, SPOT, DIRECTIONAL);
         }
     }
 }
