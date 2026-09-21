@@ -1,7 +1,7 @@
 package dev.hipposgrumm.kamapreader.blocks.parts;
 
 import dev.hipposgrumm.kamapreader.blocks.MaterialsBlock;
-import dev.hipposgrumm.kamapreader.blocks.TexturesBlock;
+import dev.hipposgrumm.kamapreader.blocks.TextureArrayBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.reader.PROReader;
@@ -25,10 +25,10 @@ public abstract class Part implements DatingBachelor {
 
     protected byte[] BYTE_DATA;
 
-    protected final TexturesBlock.TexturesData textures;
+    protected final TextureArrayBlock.TexturesData textures;
     protected final MaterialsBlock.MaterialsData materials;
 
-    public Part(TexturesBlock.TexturesData textures, MaterialsBlock.MaterialsData materials) {
+    public Part(TextureArrayBlock.TexturesData textures, MaterialsBlock.MaterialsData materials) {
         this.textures = textures;
         this.materials = materials;
     }
@@ -67,10 +67,10 @@ public abstract class Part implements DatingBachelor {
             int currentOffset = reader.getPointer();
 
             // TODO: Read textures and materials first before reading object data, it will be cleaner (and I think the game does that anyway).
-            TexturesBlock.TexturesData textures;
+            TextureArrayBlock.TexturesData textures;
             if (texturesOffset > 0) {
                 reader.seek(texturesOffset-currentOffset);
-                textures = new TexturesBlock.TexturesData(reader, false);
+                textures = new TextureArrayBlock.TexturesData(reader);
             } else textures = null;
             MaterialsBlock.MaterialsData materials;
             if (materialsOffset > 0) {
@@ -367,7 +367,7 @@ public abstract class Part implements DatingBachelor {
         }
     }
 
-    private record TexturesWrapper(TexturesBlock.TexturesData textures) implements DatingBachelor {
+    private record TexturesWrapper(TextureArrayBlock.TexturesData textures) implements DatingBachelor {
         @Override
         public List<? extends DatingProfileEntry<?>> getDatingProfile() {
             return List.of(new SubBachelorPreviewEntry(

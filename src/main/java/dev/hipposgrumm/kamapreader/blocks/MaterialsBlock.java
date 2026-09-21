@@ -10,10 +10,7 @@ import dev.hipposgrumm.kamapreader.util.types.Material;
 import dev.hipposgrumm.kamapreader.util.types.SubBachelorPreviewEntry;
 import dev.hipposgrumm.kamapreader.util.types.Texture;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class MaterialsBlock extends Block {
     private final List<Map<Integer, Texture>> textureMaps;
@@ -22,8 +19,12 @@ public class MaterialsBlock extends Block {
 
     public MaterialsBlock(KARFile file) {
         this.textureMaps = file.blocks.stream()
-                .filter(b -> b instanceof TexturesBlock)
-                .map(b -> ((TexturesBlock) b).data.textures)
+                .map(b -> switch (b) {
+                    case TextureSingleBlock bl -> Collections.singletonMap(bl.texture.getUid().get(), bl.texture);
+                    case TextureArrayBlock bl -> bl.data.textures;
+                    default -> null;
+                })
+                .filter(Objects::nonNull)
                 .toList();
     }
 

@@ -1,12 +1,12 @@
 package dev.hipposgrumm.kamapreader.blocks.parts;
 
 import dev.hipposgrumm.kamapreader.blocks.MaterialsBlock;
-import dev.hipposgrumm.kamapreader.blocks.TexturesBlock;
+import dev.hipposgrumm.kamapreader.blocks.TextureArrayBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 
 public class PartUndefined extends Part {
-    public PartUndefined(TexturesBlock.TexturesData textures, MaterialsBlock.MaterialsData materials) {
+    public PartUndefined(TextureArrayBlock.TexturesData textures, MaterialsBlock.MaterialsData materials) {
         super(textures, materials);
     }
 

@@ -34,8 +34,8 @@ public class KARFile {
             String blockType = reader.readBlockType();
             Block block = switch (blockType) {
                 case "PtFm" -> new PartsBlock();
-                case "TxFm" -> new TexturesBlock(false);
-                case "TrFm" -> new TexturesBlock(true);
+                case "TxFm" -> new TextureArrayBlock();
+                case "TrFm" -> new TextureSingleBlock();
                 case "MtFm" -> new MaterialsBlock(this);
                 case "SnFm" -> new SoundsBlock(file.getName(), this);
                 case "ObFm" -> new ObjectsBlock();
