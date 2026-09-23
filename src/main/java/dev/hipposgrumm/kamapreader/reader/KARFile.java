@@ -39,6 +39,7 @@ public class KARFile {
                 case "MtFm" -> new MaterialsBlock(this);
                 case "SnFm" -> new SoundsBlock(file.getName(), this);
                 case "ObFm" -> new ObjectsBlock();
+                case "FtFm" -> new FontsBlock();
                 default -> new UnknownBlock(blockType);
             };
             block.readFull(reader.segment(blockSize));
