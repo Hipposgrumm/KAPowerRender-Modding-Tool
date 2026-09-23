@@ -79,7 +79,7 @@ public abstract class Part implements DatingBachelor {
             } else materials = new FillableMaterials();
             reader.seek(currentOffset);
 
-            part = switch ((type >> 8) & 0xFF) {
+            part = switch ((type >> 8) & 0xFF) { // TODO: There's more data to be read.
                 case 0x10 -> new PartCharacter(textures, materials);
                 case 0x20 -> new PartObject(textures, materials);
                 default -> new PartUndefined(textures, materials);
@@ -116,7 +116,12 @@ public abstract class Part implements DatingBachelor {
         boolean wasLittleEndian = writer.isLittleEndian();
         writer.setLittleEndian(true);
         writer.writeRawString("\0\0\0\0\0\0\0\0\0\0\0\0"); // Block Size and Texture/Material Offsets - Get filled in later.
-        writeData(writer.segment());
+        BlockWriter blockWriter = writer.segment();
+        writeData(blockWriter);
+
+        byte[] alignBytes = new byte[getBytesToAlign(writer.getTruePointer())];
+        if (alignBytes.length > 0) blockWriter.writeBytes(alignBytes);
+
         int texPosition;
         if (hasTextures()) {
             texPosition = writer.getPointer();
@@ -137,6 +142,17 @@ public abstract class Part implements DatingBachelor {
 
     /// Writes main mesh data excluding texture and material data.
     protected abstract void writeData(BlockWriter writer);
+
+    protected static int getBytesToAlign(int truePointer) {
+        int posForAlign = truePointer % 4;
+        return switch (posForAlign) {
+            case 0 -> 0;
+            case 1 -> 3;
+            case 2 -> 2;
+            case 3 -> 5; // I have no clue why this is the case. You'd expect it to be 1 but there's 4 extra bytes for some reason?
+            default -> throw new IllegalStateException("the file pointer is negative and somehow got this far");
+        };
+    }
 
     @Override
     public List<? extends DatingProfileEntry<?>> getDatingProfile() {

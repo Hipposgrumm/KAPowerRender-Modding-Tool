@@ -438,4 +438,15 @@ public class BlockReader {
     public String readBlockType() {
         return new String(readBytes(4), StandardCharsets.US_ASCII);
     }
+
+    /**
+     * Read 4 bytes as block head, flipping for endianness as necessary.
+     * @return 4 byte head
+     * @throws IndexOutOfBoundsException If there is less than 4 bytes remaining.
+     */
+    public byte[] readBlockHead() {
+        byte[] bytes = readBytes(4);
+        if (littleEndian) return bytes;
+        else return new byte[] {bytes[3], bytes[2], bytes[1], bytes[0]};
+    }
 }

@@ -55,7 +55,7 @@ public class TextureArrayBlock extends Block {
         public final Map<Integer, Texture> textures = new HashMap<>();
 
         public TexturesData(BlockReader reader) {
-            head = reader.readBytes(4);
+            head = reader.readBlockHead();
             if (head[0] != BlockType.TEXTURE_ARRAY)
                 throw new IllegalStateException(String.format("Block data value (0x%02X) does not match for type TEXTURE_ARRAY", head[0]));
 
@@ -85,16 +85,19 @@ public class TextureArrayBlock extends Block {
             // TODO: Make sure to actually test this.
             writer = writer.segment();
 
-            writer.writeBytes(head);
+            writer.writeBlockHead(head);
             writer.writeIntLittle(0);
 
             writer.writeIntLittle(writer.getPointer()+4);
-            for (Texture tex:textureList) {
+            Iterator<Texture> texIter = textureList.iterator();
+            while (texIter.hasNext()) {
+                Texture tex = texIter.next();
                 int offset = writer.getPointer();
                 writer.writeIntLittle(0);
 
                 tex.write(writer.segment());
 
+                if (!texIter.hasNext()) continue;
                 writer.seek(offset);
                 writer.writeIntLittle(writer.getSize());
                 writer.seek(writer.getSize());

@@ -121,7 +121,7 @@ public class Texture implements DatingBachelor, Previewable, Exportable {
 
             writer.seek(4+(4*i));
             writer.writeIntLittle(offset);
-            writer.move(40);
+            writer.move(36);
             writer.writeIntLittle(writer.getSize() - offset);
             writer.seek(writer.getSize());
         }

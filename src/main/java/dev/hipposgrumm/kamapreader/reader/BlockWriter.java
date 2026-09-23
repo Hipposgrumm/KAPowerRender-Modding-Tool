@@ -129,7 +129,7 @@ public class BlockWriter {
      * @param b UByte
      */
     public void writeUByte(UByte b) {
-        writeByte(b.getByte());
+        writeByte(b.innerVal());
     }
 
     /**
@@ -155,7 +155,7 @@ public class BlockWriter {
      * @param s UShort
      */
     public void writeUShort(UShort s) {
-        writeShort(s.getShort());
+        writeShort(s.innerVal());
     }
 
     /**
@@ -181,7 +181,7 @@ public class BlockWriter {
      * @param i UInteger
      */
     public void writeUInt(UInteger i) {
-        writeInt(i.getInt());
+        writeInt(i.innerVal());
     }
 
     /**
@@ -198,7 +198,13 @@ public class BlockWriter {
      * @param f Float
      */
     public void writeFloat(float f) {
-        writeInt(Float.floatToIntBits(f));
+        writeInt(convertFloatBits(f));
+    }
+
+    /// Float bit conversion with consideration for C++ implementation of NaN
+    private static int convertFloatBits(float f) {
+        if (Float.isNaN(f)) return 0xFFC00000;
+        return Float.floatToIntBits(f);
     }
 
     /**
@@ -216,7 +222,7 @@ public class BlockWriter {
      * @param s Short (Unsigned)
      */
     public void writeUShortLittle(UShort s) {
-        writeShortLittle(s.getShort());
+        writeShortLittle(s.innerVal());
     }
 
     /**
@@ -245,7 +251,7 @@ public class BlockWriter {
      * @param i Integer (Unsigned)
      */
     public void writeUIntLittle(UInteger i) {
-        writeIntLittle(i.getInt());
+        writeIntLittle(i.innerVal());
     }
 
     /**
@@ -262,7 +268,7 @@ public class BlockWriter {
      * @param f Float
      */
     public void writeFloatLittle(float f) {
-        writeIntLittle(Float.floatToIntBits(f));
+        writeIntLittle(convertFloatBits(f));
     }
 
     /**
@@ -280,7 +286,7 @@ public class BlockWriter {
      * @param s Short (Unsigned)
      */
     public void writeUShortBig(UShort s) {
-        writeShortBig(s.getShort());
+        writeShortBig(s.innerVal());
     }
 
     /**
@@ -309,7 +315,7 @@ public class BlockWriter {
      * @param i Integer (Unsigned)
      */
     public void writeUIntBig(UInteger i) {
-        writeIntBig(i.getInt());
+        writeIntBig(i.innerVal());
     }
 
     /**
@@ -326,7 +332,7 @@ public class BlockWriter {
      * @param f Float
      */
     public void writeFloatBig(float f) {
-        writeIntBig(Float.floatToIntBits(f));
+        writeIntBig(convertFloatBits(f));
     }
 
     /**
@@ -380,6 +386,17 @@ public class BlockWriter {
     public BlockWriter segment() {
         if (pointerAtEnd) pointer = file.getSize();
         return new BlockWriter(file, pointer, littleEndian);
+    }
+
+    /**
+     * Write 4 bytes as block head, flipping for endianness as necessary.
+     * @param head 4 byte head
+     * @throws IllegalArgumentException If inputted byte array is not exactly 4 indexes long.
+     */
+    public void writeBlockHead(byte[] head) {
+        if (head.length != 4) throw new IllegalArgumentException("Bytes do not match size for head.");
+        if (littleEndian) writeBytes(head);
+        else writeBytes(new byte[] {head[3], head[2], head[1], head[0]});
     }
 
     private static final class SharedFileBytes {

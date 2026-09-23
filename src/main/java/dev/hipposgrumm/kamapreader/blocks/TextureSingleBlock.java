@@ -22,7 +22,7 @@ public class TextureSingleBlock extends Block {
         rsck = ResourceCheckBlock.read(reader, "TrFm");
         arck = ArCkBlock.read(reader, "TrFm");
 
-        head = reader.readBytes(4);
+        head = reader.readBlockHead();
         if (head[0] != BlockType.TEXTURE_SINGLE)
             throw new IllegalStateException(String.format("Block data value (0x%02X) does not match for type TEXTURE_SINGLE", head[0]));
 
@@ -35,7 +35,7 @@ public class TextureSingleBlock extends Block {
         rsck.write(writer.segment());
         arck.write(writer.segment());
 
-        writer.writeBytes(head);
+        writer.writeBlockHead(head);
 
         writer = writer.segment();
         writer.writeIntLittle(0);
