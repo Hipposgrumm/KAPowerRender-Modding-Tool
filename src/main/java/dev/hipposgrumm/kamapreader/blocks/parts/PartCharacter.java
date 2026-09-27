@@ -4,7 +4,7 @@ import dev.hipposgrumm.kamapreader.blocks.MaterialsBlock;
 import dev.hipposgrumm.kamapreader.blocks.TextureArrayBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.reader.PROReader;
 import dev.hipposgrumm.kamapreader.util.ViewerAppHandle;
 import dev.hipposgrumm.kamapreader.util.types.Material;
@@ -88,29 +88,18 @@ public class PartCharacter extends Part {
     }
 
     @Override
-    public List<? extends DatingProfileEntry<?>> getDatingProfile() {
-        ViewerAppHandle.sendMessage(ViewerAppHandle.Messages.MODELS_CLEAR, new byte[0]);
-        sendMeshData(name.toString(), mesh_data);
+    public List<? extends DatingProfileEntry> getDatingProfile() {
+        // TODO: Move these calls.
+        //ViewerAppHandle.sendMessage(ViewerAppHandle.Messages.MODELS_CLEAR, new byte[0]);
+        //sendMeshData(name.toString(), mesh_data);
 
-        List<DatingProfileEntry<?>> entries = new ArrayList<>();
-        entries.add(new DatingProfileEntry<>("Name",
-                () -> name
-        ));
-        if (textures != null) entries.add(new SubBachelorPreviewEntry("Textures",
-                () -> textures.textureList
-        ));
-        if (materials != null) entries.add(new SubBachelorPreviewEntry("Materials",
-                () -> materials.materialList
-        ));
-        entries.add(new DatingProfileEntry<>("Character Script File",
-                () -> file_scr
-        ));
-        entries.add(new DatingProfileEntry<>("LOD Settings",
-                () -> file_ls
-        ));
-        entries.add(new DatingProfileEntry<>("Motion Definition",
-                () -> file_mot
-        ));
+        List<DatingProfileEntry> entries = new ArrayList<>();
+        entries.add(new DatingProfileEntry("Name", false, name));
+        if (textures != null) entries.add(new DatingProfileEntry("Textures", new SubBachelorPreviewEntry(textures.textureList)));
+        if (materials != null) entries.add(new DatingProfileEntry("Materials", new SubBachelorPreviewEntry(materials.materialList)));
+        entries.add(new DatingProfileEntry("Character Script File", false, file_scr));
+        entries.add(new DatingProfileEntry("LOD Settings", false, file_ls));
+        entries.add(new DatingProfileEntry("Motion Definition", false, file_mot));
         return entries;
     }
 

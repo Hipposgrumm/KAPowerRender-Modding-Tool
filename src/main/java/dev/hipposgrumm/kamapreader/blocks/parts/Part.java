@@ -6,7 +6,7 @@ import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.reader.PROReader;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.ViewerAppHandle;
 import dev.hipposgrumm.kamapreader.util.types.Material;
 import dev.hipposgrumm.kamapreader.util.types.SubBachelorPreviewEntry;
@@ -155,14 +155,10 @@ public abstract class Part implements DatingBachelor {
     }
 
     @Override
-    public List<? extends DatingProfileEntry<?>> getDatingProfile() {
-        List<DatingProfileEntry<?>> list = new ArrayList<>();
-        if (hasTextures()) list.add(new SubBachelorPreviewEntry("Textures",
-                () -> textures.textureList
-        ));
-        if (hasMaterial()) list.add(new SubBachelorPreviewEntry("Materials",
-                () -> materials.materialList
-        ));
+    public List<? extends DatingProfileEntry> getDatingProfile() {
+        List<DatingProfileEntry> list = new ArrayList<>();
+        if (hasTextures()) list.add(new DatingProfileEntry("Textures", new SubBachelorPreviewEntry(textures.textureList)));
+        if (hasMaterial()) list.add(new DatingProfileEntry("Materials", new SubBachelorPreviewEntry(materials.materialList)));
         return list;
     }
 
@@ -385,10 +381,8 @@ public abstract class Part implements DatingBachelor {
 
     private record TexturesWrapper(TextureArrayBlock.TexturesData textures) implements DatingBachelor {
         @Override
-        public List<? extends DatingProfileEntry<?>> getDatingProfile() {
-            return List.of(new SubBachelorPreviewEntry(
-                    () -> textures.textureList
-            ));
+        public List<? extends DatingProfileEntry> getDatingProfile() {
+            return List.of(new DatingProfileEntry("Content", new SubBachelorPreviewEntry(textures.textureList)));
         }
 
         @Override
@@ -404,10 +398,8 @@ public abstract class Part implements DatingBachelor {
 
     private record MaterialsWrapper(MaterialsBlock.MaterialsData materials) implements DatingBachelor {
         @Override
-        public List<? extends DatingProfileEntry<?>> getDatingProfile() {
-            return List.of(new SubBachelorPreviewEntry(
-                    () -> materials.materialList
-            ));
+        public List<? extends DatingProfileEntry> getDatingProfile() {
+            return List.of(new DatingProfileEntry("Content", new SubBachelorPreviewEntry(materials.materialList)));
         }
 
         @Override

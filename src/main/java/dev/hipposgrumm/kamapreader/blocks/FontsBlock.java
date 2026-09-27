@@ -5,7 +5,7 @@ import dev.hipposgrumm.kamapreader.blocks.subblock.ResourceCheckBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.BlockType;
 import dev.hipposgrumm.kamapreader.util.types.EnumChoices;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.SizeLimitedString;
@@ -45,7 +45,7 @@ public class FontsBlock extends Block {
     }
 
     @Override
-    public List<? extends DatingProfileEntry<?>> getDatingProfile() {
+    public List<? extends DatingProfileEntry> getDatingProfile() {
         return null;
     }
 
@@ -117,10 +117,8 @@ public class FontsBlock extends Block {
         }
 
         @Override
-        public List<? extends DatingProfileEntry<?>> getDatingProfile() {
-            return List.of(new DatingProfileEntry<>("Font Name",
-                    () -> fontName
-            ));
+        public List<? extends DatingProfileEntry> getDatingProfile() {
+            return List.of(new DatingProfileEntry("Font Name", false, fontName));
         }
 
         @Override

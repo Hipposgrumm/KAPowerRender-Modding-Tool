@@ -2,9 +2,10 @@ package dev.hipposgrumm.kamapreader;
 
 import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.control.ObservableDatingValue;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -18,7 +19,10 @@ import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.Pair;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URL;
 import java.util.*;
 import java.util.function.Consumer;
@@ -34,9 +38,9 @@ public class FirstThing implements Initializable {
     @FXML private HBox dragTarget;
     @FXML public TreeView<DatingBachelor> tree;
     @FXML public TreeItem<DatingBachelor> treeRoot;
-    @FXML public TableView<Pair<TreeItem<?>,DatingProfileEntry<?>>> table;
-    public TableColumn<Pair<TreeItem<?>,DatingProfileEntry<?>>,String> tableName;
-    public TableColumn<Pair<TreeItem<?>,DatingProfileEntry<?>>,Node> tableValue;
+    @FXML public TableView<Pair<TreeItem<DatingBachelor>,DatingProfileEntry>> table;
+    public TableColumn<Pair<TreeItem<DatingBachelor>,DatingProfileEntry>,String> tableName;
+    public TableColumn<Pair<TreeItem<DatingBachelor>,DatingProfileEntry>,Node> tableValue;
 
     private final Dialog<String> helpPopup = new Dialog<>();
     private final Dialog<ButtonType> question = new Dialog<>();
@@ -77,12 +81,17 @@ public class FirstThing implements Initializable {
 
         tableName = new TableColumn<>("Name");
         tableName.setMinWidth(100);
-        tableName.setCellValueFactory((cdf) -> new SimpleStringProperty(cdf.getValue().getValue().getName()));
+        tableName.setCellValueFactory((cdf) -> {
+            DatingProfileEntry entry = cdf.getValue().getValue();
+            if (cdf.getValue().getKey() instanceof BachelorTreeItem item) {
+                return item.updatingStrings.get(entry);
+            } else return new SimpleStringProperty(entry.name());
+        });
         tableName.setSortable(false);
         tableName.setReorderable(false);
         tableValue = new TableColumn<>("Value");
         tableValue.setMinWidth(320);
-        tableValue.setCellValueFactory(cbf -> new ObservableDatingValue(this, cbf));
+        tableValue.setCellValueFactory(cbf -> new ObservableDatingValue(this, cbf.getValue().getKey(), cbf.getValue().getValue()));
         tableValue.setSortable(false);
         tableValue.setReorderable(false);
         table.setSelectionModel(null);
@@ -91,7 +100,7 @@ public class FirstThing implements Initializable {
             if (newValue == null) return;
             selectElement(newValue);
         });
-        tree.setCellFactory(treeView -> new BatchelorTreeCell(this));
+        tree.setCellFactory(treeView -> new BachelorTreeCell(this));
 
         dragTarget.setOnDragOver(event -> {
             if (event.getGestureSource() != dragTarget && event.getDragboard().hasFiles()) {
@@ -115,19 +124,16 @@ public class FirstThing implements Initializable {
     }
 
     public void selectElement(TreeItem<DatingBachelor> value) {
-        DatingBachelor element = value.getValue();
-        if (element == null) return;
-        if (element instanceof TreeBase) return;
+        if (value.getValue() == null) return;
         table.getItems().clear();
         table.getColumns().clear();
         double maxwidth = tableValue.getMaxWidth();
         tableValue.setMaxWidth(tableValue.getMinWidth());
         tableValue.setMaxWidth(maxwidth);
-        List<? extends DatingProfileEntry<?>> entries = element.getDatingProfile();
-        if (entries != null) {
+        if (value instanceof BachelorTreeItem item && item.entries != null) {
             table.getColumns().add(tableName);
             table.getColumns().add(tableValue);
-            for (DatingProfileEntry<?> entry : entries)
+            for (DatingProfileEntry entry:item.entries)
                 table.getItems().add(new Pair<>(value, entry));
         }
     }
@@ -251,7 +257,7 @@ public class FirstThing implements Initializable {
     }
 
     private void addTreeItem(TreeItem<DatingBachelor> base, DatingBachelor item) {
-        TreeItem<DatingBachelor> added = new TreeItem<>(item);
+        TreeItem<DatingBachelor> added = new BachelorTreeItem(item);
         base.getChildren().add(added);
         List<? extends DatingBachelor> subs = item.getSubBachelors();
         if (subs != null)
@@ -266,16 +272,23 @@ public class FirstThing implements Initializable {
         }
 
         @Override
-        public List<? extends DatingProfileEntry<?>> getDatingProfile() {
+        public List<? extends DatingProfileEntry> getDatingProfile() {
             return null;
         }
     }
 
-    private static class BatchelorTreeCell extends TreeCell<DatingBachelor> {
+    private static class BachelorTreeCell extends TreeCell<DatingBachelor> {
         private final FirstThing controller;
 
-        public BatchelorTreeCell(FirstThing controller) {
+        public BachelorTreeCell(FirstThing controller) {
             this.controller = controller;
+            cellChanged(null, null, getTreeItem());
+            treeItemProperty().addListener(this::cellChanged);
+        }
+
+        private void cellChanged(ObservableValue<? extends TreeItem<DatingBachelor>> observable, TreeItem<DatingBachelor> oldVal, TreeItem<DatingBachelor> newVal) {
+            if (oldVal instanceof BachelorTreeItem item) item.cell = null;
+            if (newVal instanceof BachelorTreeItem item) item.cell = this;
         }
 
         @Override
@@ -283,10 +296,17 @@ public class FirstThing implements Initializable {
             super.updateItem(item, empty);
             if (empty || item == null) {
                 setText(null);
+                setGraphic(null);
                 return;
             }
 
-            setText(item.toString());
+            String label = item.toString();
+            if (getTreeItem() instanceof BachelorTreeItem treeitem && treeitem.isModified) {
+                label = "* "+label;
+            }
+
+            setGraphic(getTreeItem().getGraphic());
+            setText(label);
             ContextMenu menu = new ContextMenu();
             for (DatingBachelor.ContextMenuOption option:item.getContextMenu()) {
                 MenuItem menuItem = new MenuItem(option.name());
@@ -299,6 +319,47 @@ public class FirstThing implements Initializable {
                 menu.getItems().add(menuItem);
             }
             setContextMenu(menu);
+        }
+    }
+
+    public static class BachelorTreeItem extends TreeItem<DatingBachelor> {
+        final List<? extends DatingProfileEntry> entries;
+        final Map<DatingProfileEntry, BachelorStringProperty> updatingStrings = new HashMap<>();
+        BachelorTreeCell cell;
+        public boolean isModified;
+
+        public BachelorTreeItem(DatingBachelor item) {
+            super(item);
+            this.entries = item.getDatingProfile();
+            if (this.entries != null) for (DatingProfileEntry entry:this.entries) {
+                updatingStrings.put(entry, new BachelorStringProperty(entry.name()));
+            }
+        }
+
+        public void doUpdate() {
+            if (cell != null) {
+                DatingBachelor value = getValue();
+                cell.updateItem(value, value == null);
+            }
+        }
+
+        public void updateLabel(DatingProfileEntry with, boolean modified) {
+            BachelorStringProperty string = updatingStrings.get(with);
+            if (string != null) string.update(with, modified);
+        }
+
+        // To anyone who says this is weird and convoluted, yes you are absolutely correct.
+        private static class BachelorStringProperty extends SimpleStringProperty {
+            public BachelorStringProperty(String initialValue) {
+                super(initialValue);
+            }
+
+            public void update(DatingProfileEntry entry, boolean modified) {
+                set(modified
+                        ? "* "+entry.name()
+                        : entry.name()
+                );
+            }
         }
     }
 }

@@ -1,5 +1,7 @@
 package dev.hipposgrumm.kamapreader.util.control.display;
 
+import dev.hipposgrumm.kamapreader.FirstThing;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileValue;
 import dev.hipposgrumm.kamapreader.util.types.Material;
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Point3D;
@@ -12,8 +14,18 @@ import javafx.scene.shape.Sphere;
 import javafx.scene.transform.Rotate;
 
 // https://github.com/jvm-graphics-labs/hello-triangle/blob/master/src/main/java/gl3/HelloTriangleSimple.java
-public class MaterialView {
-    public static Node create(Material material, double width, double height) {
+public class MaterialView implements DatingProfileValue {
+    private final Material material;
+    private final double width, height;
+
+    public MaterialView(Material material, double width, double height) {
+        this.material = material;
+        this.width = width;
+        this.height = height;
+    }
+
+    @Override
+    public Node createDisplay(FirstThing controller, Runnable onChanged, boolean readonly) {
         Node changableView;
         try {
             Group root = new Group();
@@ -74,5 +86,10 @@ public class MaterialView {
         pongMaterial.setSpecularColor(material.specular.toJavaFXColor());
         pongMaterial.setSpecularPower(material.specular_power);
         sphere.setCullFace(material.doublesided ? CullFace.NONE : CullFace.BACK);
+    }
+
+    @Override
+    public boolean isModified() {
+        return false;
     }
 }

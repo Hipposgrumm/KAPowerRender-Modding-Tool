@@ -2,7 +2,8 @@ package dev.hipposgrumm.kamapreader.blocks.worldobjects;
 
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.ContainingDatingProfileValue;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.Flags;
 
 import java.util.List;
@@ -51,12 +52,10 @@ public class WorldObject_Base extends WorldObject {
     }
 
     @Override
-    public List<DatingProfileEntry<?>> getDatingProfile() {
-        List<DatingProfileEntry<?>> items = super.getDatingProfile();
-        items.add(new DatingProfileEntry<>("Flags",
-                () -> flags
-        ));
-        items.add(new DatingProfileEntry<>("Script",
+    public List<DatingProfileEntry> getDatingProfile() {
+        List<DatingProfileEntry> items = super.getDatingProfile();
+        items.add(new DatingProfileEntry("Flags", false, flags));
+        items.add(DatingProfileEntry.simple("Script",
                 () -> script,
                 s -> script = s
         ));

@@ -2,7 +2,7 @@ package dev.hipposgrumm.kamapreader.blocks.worldobjects;
 
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.structs.ASPECTRATIO;
 import dev.hipposgrumm.kamapreader.util.types.structs.PR_VIEWPORT;
 
@@ -80,22 +80,18 @@ public class WorldObject_Camera extends WorldObject_Position {
     }
 
     @Override
-    public List<DatingProfileEntry<?>> getDatingProfile() {
-        List<DatingProfileEntry<?>> items = super.getDatingProfile();
-        items.add(new DatingProfileEntry<>("Viewport",
-                () -> viewport
-        ));
-        items.add(new DatingProfileEntry<>("Nearclip",
+    public List<DatingProfileEntry> getDatingProfile() {
+        List<DatingProfileEntry> items = super.getDatingProfile();
+        items.add(new DatingProfileEntry("Viewport", false, viewport));
+        items.add(DatingProfileEntry.simple("Nearclip",
                 () -> nearclip,
                 c -> nearclip = c
         ));
-        items.add(new DatingProfileEntry<>("Farclip",
+        items.add(DatingProfileEntry.simple("Farclip",
                 () -> farclip,
                 c -> farclip = c
         ));
-        items.add(new DatingProfileEntry<>("FOV",
-                () -> fov
-        ));
+        items.add(new DatingProfileEntry("FOV", false, fov));
         return items;
     }
 }

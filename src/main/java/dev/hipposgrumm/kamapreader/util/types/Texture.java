@@ -1,14 +1,24 @@
 package dev.hipposgrumm.kamapreader.util.types;
 
+import dev.hipposgrumm.kamapreader.FirstThing;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.Icon;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.Exportable;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileValue;
+import dev.hipposgrumm.kamapreader.util.control.display.TexturesDisplay;
 import dev.hipposgrumm.kamapreader.util.types.structs.BITMAP_TEXTURE;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.UniqueIdentifier;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TreeItem;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 import javax.imageio.ImageIO;
 import java.io.FileOutputStream;
@@ -136,13 +146,11 @@ public class Texture implements DatingBachelor, Previewable, Exportable {
     }
 
     @Override
-    public List<? extends DatingProfileEntry<?>> getDatingProfile() {
-        return Arrays.asList(new DatingProfileEntry.ReadOnly<>("UID",
-                () -> uid
-        ), new DatingProfileEntry<>("Texture",
-                () -> textures,
-                this::changeImage
-        ));
+    public List<? extends DatingProfileEntry> getDatingProfile() {
+        return Arrays.asList(
+                new DatingProfileEntry("UID", true, uid),
+                new DatingProfileEntry("Texture", false, new TexturesDisplay(this, textures))
+        );
     }
 
     @Override
@@ -159,8 +167,7 @@ public class Texture implements DatingBachelor, Previewable, Exportable {
         return image;
     }
 
-    private void changeImage(BITMAP_TEXTURE[] baseArr) {
-        BITMAP_TEXTURE base = baseArr[0];
+    public BITMAP_TEXTURE[] changeImage(BITMAP_TEXTURE base) {
         textures[0] = base;
 
         // All LODs are half the size of the first one.
@@ -191,6 +198,7 @@ public class Texture implements DatingBachelor, Previewable, Exportable {
             textures[i] = smaller;
             base = smaller;
         }
+        return textures;
     }
 
     @Override
@@ -225,5 +233,43 @@ public class Texture implements DatingBachelor, Previewable, Exportable {
     @Override
     public String toString() {
         return uid.toString();
+    }
+
+    public static class ArrayDisplay implements DatingProfileValue {
+        private final Texture[] textures;
+
+        public ArrayDisplay(Texture[] textures) {
+            this.textures = textures;
+        }
+
+        @Override
+        public Node createDisplay(FirstThing controller, Runnable onChanged, boolean readonly) {
+            HBox images = new HBox(5);
+            for (Texture texture:textures) {
+                if (texture != null) {
+                    ImageView view = new ImageView(texture.getViewable().getJavaFXImage());
+                    view.setFitWidth(100);
+                    view.setFitHeight(100);
+                    Button refButton = new Button("Go to Reference", Icon.redirect());
+                    TreeItem<DatingBachelor> found = DatingProfileValue.findInTree(controller.tree.getRoot(), texture);
+                    if (found != null) refButton.setOnAction(event ->
+                            controller.tree.getSelectionModel().select(found)
+                    );
+                    else refButton.setDisable(true);
+                    images.getChildren().add(new VBox(view, refButton));
+                } else {
+                    images.getChildren().add(new Label("  empty  "));
+                }
+            }
+            ScrollPane pane = new ScrollPane(images);
+            pane.maxWidth(315);
+            pane.setMinHeight(145);
+            return pane;
+        }
+
+        @Override
+        public boolean isModified() {
+            return false;
+        }
     }
 }

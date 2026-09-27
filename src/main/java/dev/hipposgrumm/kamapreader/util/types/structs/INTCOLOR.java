@@ -1,6 +1,16 @@
 package dev.hipposgrumm.kamapreader.util.types.structs;
 
-public class INTCOLOR {
+import dev.hipposgrumm.kamapreader.FirstThing;
+import dev.hipposgrumm.kamapreader.util.control.ContainingDatingProfileValue;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileValue;
+import dev.hipposgrumm.kamapreader.util.types.wrappers.UByte;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.Control;
+import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
+
+public class INTCOLOR implements ContainingDatingProfileValue.Containable<INTCOLOR> {
     private final Format format;
     public int color;
 
@@ -49,6 +59,50 @@ public class INTCOLOR {
         color.setBlue(getBlue());
         color.setAlpha(getAlpha());
         return color;
+    }
+
+    @Override
+    public Node createDisplay(FirstThing controller, Runnable onChanged, boolean readonly) {
+        Control R = DatingProfileValue.ubyteSpinner(new UByte((short) this.getRed()), readonly, (observable, oldValue, newValue) -> {
+            this.setRed(newValue);
+            onChanged.run();
+        });
+        Control G = DatingProfileValue.ubyteSpinner(new UByte((short) this.getGreen()), readonly, (observable, oldValue, newValue) -> {
+            this.setGreen(newValue);
+            onChanged.run();
+        });
+        Control B = DatingProfileValue.ubyteSpinner(new UByte((short) this.getBlue()), readonly, (observable, oldValue, newValue) -> {
+            this.setBlue(newValue);
+            onChanged.run();
+        });
+        Control A = DatingProfileValue.ubyteSpinner(new UByte((short) this.getAlpha()), readonly, (observable, oldValue, newValue) -> {
+            this.setAlpha(newValue);
+            onChanged.run();
+        });
+        R.setMaxWidth(63);
+        G.setMaxWidth(63);
+        B.setMaxWidth(63);
+        A.setMaxWidth(63);
+        HBox box = new HBox(0,
+                new Label("R:"), R,
+                new Label(" G:"), G,
+                new Label(" B:"), B,
+                new Label(" A:"), A
+        );
+        box.setAlignment(Pos.CENTER_LEFT);
+        return box;
+    }
+
+    @Override
+    public ContainingDatingProfileValue.Containable<? extends INTCOLOR> makeCopy() {
+        return new INTCOLOR(format, color);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof INTCOLOR other)) return false;
+        return  other.format == format &&
+                other.color  == color;
     }
 
     public enum Format {

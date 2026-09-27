@@ -2,7 +2,7 @@ package dev.hipposgrumm.kamapreader.blocks.worldobjects;
 
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 
 import java.util.List;
 
@@ -38,9 +38,9 @@ public class WorldObject_Draw extends WorldObject_Position {
     }
 
     @Override
-    public List<DatingProfileEntry<?>> getDatingProfile() {
-        List<DatingProfileEntry<?>> items = super.getDatingProfile();
-        items.add(new DatingProfileEntry<>("RenderMethod",
+    public List<DatingProfileEntry> getDatingProfile() {
+        List<DatingProfileEntry> items = super.getDatingProfile();
+        items.add(DatingProfileEntry.simple("RenderMethod",
                 () -> rendermethod,
                 rm -> rendermethod = rm
         ));

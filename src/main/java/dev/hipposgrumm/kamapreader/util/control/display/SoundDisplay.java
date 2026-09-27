@@ -1,8 +1,8 @@
 package dev.hipposgrumm.kamapreader.util.control.display;
 
 import dev.hipposgrumm.kamapreader.FirstThing;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.Icon;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileValue;
 import dev.hipposgrumm.kamapreader.util.types.SnSound;
 import javafx.animation.AnimationTimer;
 import javafx.scene.Node;
@@ -14,26 +14,25 @@ import javax.sound.sampled.*;
 import java.io.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class SoundDisplay {
+public class SoundDisplay implements DatingProfileValue {
     private static boolean autoplay = false;
     private static boolean loopingMode = false;
 
-    private Player player;
-    private SoundDisplay(Player player) {
-        this.player = player;
+    private final SnSound sound;
+    private boolean isModified = false;
+
+    public SoundDisplay(SnSound sound) {
+        this.sound = sound;
     }
 
-    public static Node create(FirstThing controller, DatingProfileEntry<SnSound> entry) {
-        SnSound sn = entry.get();
-
+    @Override
+    public Node createDisplay(FirstThing controller, Runnable onChanged, boolean readonly) {
         Node soundInterface;
-        SoundDisplay changableDisplay = null;
-        Slider changableProgressBar = null;
+        PlayerRef playerref = new PlayerRef();
+        Slider progress = new Slider(0, 0, 0);
         try {
-            SoundDisplay display = new SoundDisplay(new Player(sn));
-            Slider progress = new Slider(0, display.player.length(), 0);
-            changableDisplay = display; // Lambda moment
-            changableProgressBar = progress;
+            playerref.player = new Player(sound);
+            progress.setMax(playerref.player.length());
 
             Button playbtn = new Button("", Icon.play());
             Button pausebtn = new Button("", Icon.pause());
@@ -43,13 +42,13 @@ public class SoundDisplay {
 
             loopbtn.setSelected(loopingMode);
             autoplaybtn.setSelected(autoplay);
-            display.player.setLooping(loopingMode);
-            playbtn.setOnAction(event -> display.player.resume());
-            pausebtn.setOnAction(event -> display.player.pause());
-            stopbtn.setOnAction(event -> display.player.stop());
+            playerref.player.setLooping(loopingMode);
+            playbtn.setOnAction(event -> playerref.player.resume());
+            pausebtn.setOnAction(event -> playerref.player.pause());
+            stopbtn.setOnAction(event -> playerref.player.stop());
             loopbtn.setOnAction(event -> {
                 loopingMode = loopbtn.isSelected();
-                display.player.setLooping(loopingMode);
+                playerref.player.setLooping(loopingMode);
             });
             autoplaybtn.setOnAction(event -> {
                 autoplay = autoplaybtn.isSelected();
@@ -59,12 +58,12 @@ public class SoundDisplay {
             AtomicBoolean playingState = new AtomicBoolean();
             progress.setOnMousePressed(event -> {
                 modifyingState.set(true);
-                playingState.set(display.player.isPlaying());
-                display.player.pause();
+                playingState.set(playerref.player.isPlaying());
+                playerref.player.pause();
             });
             progress.setOnMouseReleased(event -> {
-                display.player.playFrom((int) Math.round(progress.getValue()));
-                if (!playingState.get()) display.player.pause();
+                playerref.player.playFrom((int) Math.round(progress.getValue()));
+                if (!playingState.get()) playerref.player.pause();
                 modifyingState.set(false);
             });
 
@@ -73,11 +72,11 @@ public class SoundDisplay {
                 public void handle(long now) {
                     if (progress.getScene() == null) {
                         stop();
-                        display.player.close();
+                        playerref.player.close();
                         return;
                     }
 
-                    if (!modifyingState.get()) progress.setValue(display.player.getPosition());
+                    if (!modifyingState.get()) progress.setValue(playerref.player.getPosition());
                 }
             }.start();
 
@@ -85,7 +84,7 @@ public class SoundDisplay {
                     playbtn, pausebtn, stopbtn, loopbtn
             ));
 
-            if (autoplay) display.player.resume();
+            if (autoplay) playerref.player.resume();
         } catch (Exception e) {
             e.printStackTrace();
             soundInterface = new Label("Preview could not be loaded.");
@@ -95,21 +94,20 @@ public class SoundDisplay {
         Button changeButton = new Button("Replace Sound", Icon.upload());
         saveButton.setOnAction(event -> {
             try {
-                File file = controller.popupSaveFile("Export File", sn.exportFileName+".ogg", "OGG", "*.ogg");
+                File file = controller.popupSaveFile("Export File", sound.exportFileName+".ogg", "OGG", "*.ogg");
                 if (file == null) return;
                 if (!file.getName().endsWith(".ogg")) file = new File(file.getPath()+".ogg");
                 if ((!file.createNewFile() && !controller.popupQuestion("Overwrite Warning", "This file already exists!", "Would you like to overwrite the file?"))) return;
 
                 try (FileOutputStream outputStream = new FileOutputStream(file)) {
-                    sn.writeExportData(outputStream);
+                    sound.writeExportData(outputStream);
                 }
             } catch (Exception e) {
                 controller.popupError("Error Saving", "An exception was thrown when exporting.", e);
             }
         });
-        SoundDisplay finalDisplay = changableDisplay;
-        Slider finalProgressBar = changableProgressBar;
-        changeButton.setOnAction(event -> {
+        if (readonly) changeButton.setDisable(true);
+        else changeButton.setOnAction(event -> {
             try {
                 File file = controller.popupOpenFile("Choose a File", null, "OGG", "*.ogg");
                 if (file == null) return;
@@ -117,12 +115,14 @@ public class SoundDisplay {
                     String name = file.getName();
                     int extPos = name.lastIndexOf('.');
                     name = name.substring(0, extPos);
-                    entry.set(new SnSound(name, input.readAllBytes()));
-                    if (finalDisplay != null) {
-                        finalDisplay.player.close();
-                        finalDisplay.player = new Player(sn);
-                        finalProgressBar.setMax(finalDisplay.player.length());
+                    sound.copyFrom(new SnSound(name, input.readAllBytes()));
+                    if (playerref.player != null) {
+                        playerref.player.close();
+                        playerref.player = new Player(sound);
+                        progress.setMax(playerref.player.length());
                     }
+                    isModified = true;
+                    onChanged.run();
                 }
             } catch (Exception e) {
                 controller.popupError("Error", "An exception was thrown when modifying sound.", e);
@@ -134,6 +134,15 @@ public class SoundDisplay {
                 saveButton,
                 changeButton
         );
+    }
+
+    @Override
+    public boolean isModified() {
+        return isModified;
+    }
+
+    private static class PlayerRef {
+        public Player player = null;
     }
 
     private static class Player implements AutoCloseable {

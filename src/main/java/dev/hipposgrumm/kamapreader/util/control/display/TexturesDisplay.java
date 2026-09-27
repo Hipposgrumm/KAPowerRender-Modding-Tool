@@ -1,10 +1,11 @@
 package dev.hipposgrumm.kamapreader.util.control.display;
 
 import dev.hipposgrumm.kamapreader.FirstThing;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.Icon;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileValue;
 import dev.hipposgrumm.kamapreader.util.types.Texture;
 import dev.hipposgrumm.kamapreader.util.types.structs.BITMAP_TEXTURE;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.ImageView;
@@ -16,14 +17,24 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-public class TexturesDisplay {
-    public static VBox create(FirstThing controller, Object parent, BITMAP_TEXTURE[] texArr, DatingProfileEntry<BITMAP_TEXTURE[]> entry) {
-        HBox[] images = new HBox[texArr.length];
+public class TexturesDisplay implements DatingProfileValue {
+    private final Texture main;
+    private BITMAP_TEXTURE[] textures;
+    private boolean isModified = false;
+
+    public TexturesDisplay(Texture main, BITMAP_TEXTURE[] textures) {
+        this.main = main;
+        this.textures = textures;
+    }
+
+    @Override
+    public Node createDisplay(FirstThing controller, Runnable onChanged, boolean readonly) {
+        HBox[] images = new HBox[textures.length];
         ImageView[] imageViews = new ImageView[images.length];
         Tooltip noAWTTooltip = new Tooltip(Texture.NO_AWT_MSG);
-        for (int i=0;i<texArr.length;i++) {
+        for (int i=0;i<textures.length;i++) {
             int lambdaSafeIndex = i;
-            ImageView image = new ImageView(texArr[i].getJavaFXImage());
+            ImageView image = new ImageView(textures[i].getJavaFXImage());
             Button saveButton = new Button("Save Texture", Icon.download());
             Button changeButton = new Button("Change Texture", Icon.upload());
             if (i == 0) {
@@ -32,18 +43,15 @@ public class TexturesDisplay {
                 controller.tableValue.setMinWidth(minwidth);
             }
             if (Texture.HAS_AWT) {
-                saveButton.setOnAction(event -> saveOne(controller, parent, texArr[lambdaSafeIndex]));
+                saveButton.setOnAction(event -> saveOne(controller, textures[lambdaSafeIndex]));
             } else {
                 saveButton.setTooltip(noAWTTooltip);
             }
-            if (entry.readOnly()) {
-                changeButton.setDisable(true);
+            if (readonly) changeButton.setDisable(true);
+            else if (Texture.HAS_AWT) {
+                changeButton.setOnAction(event -> changeOne(controller, lambdaSafeIndex, imageViews, onChanged));
             } else {
-                if (Texture.HAS_AWT) {
-                    changeButton.setOnAction(event -> changeOne(controller, texArr[lambdaSafeIndex], lambdaSafeIndex, imageViews, entry));
-                } else {
-                    changeButton.setTooltip(noAWTTooltip);
-                }
+                changeButton.setTooltip(noAWTTooltip);
             }
             imageViews[i] = image;
             images[i] = new HBox(5,
@@ -54,15 +62,15 @@ public class TexturesDisplay {
         Button saveButton = new Button("Save All", Icon.download());
         Button changeButton = new Button("Change All", Icon.upload());
         if (Texture.HAS_AWT) {
-            saveButton.setOnAction(event -> saveAll(controller, parent, texArr));
+            saveButton.setOnAction(event -> saveAll(controller, textures));
         } else {
             saveButton.setTooltip(noAWTTooltip);
         }
-        if (texArr.length == 0 || entry.readOnly()) {
+        if (textures.length == 0 || readonly) {
             changeButton.setDisable(true);
         } else {
             if (Texture.HAS_AWT) {
-                changeButton.setOnAction(event -> changeAll(controller, texArr[0], imageViews, entry));
+                changeButton.setOnAction(event -> changeAll(controller, imageViews, onChanged));
             } else {
                 changeButton.setTooltip(noAWTTooltip);
             }
@@ -74,9 +82,13 @@ public class TexturesDisplay {
         return box;
     }
 
-    private static void saveOne(FirstThing controller, Object parent, BITMAP_TEXTURE tex) {
-        String defname = null;
-        if (parent instanceof Texture t) defname = t+".png";
+    @Override
+    public boolean isModified() {
+        return isModified;
+    }
+
+    private void saveOne(FirstThing controller, BITMAP_TEXTURE tex) {
+        String defname = (main != null) ? main.getFileName()+".png" : null;
         try {
             File file = controller.popupSaveFile("Save Texture", defname, "PNG", "*.png");
             if (file == null) return;
@@ -91,9 +103,11 @@ public class TexturesDisplay {
         }
     }
 
-    private static void saveAll(FirstThing controller, Object parent, BITMAP_TEXTURE[] textures) {
-        String defname = null;
-        if (parent instanceof Texture t) defname = t.getFileName()+".png";
+    private void saveAll(FirstThing controller, BITMAP_TEXTURE[] textures) {
+        if (textures.length == 0) {
+            controller.popupNotice("No textures", "No textures to save", "Texture list size is 0.");
+        }
+        String defname = (main != null) ? main.getFileName()+".png" : null;
         try {
             File file = controller.popupSaveFile("Save Textures", defname, "PNG", "*.png");
             if (file == null) return;
@@ -124,25 +138,28 @@ public class TexturesDisplay {
         }
     }
 
-    private static void changeOne(FirstThing controller, BITMAP_TEXTURE tex, int index, ImageView[] imageViews, DatingProfileEntry<BITMAP_TEXTURE[]> entry) {
+    private void changeOne(FirstThing controller, int index, ImageView[] imageViews, Runnable onChanged) {
         try {
             File file = controller.popupOpenFile("Choose Texture", null, "PNG", "*.png");
             if (file == null) return;
-            entry.get()[index] = loadReplacementTexture(file, tex);
-            imageViews[index].setImage(entry.get()[index].getJavaFXImage());
+            textures[index] = loadReplacementTexture(file, textures[index]);
+            imageViews[index].setImage(textures[index].getJavaFXImage());
+            isModified = true;
+            onChanged.run();
         } catch (Exception e) {
             controller.popupError("Error", "An exception was thrown when changing image.", e);
         }
     }
 
-    private static void changeAll(FirstThing controller, BITMAP_TEXTURE tex, ImageView[] imageViews, DatingProfileEntry<BITMAP_TEXTURE[]> entry) {
+    private void changeAll(FirstThing controller, ImageView[] imageViews, Runnable onChanged) {
         try {
             File file = controller.popupOpenFile("Choose Texture", null, "PNG", "*.png");
             if (file == null) return;
-            entry.set(new BITMAP_TEXTURE[] {loadReplacementTexture(file, tex)});
-            BITMAP_TEXTURE[] images = entry.get();
-            for (int i=0;i<images.length;i++)
-                imageViews[i].setImage(images[i].getJavaFXImage());
+            textures = main.changeImage(loadReplacementTexture(file, textures[0]));
+            for (int i=0;i<textures.length;i++)
+                imageViews[i].setImage(textures[i].getJavaFXImage());
+            isModified = true;
+            onChanged.run();
         } catch (Exception e) {
             controller.popupError("Error", "An exception was thrown when changing image.", e);
         }

@@ -6,7 +6,7 @@ import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.SnSound;
 
 import java.util.ArrayList;
@@ -67,7 +67,7 @@ public class SoundsBlock extends Block {
     }
 
     @Override
-    public List<? extends DatingProfileEntry<?>> getDatingProfile() {
+    public List<? extends DatingProfileEntry> getDatingProfile() {
         return null;
     }
 

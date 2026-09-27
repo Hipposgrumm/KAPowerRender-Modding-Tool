@@ -2,7 +2,7 @@ package dev.hipposgrumm.kamapreader.blocks;
 
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 
 import java.util.List;
 
@@ -25,9 +25,9 @@ public class UnknownBlock extends Block {
     }
 
     @Override
-    public List<? extends DatingProfileEntry<?>> getDatingProfile() {
+    public List<? extends DatingProfileEntry> getDatingProfile() {
         return List.of(
-                new DatingProfileEntry<>("data",
+                DatingProfileEntry.simple("data", // TODO: Hex Editor
                         () -> data,
                         d -> data = d
                 )

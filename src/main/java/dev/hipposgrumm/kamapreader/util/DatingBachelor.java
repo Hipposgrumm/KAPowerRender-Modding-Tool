@@ -1,12 +1,13 @@
 package dev.hipposgrumm.kamapreader.util;
 
 import dev.hipposgrumm.kamapreader.FirstThing;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 
 import java.util.List;
 import java.util.function.BiConsumer;
 
 public interface DatingBachelor {
-    List<? extends DatingProfileEntry<?>> getDatingProfile();
+    List<? extends DatingProfileEntry> getDatingProfile();
 
     default List<? extends DatingBachelor> getSubBachelors() {
         return null;

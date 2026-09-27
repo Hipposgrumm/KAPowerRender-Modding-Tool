@@ -4,7 +4,7 @@ import dev.hipposgrumm.kamapreader.blocks.subblock.ArCkBlock;
 import dev.hipposgrumm.kamapreader.blocks.subblock.ResourceCheckBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.BlockType;
 import dev.hipposgrumm.kamapreader.util.types.Texture;
 
@@ -47,7 +47,7 @@ public class TextureSingleBlock extends Block {
     }
 
     @Override
-    public List<? extends DatingProfileEntry<?>> getDatingProfile() {
+    public List<? extends DatingProfileEntry> getDatingProfile() {
         return texture.getDatingProfile();
     }
 

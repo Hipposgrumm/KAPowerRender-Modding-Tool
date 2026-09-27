@@ -1,8 +1,9 @@
 package dev.hipposgrumm.kamapreader.util.types;
 
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.Exportable;
+import dev.hipposgrumm.kamapreader.util.control.display.SoundDisplay;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -54,14 +55,14 @@ public class SnSound implements DatingBachelor, Exportable {
     }
 
     @Override
-    public List<? extends DatingProfileEntry<?>> getDatingProfile() {
-        return List.of(new DatingProfileEntry<>("Clip",
-                () -> this,
-                snd -> {
-            //UNKNOWN1 = snd.UNKNOWN1;
-            //UNKNOWN2 = snd.UNKNOWN2;
-            setData(snd.DATA);
-        }));
+    public List<? extends DatingProfileEntry> getDatingProfile() {
+        return List.of(new DatingProfileEntry("Clip", false, new SoundDisplay(this)));
+    }
+
+    public void copyFrom(SnSound snd) {
+        //UNKNOWN1 = snd.UNKNOWN1;
+        //UNKNOWN2 = snd.UNKNOWN2;
+        setData(snd.DATA);
     }
 
     @Override

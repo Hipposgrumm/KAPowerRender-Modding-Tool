@@ -1,9 +1,13 @@
 package dev.hipposgrumm.kamapreader.blocks.worldobjects;
 
+import dev.hipposgrumm.kamapreader.FirstThing;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileValue;
+import javafx.scene.Node;
+import javafx.scene.control.Label;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,11 +72,9 @@ public class WorldObject implements DatingBachelor {
     }
 
     @Override
-    public List<DatingProfileEntry<?>> getDatingProfile() {
-        List<DatingProfileEntry<?>> items = new ArrayList<>();
-        items.add(new DatingProfileEntry.ReadOnly<>("Type",
-                () -> type
-        ));
+    public List<DatingProfileEntry> getDatingProfile() {
+        List<DatingProfileEntry> items = new ArrayList<>();
+        items.add(new DatingProfileEntry("Type", type));
         return items;
     }
 
@@ -83,7 +85,7 @@ public class WorldObject implements DatingBachelor {
 
     public record Child(String source, short index, short flags, int ptr) {}
 
-    public enum ObType {
+    public enum ObType implements DatingProfileValue {
         UNKNOWN("Unknown", -1),
         BASE("Base", 0),
         POSITION("Position", 1),
@@ -103,6 +105,16 @@ public class WorldObject implements DatingBachelor {
         ObType(String name, int identifier) {
             this.name = name;
             this.identifier = (short) identifier;
+        }
+
+        @Override
+        public Node createDisplay(FirstThing controller, Runnable onChanged, boolean readonly) {
+            return new Label(this.name);
+        }
+
+        @Override
+        public boolean isModified() {
+            return false;
         }
     }
 }

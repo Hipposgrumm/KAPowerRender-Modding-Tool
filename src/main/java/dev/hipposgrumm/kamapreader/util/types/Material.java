@@ -1,9 +1,12 @@
 package dev.hipposgrumm.kamapreader.util.types;
 
+import dev.hipposgrumm.kamapreader.FirstThing;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.ContainingDatingProfileValue;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.display.MaterialView;
 import dev.hipposgrumm.kamapreader.util.types.enums.*;
 import dev.hipposgrumm.kamapreader.util.types.structs.INTCOLOR;
 import dev.hipposgrumm.kamapreader.util.types.structs.FLOATCOLOR_RGBA;
@@ -18,7 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-public class Material implements DatingBachelor, Previewable {
+public class Material implements DatingBachelor, Previewable, ContainingDatingProfileValue.Containable<Material> {
     public final Texture[] textures = new Texture[7];
     private final SizeLimitedString name;
     private int unknown1;
@@ -151,41 +154,37 @@ public class Material implements DatingBachelor, Previewable {
     }
 
     @Override
-    public List<? extends DatingProfileEntry<?>> getDatingProfile() {
-        return List.of(new DatingProfileEntry.ReadOnly<>("UID",
-                () -> uid
-        ), new DatingProfileEntry.ReadOnly<>("Preview",
-                () -> this
-        ), new DatingProfileEntry<>("Name",
-                () -> name
-        ), new DatingProfileEntry<>("Color",
-                () -> color
-        ), new DatingProfileEntry<>("Textures",
-                () -> textures
-        ), new DatingProfileEntry<>("Bump00",
-                () -> Bump00,
-                b -> Bump00 = b
-        ), new DatingProfileEntry<>("Bump01",
-                () -> Bump01,
-                b -> Bump01 = b
-        ), new DatingProfileEntry<>("Bump10",
-                () -> Bump10,
-                b -> Bump10 = b
-        ), new DatingProfileEntry<>("Bump11",
-                () -> Bump11,
-                b -> Bump11 = b
-        ), new DatingProfileEntry<>("BumpScale",
-                () -> BumpScale,
-                b -> BumpScale = b
-        ), new DatingProfileEntry<>("Specular Color",
-                () -> specular
-        ), new DatingProfileEntry<>("Specular Power",
-                () -> specular_power,
-                p -> specular_power = p
-        ), new DatingProfileEntry<>("Double-Sided",
-                () -> doublesided,
-                p -> doublesided = p
-        ));
+    public List<? extends DatingProfileEntry> getDatingProfile() {
+        return List.of(
+                new DatingProfileEntry("UID", true, uid),
+                new DatingProfileEntry("Preview", new MaterialView(this, 315, 150)),
+                new DatingProfileEntry("Name", false, name),
+                new DatingProfileEntry("Color", false, color),
+                new DatingProfileEntry("Textures", false, new Texture.ArrayDisplay(textures)),
+                DatingProfileEntry.simple("Bump00",
+                        () -> Bump00,
+                        b -> Bump00 = b
+                ), DatingProfileEntry.simple("Bump01",
+                        () -> Bump01,
+                        b -> Bump01 = b
+                ), DatingProfileEntry.simple("Bump10",
+                        () -> Bump10,
+                        b -> Bump10 = b
+                ), DatingProfileEntry.simple("Bump11",
+                        () -> Bump11,
+                        b -> Bump11 = b
+                ), DatingProfileEntry.simple("BumpScale",
+                        () -> BumpScale,
+                        b -> BumpScale = b
+                ), new DatingProfileEntry("Specular Color", false, specular),
+                DatingProfileEntry.simple("Specular Power",
+                        () -> specular_power,
+                        p -> specular_power = p
+                ), DatingProfileEntry.simple("Double-Sided",
+                        () -> doublesided,
+                        p -> doublesided = p
+                )
+        );
     }
 
     @Override
@@ -197,6 +196,46 @@ public class Material implements DatingBachelor, Previewable {
     public Node getPreviewGraphic() {
         if (textures[0] != null) return textures[0].getPreviewGraphic();
         return new Rectangle(50, 50, color.toJavaFXColor());
+    }
+
+    /// For makeCopy()
+    private Material(SizeLimitedString name, RenderStyle style) {
+        this.name = name;
+        this.renderstyle = style;
+    }
+
+    @Override
+    public Node createDisplay(FirstThing controller, Runnable onChanged, boolean readonly) {
+        return null;
+    }
+
+    @Override
+    public ContainingDatingProfileValue.Containable<? extends Material> makeCopy() {
+        Material material = new Material(new SizeLimitedString(name.toString(), name.getSize()), this.renderstyle.makeCopy());
+        System.arraycopy(this.textures, 0, material.textures, 0, this.textures.length);
+        material.unknown1 = this.unknown1;
+        System.arraycopy(this.unknown2, 0, material.unknown2, 0, this.unknown2.length);
+        material.unknown3 = this.unknown3;
+        material.unknown4 = this.unknown4;
+        System.arraycopy(this.unknown5, 0, material.unknown5, 0, this.unknown5.length);
+        System.arraycopy(this.unknown6.array(), 0, material.unknown6.array(), 0, this.unknown6.array().length);
+        material.color = (FLOATCOLOR_RGBA) this.color.makeCopy();
+        material.unknown7 = this.unknown7;
+        material.Bump00 = this.Bump00;
+        material.Bump01 = this.Bump01;
+        material.Bump10 = this.Bump10;
+        material.Bump11 = this.Bump11;
+        material.BumpScale = this.BumpScale;
+        material.specular = (FLOATCOLOR_RGBA) this.specular.makeCopy();
+        System.arraycopy(this.unknown8, 0, material.unknown8, 0, this.unknown8.length);
+        material.specular_power = this.specular_power;
+        material.doublesided = this.doublesided;
+        System.arraycopy(this.internal1, 0, material.internal1, 0, this.internal1.length);
+        material.internal2 = this.internal2;
+        material.internal3 = this.internal3;
+        material.uid = new UniqueIdentifier(material.uid.get());
+        material.internal4 = new UniqueIdentifier(material.internal4.get());
+        return material;
     }
 
     @Override
@@ -230,6 +269,7 @@ public class Material implements DatingBachelor, Previewable {
         public final TextureStage[] textureStages = new TextureStage[8];
         public final SamplerStage[] samplerStages = new SamplerStage[8];
 
+        private RenderStyle() {}
         RenderStyle(BlockReader reader) {
             name = reader.readStringFixed(0x40);
             enableZ = D3DZBUFFERTYPE.from(reader.readInt());
@@ -289,70 +329,68 @@ public class Material implements DatingBachelor, Previewable {
         }
 
         @Override
-        public List<? extends DatingProfileEntry<?>> getDatingProfile() {
-            return List.of(new DatingProfileEntry<>("Name",
-                    () -> name
-            ), new DatingProfileEntry<>("Z-Enabled",
-                    () -> enableZ,
-                    b -> enableZ = b
-            ), new DatingProfileEntry<>("Z-Write",
-                    () -> enableWriteZ,
-                    b -> enableWriteZ = b
-            ), new DatingProfileEntry<>("Lighting",
-                    () -> lighting,
-                    b -> lighting = b
-            ), new DatingProfileEntry<>("VertexColors",
-                    () -> vertexColors,
-                    b -> vertexColors = b
-            ), new DatingProfileEntry<>("AlphaBlend",
-                    () -> enableAlphaBlend,
-                    b -> enableAlphaBlend = b
-            ), new DatingProfileEntry<>("AlphaTest",
-                    () -> enableAlphaTest,
-                    b -> enableAlphaTest = b
-            ), new DatingProfileEntry<>("Specular",
-                    () -> enableSpecular,
-                    b -> enableSpecular = b
-            ), new DatingProfileEntry<>("AlphaRef",
-                    () -> alphaRef,
-                    i -> alphaRef = i
-            ), new DatingProfileEntry<>("TextureFactor",
-                    () -> textureFactor
-            ), new DatingProfileEntry<>("BlendFactor",
-                    () -> blendFactor
-            ), new DatingProfileEntry<>("Shade Mode",
-                    () -> shadeMode,
-                    e -> shadeMode = e
-            ), new DatingProfileEntry<>("Source Blend",
-                    () -> srcBlend,
-                    e -> srcBlend = e
-            ), new DatingProfileEntry<>("Destination Blend",
-                    () -> destBlend,
-                    e -> destBlend = e
-            ), new DatingProfileEntry<>("Z-Function",
-                    () -> zFunc,
-                    e -> zFunc = e
-            ), new DatingProfileEntry<>("Alpha-Function",
-                    () -> alphaFunc,
-                    e -> alphaFunc = e
-            ), new DatingProfileEntry<>("MatSrc: Diffuse",
-                    () -> diffuseMaterialSource,
-                    s -> diffuseMaterialSource = s
-            ), new DatingProfileEntry<>("MatSrc: Specular",
-                    () -> specularMaterialSource,
-                    s -> specularMaterialSource = s
-            ), new DatingProfileEntry<>("MatSrc: Ambient",
-                    () -> ambientMaterialSource,
-                    s -> ambientMaterialSource = s
-            ), new DatingProfileEntry<>("MatSrc: Emissive",
-                    () -> emissiveMaterialSource,
-                    s -> emissiveMaterialSource = s
-            ), new DatingProfileEntry<>("Color Write Flags",
-                    () -> colorWriteFlags
-            ), new DatingProfileEntry<>("BlendOp",
-                    () -> blendop,
-                    o -> blendop = o
-            ));
+        public List<? extends DatingProfileEntry> getDatingProfile() {
+            return List.of(
+                    new DatingProfileEntry("Name", false, name),
+                    DatingProfileEntry.simple("Z-Enabled",
+                            () -> enableZ,
+                            b -> enableZ = b
+                    ), DatingProfileEntry.simple("Z-Write",
+                            () -> enableWriteZ,
+                            b -> enableWriteZ = b
+                    ), DatingProfileEntry.simple("Lighting",
+                            () -> lighting,
+                            b -> lighting = b
+                    ), DatingProfileEntry.simple("VertexColors",
+                            () -> vertexColors,
+                            b -> vertexColors = b
+                    ), DatingProfileEntry.simple("AlphaBlend",
+                            () -> enableAlphaBlend,
+                            b -> enableAlphaBlend = b
+                    ), DatingProfileEntry.simple("AlphaTest",
+                            () -> enableAlphaTest,
+                            b -> enableAlphaTest = b
+                    ), DatingProfileEntry.simple("Specular",
+                            () -> enableSpecular,
+                            b -> enableSpecular = b
+                    ), DatingProfileEntry.simple("AlphaRef",
+                            () -> alphaRef,
+                            i -> alphaRef = i
+                    ), new DatingProfileEntry("TextureFactor", false, textureFactor),
+                    new DatingProfileEntry("BlendFactor", false, blendFactor),
+                    DatingProfileEntry.simple("Shade Mode",
+                            () -> shadeMode,
+                            e -> shadeMode = e
+                    ), DatingProfileEntry.simple("Source Blend",
+                            () -> srcBlend,
+                            e -> srcBlend = e
+                    ), DatingProfileEntry.simple("Destination Blend",
+                            () -> destBlend,
+                            e -> destBlend = e
+                    ), DatingProfileEntry.simple("Z-Function",
+                            () -> zFunc,
+                            e -> zFunc = e
+                    ), DatingProfileEntry.simple("Alpha-Function",
+                            () -> alphaFunc,
+                            e -> alphaFunc = e
+                    ), DatingProfileEntry.simple("MatSrc: Diffuse",
+                            () -> diffuseMaterialSource,
+                            s -> diffuseMaterialSource = s
+                    ), DatingProfileEntry.simple("MatSrc: Specular",
+                            () -> specularMaterialSource,
+                            s -> specularMaterialSource = s
+                    ), DatingProfileEntry.simple("MatSrc: Ambient",
+                            () -> ambientMaterialSource,
+                            s -> ambientMaterialSource = s
+                    ), DatingProfileEntry.simple("MatSrc: Emissive",
+                            () -> emissiveMaterialSource,
+                            s -> emissiveMaterialSource = s
+                    ), new DatingProfileEntry("Color Write Flags", false, colorWriteFlags),
+                    DatingProfileEntry.simple("BlendOp",
+                            () -> blendop,
+                            o -> blendop = o
+                    )
+            );
         }
 
         @Override
@@ -361,6 +399,37 @@ public class Material implements DatingBachelor, Previewable {
             items.addAll(Arrays.asList(textureStages));
             items.addAll(Arrays.asList(samplerStages));
             return items;
+        }
+
+        public RenderStyle makeCopy() {
+            RenderStyle style = new RenderStyle();
+            style.name = new SizeLimitedString(this.name.toString(), this.name.getSize());
+            style.enableZ = this.enableZ;
+            style.enableWriteZ = this.enableWriteZ;
+            style.lighting = this.lighting;
+            style.vertexColors = this.vertexColors;
+            style.enableAlphaBlend = this.enableAlphaBlend;
+            style.enableAlphaTest = this.enableAlphaTest;
+            style.enableSpecular = this.enableSpecular;
+            style.alphaRef = this.alphaRef;
+            style.textureFactor.color = this.textureFactor.color;
+            style.blendFactor.color = this.blendFactor.color;
+            style.shadeMode = this.shadeMode;
+            style.srcBlend = this.srcBlend;
+            style.destBlend = this.destBlend;
+            style.zFunc = this.zFunc;
+            style.alphaFunc = this.alphaFunc;
+            style.diffuseMaterialSource = this.diffuseMaterialSource;
+            style.specularMaterialSource = this.specularMaterialSource;
+            style.ambientMaterialSource = this.ambientMaterialSource;
+            style.emissiveMaterialSource = this.emissiveMaterialSource;
+            style.colorWriteFlags = this.colorWriteFlags;
+            style.blendop = this.blendop;
+            for (int i=0;i<this.textureStages.length;i++)
+                style.textureStages[i] = this.textureStages[i].makeCopy();
+            for (int i=0;i<this.samplerStages.length;i++)
+                style.samplerStages[i] = this.samplerStages[i].makeCopy();
+            return style;
         }
 
         @Override
@@ -396,6 +465,10 @@ public class Material implements DatingBachelor, Previewable {
             public TEXINDEX texcoordindex;
             public D3DTEXTURETRANSFORMFLAGS transformflags;
 
+            private TextureStage(int i) {
+                this.i = i;
+            }
+
             TextureStage(int i, BlockReader reader) {
                 this.i = i;
                 colorop = D3DTEXTUREOP.from(reader.readInt());
@@ -420,32 +493,36 @@ public class Material implements DatingBachelor, Previewable {
             }
 
             @Override
-            public List<? extends DatingProfileEntry<?>> getDatingProfile() {
-                return List.of(new DatingProfileEntry<>("ColorOp",
-                        () -> colorop,
-                        o -> colorop = o
-                ), new DatingProfileEntry<>("AlphaOp",
-                        () -> alphaop,
-                        o -> alphaop = o
-                ), new DatingProfileEntry<>("ColorArg1",
-                        () -> colorarg1,
-                        a -> colorarg1 = a
-                ), new DatingProfileEntry<>("ColorArg2",
-                        () -> colorarg2,
-                        a -> colorarg2 = a
-                ), new DatingProfileEntry<>("AlphaArg1",
-                        () -> alphaarg1,
-                        a -> alphaarg1 = a
-                ), new DatingProfileEntry<>("AlphaArg2",
-                        () -> alphaarg2,
-                        a -> alphaarg2 = a
-                ), new DatingProfileEntry<>("TexCoord Index",
-                        () -> texcoordindex,
-                        i -> texcoordindex = i
-                ), new DatingProfileEntry<>("Texture Transform Flags",
-                        () -> transformflags,
-                        f -> transformflags = f
-                ));
+            public List<? extends DatingProfileEntry> getDatingProfile() {
+                return List.of(
+                        DatingProfileEntry.simple("ColorOp",
+                                () -> colorop,
+                                o -> colorop = o
+                        ), DatingProfileEntry.simple("AlphaOp",
+                                () -> alphaop,
+                                o -> alphaop = o
+                        ), new DatingProfileEntry("ColorArg1", false, colorarg1),
+                        new DatingProfileEntry("ColorArg2", false, colorarg2),
+                        new DatingProfileEntry("AlphaArg1", false, alphaarg1),
+                        new DatingProfileEntry("AlphaArg2", false, alphaarg2),
+                        DatingProfileEntry.simple("TexCoord Index",
+                                () -> texcoordindex,
+                                i -> texcoordindex = i
+                        ), new DatingProfileEntry("Texture Transform Flags", false, transformflags)
+                );
+            }
+
+            public TextureStage makeCopy() {
+                RenderStyle.TextureStage stage = new RenderStyle.TextureStage(i);
+                stage.colorop = this.colorop;
+                stage.alphaop = this.alphaop;
+                stage.colorarg1 = this.colorarg1;
+                stage.colorarg2 = this.colorarg2;
+                stage.alphaarg1 = this.alphaarg1;
+                stage.alphaarg2 = this.alphaarg2;
+                stage.texcoordindex = this.texcoordindex;
+                stage.transformflags = this.transformflags;
+                return stage;
             }
 
             @Override
@@ -460,6 +537,10 @@ public class Material implements DatingBachelor, Previewable {
             public D3DTEXTUREADDRESS addressV;
             public D3DTEXTUREADDRESS addressW;
             public final INTCOLOR bordercolor = new INTCOLOR(INTCOLOR.Format.RGBA, -1);
+
+            private SamplerStage(int i) {
+                this.i = i;
+            }
 
             SamplerStage(int i, BlockReader reader) {
                 this.i = i;
@@ -477,19 +558,28 @@ public class Material implements DatingBachelor, Previewable {
             }
 
             @Override
-            public List<? extends DatingProfileEntry<?>> getDatingProfile() {
-                return List.of(new DatingProfileEntry<>("U Address",
-                        () -> addressU,
-                        a -> addressU = a
-                ), new DatingProfileEntry<>("V Address",
-                        () -> addressV,
-                        a -> addressV = a
-                ), new DatingProfileEntry<>("W Address",
-                        () -> addressW,
-                        a -> addressW = a
-                ), new DatingProfileEntry<>("Border Color",
-                        () -> bordercolor
-                ));
+            public List<? extends DatingProfileEntry> getDatingProfile() {
+                return List.of(
+                        DatingProfileEntry.simple("U Address",
+                                () -> addressU,
+                                a -> addressU = a
+                        ), DatingProfileEntry.simple("V Address",
+                                () -> addressV,
+                                a -> addressV = a
+                        ), DatingProfileEntry.simple("W Address",
+                                () -> addressW,
+                                a -> addressW = a
+                        ), new DatingProfileEntry("Border Color", false, bordercolor)
+                );
+            }
+
+            public SamplerStage makeCopy() {
+                SamplerStage stage = new SamplerStage(i);
+                stage.addressU = this.addressU;
+                stage.addressV = this.addressW;
+                stage.addressW = this.addressW;
+                stage.bordercolor.color = this.bordercolor.color;
+                return stage;
             }
 
             @Override

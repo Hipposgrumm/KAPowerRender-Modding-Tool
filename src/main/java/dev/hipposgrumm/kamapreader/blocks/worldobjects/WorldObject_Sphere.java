@@ -2,7 +2,7 @@ package dev.hipposgrumm.kamapreader.blocks.worldobjects;
 
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 
 import java.util.List;
 
@@ -38,13 +38,13 @@ public class WorldObject_Sphere extends WorldObject_Draw {
     }
 
     @Override
-    public List<DatingProfileEntry<?>> getDatingProfile() {
-        List<DatingProfileEntry<?>> items = super.getDatingProfile();
-        items.add(new DatingProfileEntry<>("Radius",
+    public List<DatingProfileEntry> getDatingProfile() {
+        List<DatingProfileEntry> items = super.getDatingProfile();
+        items.add(DatingProfileEntry.simple("Radius",
                 () -> radius,
                 r -> radius = r
         ));
-        items.add(new DatingProfileEntry<>("Sphere Material",
+        items.add(DatingProfileEntry.simple("Sphere Material",
                 () -> spherematerial,
                 sm -> spherematerial = sm
         ));

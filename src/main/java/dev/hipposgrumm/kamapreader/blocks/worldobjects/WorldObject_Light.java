@@ -2,7 +2,7 @@ package dev.hipposgrumm.kamapreader.blocks.worldobjects;
 
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.EnumChoices;
 import dev.hipposgrumm.kamapreader.util.types.structs.FLOATCOLOR_RGB;
 
@@ -67,31 +67,29 @@ public class WorldObject_Light extends WorldObject_Position {
     }
 
     @Override
-    public List<DatingProfileEntry<?>> getDatingProfile() {
-        List<DatingProfileEntry<?>> items = super.getDatingProfile();
-        items.add(new DatingProfileEntry<>("Lighting Mode",
+    public List<DatingProfileEntry> getDatingProfile() {
+        List<DatingProfileEntry> items = super.getDatingProfile();
+        items.add(DatingProfileEntry.simple("Lighting Mode",
                 () -> lightmode,
                 m -> lightmode = m
         ));
-        items.add(new DatingProfileEntry<>("Inner Cone (Spotlight)",
+        items.add(DatingProfileEntry.simple("Inner Cone (Spotlight)",
                 () -> coneInner,
                 c -> coneInner = c
         ));
-        items.add(new DatingProfileEntry<>("Outer Cone (Spotlight)",
+        items.add(DatingProfileEntry.simple("Outer Cone (Spotlight)",
                 () -> coneOuter,
                 c -> coneOuter = c
         ));
-        items.add(new DatingProfileEntry<>("Falloff",
+        items.add(DatingProfileEntry.simple("Falloff",
                 () -> falloff,
                 f -> falloff = f
         ));
-        items.add(new DatingProfileEntry<>("Strength",
+        items.add(DatingProfileEntry.simple("Strength",
                 () -> strength,
                 s -> strength = s
         ));
-        items.add(new DatingProfileEntry<>("Color",
-                () -> color
-        ));
+        items.add(new DatingProfileEntry("Color", false, color));
         return items;
     }
 

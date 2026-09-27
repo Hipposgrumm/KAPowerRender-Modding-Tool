@@ -5,7 +5,7 @@ import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.Material;
 import dev.hipposgrumm.kamapreader.util.types.SubBachelorPreviewEntry;
 import dev.hipposgrumm.kamapreader.util.types.Texture;
@@ -41,10 +41,8 @@ public class MaterialsBlock extends Block {
     }
 
     @Override
-    public List<? extends DatingProfileEntry<?>> getDatingProfile() {
-        return List.of(new SubBachelorPreviewEntry(
-                () -> data.materialList
-        ));
+    public List<? extends DatingProfileEntry> getDatingProfile() {
+        return List.of(new DatingProfileEntry("Content", new SubBachelorPreviewEntry(data.materialList)));
     }
 
     @Override

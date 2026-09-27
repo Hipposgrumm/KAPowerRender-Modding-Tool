@@ -5,7 +5,7 @@ import dev.hipposgrumm.kamapreader.blocks.TextureArrayBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.reader.PROReader;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.ViewerAppHandle;
 import dev.hipposgrumm.kamapreader.util.types.Material;
 import dev.hipposgrumm.kamapreader.util.types.SubBachelorPreviewEntry;
@@ -34,17 +34,14 @@ public class PartObject extends Part {
     }
 
     @Override
-    public List<? extends DatingProfileEntry<?>> getDatingProfile() {
-        ViewerAppHandle.sendMessage(ViewerAppHandle.Messages.MODELS_CLEAR, new byte[0]);
-        sendMeshData("Object", mesh_data);
+    public List<? extends DatingProfileEntry> getDatingProfile() {
+        // TODO: Move these calls.
+        //ViewerAppHandle.sendMessage(ViewerAppHandle.Messages.MODELS_CLEAR, new byte[0]);
+        //sendMeshData("Object", mesh_data);
 
-        List<DatingProfileEntry<?>> entries = new ArrayList<>();
-        if (textures != null) entries.add(new SubBachelorPreviewEntry("Textures",
-                () -> textures.textureList
-        ));
-        if (materials != null) entries.add(new SubBachelorPreviewEntry("Materials",
-                () -> materials.materialList
-        ));
+        List<DatingProfileEntry> entries = new ArrayList<>();
+        if (textures != null) entries.add(new DatingProfileEntry("Textures", new SubBachelorPreviewEntry(textures.textureList)));
+        if (materials != null) entries.add(new DatingProfileEntry("Materials", new SubBachelorPreviewEntry(materials.materialList)));
         return entries;
     }
 

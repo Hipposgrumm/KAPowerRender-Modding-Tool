@@ -2,7 +2,7 @@ package dev.hipposgrumm.kamapreader.blocks.worldobjects;
 
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
-import dev.hipposgrumm.kamapreader.util.DatingProfileEntry;
+import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.structs.PR_POINT;
 import dev.hipposgrumm.kamapreader.util.types.structs.PR_QUATERNION;
 
@@ -52,17 +52,11 @@ public class WorldObject_Position extends WorldObject_Base {
     }
 
     @Override
-    public List<DatingProfileEntry<?>> getDatingProfile() {
-        List<DatingProfileEntry<?>> items = super.getDatingProfile();
-        items.add(new DatingProfileEntry<>("Rotation",
-                () -> rotation
-        ));
-        items.add(new DatingProfileEntry<>("Position",
-                () -> position
-        ));
-        items.add(new DatingProfileEntry<>("Scale",
-                () -> scale
-        ));
+    public List<DatingProfileEntry> getDatingProfile() {
+        List<DatingProfileEntry> items = super.getDatingProfile();
+        items.add(new DatingProfileEntry("Rotation", false, rotation));
+        items.add(new DatingProfileEntry("Position", false, position));
+        items.add(new DatingProfileEntry("Scale", false, scale));
         return items;
     }
 }
