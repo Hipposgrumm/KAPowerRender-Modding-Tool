@@ -43,7 +43,10 @@ public class SoundDisplay implements DatingProfileValue {
             loopbtn.setSelected(loopingMode);
             autoplaybtn.setSelected(autoplay);
             playerref.player.setLooping(loopingMode);
-            playbtn.setOnAction(event -> playerref.player.resume());
+            playbtn.setOnAction(event -> {
+                playerref.player.moveTo((int) Math.round(progress.getValue()));
+                playerref.player.resume();
+            });
             pausebtn.setOnAction(event -> playerref.player.pause());
             stopbtn.setOnAction(event -> playerref.player.stop());
             loopbtn.setOnAction(event -> {
@@ -62,8 +65,8 @@ public class SoundDisplay implements DatingProfileValue {
                 playerref.player.pause();
             });
             progress.setOnMouseReleased(event -> {
-                playerref.player.playFrom((int) Math.round(progress.getValue()));
-                if (!playingState.get()) playerref.player.pause();
+                playerref.player.moveTo((int) Math.round(progress.getValue()));
+                if (playingState.get()) playerref.player.resume();
                 modifyingState.set(false);
             });
 
@@ -94,9 +97,11 @@ public class SoundDisplay implements DatingProfileValue {
         Button changeButton = new Button("Replace Sound", Icon.upload());
         saveButton.setOnAction(event -> {
             try {
-                File file = controller.popupSaveFile("Export File", sound.exportFileName+".ogg", "OGG", "*.ogg");
+                String extension = sound.getFileExtension();
+                String appendedExtension = "."+extension;
+                File file = controller.popupSaveFile("Export File", sound.exportFileName+appendedExtension, extension.toUpperCase(), "*"+appendedExtension);
                 if (file == null) return;
-                if (!file.getName().endsWith(".ogg")) file = new File(file.getPath()+".ogg");
+                if (!file.getName().endsWith(appendedExtension)) file = new File(file.getPath()+appendedExtension);
                 if ((!file.createNewFile() && !controller.popupQuestion("Overwrite Warning", "This file already exists!", "Would you like to overwrite the file?"))) return;
 
                 try (FileOutputStream outputStream = new FileOutputStream(file)) {
@@ -109,7 +114,7 @@ public class SoundDisplay implements DatingProfileValue {
         if (readonly) changeButton.setDisable(true);
         else changeButton.setOnAction(event -> {
             try {
-                File file = controller.popupOpenFile("Choose a File", null, "OGG", "*.ogg");
+                File file = controller.popupOpenFile("Choose a File", null, "OGG, WAV", "*.ogg", "*.wav");
                 if (file == null) return;
                 try (InputStream input = new FileInputStream(file)) {
                     String name = file.getName();
@@ -150,6 +155,8 @@ public class SoundDisplay implements DatingProfileValue {
         private final SnSound sound;
         private final SourceDataLine line;
 
+        private final Thread thread;
+
         private int startPosition = 0;
         private int lineOffset = 0;
         private boolean playing = false;
@@ -164,7 +171,7 @@ public class SoundDisplay implements DatingProfileValue {
             line = (SourceDataLine) AudioSystem.getLine(info);
             line.open(sound.FORMAT);
 
-            Thread thread = new Thread(() -> {
+            thread = new Thread(() -> {
                 int i = -1;
                 int framesize = sound.FORMAT.getFrameSize();
                 while (line.isOpen()) {
@@ -224,19 +231,18 @@ public class SoundDisplay implements DatingProfileValue {
          * Play from a position.
          * @param pos Position (in seconds).
          */
-        public void playFrom(float pos) {
-            playFrom(pos * sound.FORMAT.getFrameRate());
+        public void moveTo(float pos) {
+            moveTo(pos * sound.FORMAT.getFrameRate());
         }
 
         /**
          * Play from a position.
          * @param frame Frame to start at.
          */
-        public void playFrom(int frame) {
+        public void moveTo(int frame) {
             stop();
             startPosition = frame;
             lineOffset = line.getFramePosition()-frame;
-            resume();
         }
 
         public void resume() {
@@ -255,7 +261,6 @@ public class SoundDisplay implements DatingProfileValue {
         }
 
         public void stop() {
-            if (!playing) return;
             pause();
             line.flush();
             startPosition = 0;
@@ -293,6 +298,7 @@ public class SoundDisplay implements DatingProfileValue {
         public void close() {
             stop();
             line.close();
+            thread.interrupt();
         }
     }
 }

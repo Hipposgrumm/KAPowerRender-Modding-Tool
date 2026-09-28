@@ -3,6 +3,7 @@ module dev.hipposgrumm.kamapreader {
     requires javafx.fxml;
     requires jdk.jshell;
     requires java.desktop;
+    requires vorbisspi;
 
     opens dev.hipposgrumm.kamapreader to javafx.fxml;
     exports dev.hipposgrumm.kamapreader;
