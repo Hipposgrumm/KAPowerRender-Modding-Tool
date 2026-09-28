@@ -2,6 +2,7 @@ package dev.hipposgrumm.kamapreader.blocks;
 
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
+import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 
 import java.util.List;
@@ -15,7 +16,7 @@ public class UnknownBlock extends Block {
     }
 
     @Override
-    protected void read(BlockReader reader) {
+    protected void read(BlockReader reader, KARFile.ProgressUpdater progress) {
         data = reader.readBytes(reader.getRemaining());
     }
 

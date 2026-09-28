@@ -4,9 +4,9 @@ import dev.hipposgrumm.kamapreader.blocks.MaterialsBlock;
 import dev.hipposgrumm.kamapreader.blocks.TextureArrayBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
+import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.reader.PROReader;
-import dev.hipposgrumm.kamapreader.util.ViewerAppHandle;
 import dev.hipposgrumm.kamapreader.util.types.Material;
 import dev.hipposgrumm.kamapreader.util.types.SubBachelorPreviewEntry;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.SizeLimitedString;
@@ -32,8 +32,9 @@ public class PartCharacter extends Part {
     }
 
     @Override
-    protected void readData(BlockReader reader) {
+    protected void readData(BlockReader reader, KARFile.ProgressUpdater progress) {
         name = reader.readStringFixed(64);
+        progress.setMessage("Reading "+name);
         String filename = name.toString();
         if (filename.toUpperCase().endsWith(".CHM")) filename = filename.substring(0, filename.length()-4);
 

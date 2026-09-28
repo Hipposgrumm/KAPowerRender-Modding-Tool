@@ -4,6 +4,7 @@ import dev.hipposgrumm.kamapreader.blocks.MaterialsBlock;
 import dev.hipposgrumm.kamapreader.blocks.TextureArrayBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
+import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.reader.PROReader;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.ViewerAppHandle;
@@ -22,7 +23,8 @@ public class PartObject extends Part {
     }
 
     @Override
-    protected void readData(BlockReader reader) {
+    protected void readData(BlockReader reader, KARFile.ProgressUpdater progress) {
+        progress.setMessage("Reading Object");
         BYTE_DATA = reader.readBytes(12);
         mesh_data = PROReader.readPRO(reader.segment(reader.getRemaining()));
     }

@@ -15,7 +15,7 @@ public class ArCkBlock extends UnknownBlock {
     public static ArCkBlock read(BlockReader reader, String from) {
         if (!"ArCk".equals(reader.readBlockType())) throw new IllegalStateException(from+" block is malformed: No ArCk found!");
         ArCkBlock block = new ArCkBlock(reader.readInt());
-        block.readFull(reader.segment(block.size));
+        block.readFull(reader.segment(block.size), null);
         return block;
     }
 

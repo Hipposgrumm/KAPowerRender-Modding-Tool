@@ -4,6 +4,7 @@ import dev.hipposgrumm.kamapreader.blocks.subblock.ArCkBlock;
 import dev.hipposgrumm.kamapreader.blocks.subblock.ResourceCheckBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
+import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.BlockType;
 import dev.hipposgrumm.kamapreader.util.types.Texture;
@@ -18,7 +19,8 @@ public class TextureSingleBlock extends Block {
     public Texture texture;
 
     @Override
-    protected void read(BlockReader reader) {
+    protected void read(BlockReader reader, KARFile.ProgressUpdater progress) {
+        progress.setMessage("Reading Texture");
         rsck = ResourceCheckBlock.read(reader, "TrFm");
         arck = ArCkBlock.read(reader, "TrFm");
 

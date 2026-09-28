@@ -4,6 +4,7 @@ import dev.hipposgrumm.kamapreader.blocks.MaterialsBlock;
 import dev.hipposgrumm.kamapreader.blocks.TextureArrayBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
+import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.reader.PROReader;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
@@ -33,7 +34,8 @@ public abstract class Part implements DatingBachelor {
         this.materials = materials;
     }
 
-    public static Part read(BlockReader reader) {
+    public static Part read(BlockReader reader, KARFile.ProgressUpdater progress) {
+        progress.setMessage("Reading Part");
         int un1 = reader.readIntLittle();
         byte[] un2 = reader.readBytes(reader.readIntLittle());
 
@@ -70,14 +72,17 @@ public abstract class Part implements DatingBachelor {
             TextureArrayBlock.TexturesData textures;
             if (texturesOffset > 0) {
                 reader.seek(texturesOffset-currentOffset);
-                textures = new TextureArrayBlock.TexturesData(reader);
+                progress.updateWith(reader);
+                textures = new TextureArrayBlock.TexturesData(reader, null, progress);
             } else textures = null;
             MaterialsBlock.MaterialsData materials;
             if (materialsOffset > 0) {
                 reader.seek(materialsOffset-currentOffset);
-                materials = new MaterialsBlock.MaterialsData(reader, (textures != null) ? Collections.singletonList(textures.textures) : Collections.emptyList());
+                progress.updateWith(reader);
+                materials = new MaterialsBlock.MaterialsData(reader, (textures != null) ? Collections.singletonList(textures.textures) : Collections.emptyList(), null, progress);
             } else materials = new FillableMaterials();
             reader.seek(currentOffset);
+            progress.updateWith(reader);
 
             part = switch ((type >> 8) & 0xFF) { // TODO: There's more data to be read.
                 case 0x10 -> new PartCharacter(textures, materials);
@@ -89,7 +94,7 @@ public abstract class Part implements DatingBachelor {
             part.TYPE = type;
             int endOffset = (texturesOffset>0 ? texturesOffset : (materialsOffset>0 ? materialsOffset : (reader.getSize()+8)));
             BlockReader subReader = reader.segment(endOffset-currentOffset-8);
-            part.readData(subReader);
+            part.readData(subReader, progress);
         } catch (Exception e) {
             e.printStackTrace();
             if (part == null) {
@@ -103,7 +108,7 @@ public abstract class Part implements DatingBachelor {
     }
 
     /// Reads main mesh data excluding texture and material data.
-    protected abstract void readData(BlockReader reader);
+    protected abstract void readData(BlockReader reader, KARFile.ProgressUpdater progress);
 
     public final void write(BlockWriter writer) {
         writer.writeIntLittle(UNKNOWN1);

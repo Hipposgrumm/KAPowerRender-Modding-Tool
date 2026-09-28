@@ -4,6 +4,7 @@ import dev.hipposgrumm.kamapreader.blocks.subblock.ArCkBlock;
 import dev.hipposgrumm.kamapreader.blocks.subblock.ResourceCheckBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
+import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.BlockType;
@@ -20,17 +21,20 @@ public class FontsBlock extends Block {
     public List<FontDefinition> fonts = new ArrayList<>();
 
     @Override
-    protected void read(BlockReader reader) {
+    protected void read(BlockReader reader, KARFile.ProgressUpdater progress) {
+        progress.setMessage("Reading FontDefinitions");
         rsck = ResourceCheckBlock.read(reader, "FtFm");
         arck = ArCkBlock.read(reader, "FtFm");
 
         while (reader.getRemaining() > 0) {
+            progress.updateWith(reader);
             byte type = reader.readByte();
             if (type == 0x00) break;
             reader.move(-1);
 
             fonts.add(new FontDefinition(reader));
         }
+        progress.updateWith(reader);
     }
 
     @Override

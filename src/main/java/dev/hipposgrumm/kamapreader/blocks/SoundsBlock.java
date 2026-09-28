@@ -38,14 +38,17 @@ public class SoundsBlock extends Block {
     }
 
     @Override
-    protected void read(BlockReader reader) {
+    protected void read(BlockReader reader, KARFile.ProgressUpdater progress) {
         rsck = ResourceCheckBlock.read(reader, "SnFm");
         arck = ArCkBlock.read(reader, "SnFm");
         int i=0;while (reader.getRemaining() >= 40) {
+            String name = soundPrefix+(i++);
+            progress.updateWith(reader);
+            progress.setMessage("Reading "+name);
             byte[] un = reader.readBytes(40);
             int size = reader.readIntLittle();
             int un2 = reader.readIntLittle();
-            SnSound snd = new SnSound(soundPrefix+(i++), reader.readBytes(size));
+            SnSound snd = new SnSound(name, reader.readBytes(size));
             snd.UNKNOWN1 = un;
             snd.UNKNOWN2 = un2;
             sounds.add(snd);

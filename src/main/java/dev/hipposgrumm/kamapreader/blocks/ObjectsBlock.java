@@ -5,6 +5,7 @@ import dev.hipposgrumm.kamapreader.blocks.subblock.ResourceCheckBlock;
 import dev.hipposgrumm.kamapreader.blocks.worldobjects.*;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
+import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 
@@ -18,11 +19,13 @@ public class ObjectsBlock extends Block {
     private final List<WorldObject> objects = new ArrayList<>();
 
     @Override
-    protected void read(BlockReader reader) {
+    protected void read(BlockReader reader, KARFile.ProgressUpdater progress) {
         rsck = ResourceCheckBlock.read(reader, "ObFm");
         arck = ArCkBlock.read(reader, "ObFm");
 
         while (reader.getRemaining() > 0) {
+            progress.setMessage("Reading Object "+objects.size());
+            progress.updateWith(reader);
             short obj = reader.readShort();
             WorldObject object = switch(obj) {
                 case 0 -> new WorldObject_Base();

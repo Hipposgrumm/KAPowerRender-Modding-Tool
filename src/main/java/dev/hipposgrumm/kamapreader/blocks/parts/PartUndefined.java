@@ -4,6 +4,7 @@ import dev.hipposgrumm.kamapreader.blocks.MaterialsBlock;
 import dev.hipposgrumm.kamapreader.blocks.TextureArrayBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
+import dev.hipposgrumm.kamapreader.reader.KARFile;
 
 public class PartUndefined extends Part {
     public PartUndefined(TextureArrayBlock.TexturesData textures, MaterialsBlock.MaterialsData materials) {
@@ -11,7 +12,8 @@ public class PartUndefined extends Part {
     }
 
     @Override
-    protected void readData(BlockReader reader) {
+    protected void readData(BlockReader reader, KARFile.ProgressUpdater progress) {
+        progress.setMessage("Reading Undefined Part");
         BYTE_DATA = reader.readBytes(reader.getSize());
         reader.seek(0);
     }

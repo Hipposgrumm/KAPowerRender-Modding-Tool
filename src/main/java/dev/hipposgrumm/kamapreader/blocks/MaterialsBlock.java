@@ -29,9 +29,9 @@ public class MaterialsBlock extends Block {
     }
 
     @Override
-    protected void read(BlockReader reader) {
+    protected void read(BlockReader reader, KARFile.ProgressUpdater progress) {
         rsck = ResourceCheckBlock.read(reader, "MtFm");
-        data = new MaterialsData(reader, textureMaps);
+        data = new MaterialsData(reader, textureMaps, "Reading Materials", progress);
     }
 
     @Override
@@ -68,12 +68,14 @@ public class MaterialsBlock extends Block {
         public final Map<Integer, MaterialRef> materials = new HashMap<>();
 
         protected MaterialsData() {}
-        public MaterialsData(BlockReader reader, List<Map<Integer, Texture>> textureMaps) {
+        public MaterialsData(BlockReader reader, List<Map<Integer, Texture>> textureMaps, String statusMessage, KARFile.ProgressUpdater progress) {
             unknown = reader.readInt();
             reader = reader.segment(reader.readInt());
 
             int count = reader.readInt();
             for (int i=0;i<count;i++) {
+                if (statusMessage != null) progress.setMessage(statusMessage+" "+i+"/"+count);
+                progress.updateWith(reader);
                 Material mat = new Material(textureMaps, reader.segment(0x42c));
                 materials.put(mat.getUid().get(), new MaterialRef(mat, materialList.size()));
                 materialList.add(mat);

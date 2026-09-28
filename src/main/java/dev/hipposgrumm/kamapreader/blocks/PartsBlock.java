@@ -5,6 +5,7 @@ import dev.hipposgrumm.kamapreader.blocks.subblock.ArCkBlock;
 import dev.hipposgrumm.kamapreader.blocks.subblock.ResourceCheckBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
+import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.Material;
@@ -21,14 +22,14 @@ public class PartsBlock extends Block {
     private byte[] neglectedBytes = null;
 
     @Override
-    protected void read(BlockReader reader) {
+    protected void read(BlockReader reader, KARFile.ProgressUpdater progress) {
         rsck = ResourceCheckBlock.read(reader, "PtFm");
         arck = ArCkBlock.read(reader, "PtFm");
 
         while (reader.getRemaining() > 0) {
             int pos = reader.getPointer();
             try {
-                Part part = Part.read(reader);
+                Part part = Part.read(reader, progress);
                 if (part == null) {
                     reader.seek(pos);
                     neglectedBytes = reader.readBytes(reader.getRemaining());

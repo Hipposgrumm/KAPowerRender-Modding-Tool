@@ -3,6 +3,7 @@ package dev.hipposgrumm.kamapreader.blocks;
 import dev.hipposgrumm.kamapreader.blocks.subblock.ResourceCheckBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
+import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.BlockType;
@@ -16,9 +17,9 @@ public class TextureArrayBlock extends Block {
     public TexturesData data;
 
     @Override
-    protected void read(BlockReader reader) {
+    protected void read(BlockReader reader, KARFile.ProgressUpdater progress) {
         rsck = ResourceCheckBlock.read(reader, "TxFm");
-        data = new TexturesData(reader);
+        data = new TexturesData(reader, "Reading TextureSet", progress);
     }
 
     @Override
@@ -52,7 +53,7 @@ public class TextureArrayBlock extends Block {
         public final ArrayList<Texture> textureList = new ArrayList<>();
         public final Map<Integer, Texture> textures = new HashMap<>();
 
-        public TexturesData(BlockReader reader) {
+        public TexturesData(BlockReader reader, String statusMessage, KARFile.ProgressUpdater progress) {
             head = reader.readBlockHead();
             if (head[0] != BlockType.TEXTURE_ARRAY)
                 throw new IllegalStateException(String.format("Block data value (0x%02X) does not match for type TEXTURE_ARRAY", head[0]));
@@ -68,6 +69,8 @@ public class TextureArrayBlock extends Block {
             //     also allow for an infinite loop if set up as such.
             int offsetNext = reader.readIntLittle();
             while (offsetNext != 0) {
+                if (statusMessage != null) progress.setMessage(statusMessage+" "+textureList.size());
+                progress.updateWith(reader);
                 offsetNext = reader.readIntLittle();
                 BlockReader texreader = reader.segment(offsetNext != 0
                         ? offsetNext - reader.getPointer()

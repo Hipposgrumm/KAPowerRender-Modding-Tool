@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="dev.hipposgrumm.kamapreader.util.control.ProgressPopup"
+      minWidth="300" minHeight="150" stylesheets="@style.css"
+      alignment="CENTER" spacing="10.0" >
+    <Label fx:id="status" text="" prefWidth="250" alignment="CENTER_LEFT" />
+    <ProgressBar fx:id="progress" prefWidth="250" />
+</VBox>

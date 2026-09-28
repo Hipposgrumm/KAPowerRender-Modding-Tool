@@ -2,18 +2,34 @@ package dev.hipposgrumm.kamapreader.reader;
 
 import dev.hipposgrumm.kamapreader.blocks.*;
 import dev.hipposgrumm.kamapreader.util.types.Material;
+import javafx.concurrent.Task;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-public class KARFile {
+public class KARFile extends Task<KARFile> {
     public final File file;
     public final List<Block> blocks = new ArrayList<>();
+    private boolean loadTriggeredAlready = false;
 
-    public KARFile(File file) throws IOException {
+    private int maxsize;
+
+    public KARFile(File file) {
         this.file = file;
+    }
+
+    @Override
+    protected KARFile call() throws Exception {
+        if (loadTriggeredAlready) {
+            cancel();
+            return null;
+        }
+        loadTriggeredAlready = true;
+
+        updateMessage("Starting Read");
         BlockReader reader = new BlockReader(file);
+        ProgressUpdater progress = new ProgressUpdater(reader.getSize());
         // Very start of the KAR file
         if (!"CAT ".equals(reader.readBlockType())) throw new IllegalArgumentException("File is not a KAResource file.");
         int size = reader.readIntBig();
@@ -21,6 +37,7 @@ public class KARFile {
         reader = reader.segment(size-4);
 
         while (reader.getRemaining() > 0) {
+            progress.updateWith(reader);
             String blockFormat = reader.readBlockType();
             boolean littleEndian = switch (blockFormat) {
                 case "RIFF" -> true;
@@ -32,6 +49,7 @@ public class KARFile {
 
             int blockSize = reader.readInt()-4;
             String blockType = reader.readBlockType();
+            progress.setMessage("Reading "+blockType);
             Block block = switch (blockType) {
                 case "PtFm" -> new PartsBlock();
                 case "TxFm" -> new TextureArrayBlock();
@@ -42,9 +60,12 @@ public class KARFile {
                 case "FtFm" -> new FontsBlock();
                 default -> new UnknownBlock(blockType);
             };
-            block.readFull(reader.segment(blockSize));
+            block.readFull(reader.segment(blockSize), progress);
+            progress.setMessage(""); // avoid blame game in case something goes wrong between this and the next one
             blocks.add(block);
         }
+        progress.updateWith(reader);
+        progress.setMessage("Done!");
 
         Map<Integer, Material> materials = new HashMap<>();
         for (Block block:blocks) {
@@ -56,6 +77,8 @@ public class KARFile {
         for (Block block:blocks) {
             if (block instanceof PartsBlock bl) bl.fillMaterials(materials);
         }
+
+        return this;
     }
 
     public void save(File file) throws IOException {
@@ -82,5 +105,21 @@ public class KARFile {
         writer.writeInt(writer.getSize()-8);
 
         writer.writeout(file);
+    }
+
+    public final class ProgressUpdater {
+        private final int maxsize;
+
+        ProgressUpdater(int maxsize) {
+            this.maxsize = maxsize;
+        }
+
+        public void updateWith(BlockReader reader) {
+            KARFile.this.updateProgress(reader.getTruePointer(), maxsize);
+        }
+
+        public void setMessage(String message) {
+            KARFile.this.updateMessage(message);
+        }
     }
 }

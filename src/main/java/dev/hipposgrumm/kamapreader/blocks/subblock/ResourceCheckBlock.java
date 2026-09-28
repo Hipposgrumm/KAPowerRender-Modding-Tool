@@ -15,7 +15,7 @@ public class ResourceCheckBlock extends UnknownBlock {
     public static ResourceCheckBlock read(BlockReader reader, String from) {
         if (!"RsCk".equals(reader.readBlockType())) throw new IllegalStateException(from+" block is malformed: No RsCk found!");
         ResourceCheckBlock block = new ResourceCheckBlock(reader.readInt());
-        block.readFull(reader.segment(block.size));
+        block.readFull(reader.segment(block.size), null);
         return block;
     }
 

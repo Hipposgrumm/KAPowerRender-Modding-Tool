@@ -4,19 +4,20 @@ import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.control.ObservableDatingValue;
+import dev.hipposgrumm.kamapreader.util.control.ProgressPopup;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
-import javafx.stage.DirectoryChooser;
-import javafx.stage.FileChooser;
-import javafx.stage.Window;
+import javafx.stage.*;
 import javafx.util.Pair;
 
 import java.io.File;
@@ -145,12 +146,51 @@ public class FirstThing implements Initializable {
     }
 
     private void doLoad(File f) {
+        clearPreview();
+        karFile = new KARFile(f);
         try {
-            karFile = new KARFile(f);
-            setPreview();
-        } catch (IOException e) {
+            try {
+                openProgress();
+                Thread thread = new Thread(karFile);
+                thread.setDaemon(true);
+                thread.start();
+            } catch (IOException e) {
+                new RuntimeException("Unable to load progress popup.", e).printStackTrace();
+                // Load without progressbar.
+                karFile.run();
+                setPreview();
+            }
+        } catch (Exception e) {
             popupError("Error", "Could not load file", e);
         }
+    }
+
+    private void openProgress() throws IOException {
+        Stage stage = new Stage();
+        stage.setTitle("Progress");
+        stage.initOwner(this.stage);
+        stage.initModality(Modality.APPLICATION_MODAL);
+        stage.setResizable(false);
+
+        FXMLLoader loader = new FXMLLoader(Main.class.getClassLoader().getResource("progress.fxml"));
+        Scene scene = new Scene(loader.load(), 300, 150);
+        stage.setScene(scene);
+        stage.show();
+
+        ProgressPopup popup = loader.getController();
+        popup.status.textProperty().bind(karFile.messageProperty());
+        popup.progress.progressProperty().bind(karFile.progressProperty());
+
+        karFile.stateProperty().addListener((obs, oldState, newState) -> {
+            switch (newState) {
+                case SUCCEEDED, FAILED:
+                    setPreview();
+                    // fall through
+                case CANCELLED:
+                    stage.close();
+                    break;
+            }
+        });
     }
 
     @FXML
@@ -247,12 +287,15 @@ public class FirstThing implements Initializable {
         popupError.show();
     }
 
-    private void setPreview() {
-        treeRoot.setValue(new TreeBase(karFile.file.getName()));
+    private void clearPreview() {
         treeRoot.getChildren().clear();
         table.getItems().clear();
         table.getColumns().clear();
         ((Label) table.getPlaceholder()).setText("Select an element in the tree to edit it.");
+    }
+
+    private void setPreview() {
+        treeRoot.setValue(new TreeBase(karFile.file.getName()));
         karFile.blocks.forEach(b -> addTreeItem(treeRoot, b));
     }
 
