@@ -9,6 +9,8 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 public class Main extends Application {
+    public static boolean debugenv = false;
+
     @Override
     public void start(Stage stage) throws IOException {
         FXMLLoader loader = new FXMLLoader(Main.class.getClassLoader().getResource("main.fxml"));
@@ -18,10 +20,17 @@ public class Main extends Application {
         stage.setScene(scene);
         stage.show();
 
-        System.out.println("Hello o/");
+        if (debugenv) System.out.println("Hello Debugger! o/");
+        else System.out.println("Hello o/");
     }
 
     public static void main(String[] args) {
+        for (String arg:args) {
+            if (arg.equals("debugenv")) {
+                debugenv = true;
+            }
+        }
+
         launch();
     }
 

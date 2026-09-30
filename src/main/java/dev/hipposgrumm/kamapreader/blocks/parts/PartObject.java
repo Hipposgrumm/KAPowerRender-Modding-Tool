@@ -37,14 +37,17 @@ public class PartObject extends Part {
 
     @Override
     public List<? extends DatingProfileEntry> getDatingProfile() {
-        // TODO: Move these calls.
-        //ViewerAppHandle.sendMessage(ViewerAppHandle.Messages.MODELS_CLEAR, new byte[0]);
-        //sendMeshData("Object", mesh_data);
-
         List<DatingProfileEntry> entries = new ArrayList<>();
         if (textures != null) entries.add(new DatingProfileEntry("Textures", new SubBachelorPreviewEntry(textures.textureList)));
         if (materials != null) entries.add(new DatingProfileEntry("Materials", new SubBachelorPreviewEntry(materials.materialList)));
         return entries;
+    }
+
+    @Override
+    public void onSelected() {
+        super.onSelected();
+        ViewerAppHandle.sendMessage(ViewerAppHandle.Messages.MODELS_CLEAR, new byte[0]);
+        sendMeshData("Object", mesh_data);
     }
 
     @Override

@@ -17,5 +17,7 @@ public interface DatingBachelor {
         return new ContextMenuOption[0];
     }
 
+    default void onSelected() {}
+
     record ContextMenuOption(String name, BiConsumer<FirstThing, DatingBachelor[]> function) {}
 }

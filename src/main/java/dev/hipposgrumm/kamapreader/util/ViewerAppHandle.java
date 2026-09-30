@@ -1,9 +1,14 @@
 package dev.hipposgrumm.kamapreader.util;
 
+import dev.hipposgrumm.kamapreader.Main;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class ViewerAppHandle {
@@ -47,53 +52,57 @@ public class ViewerAppHandle {
                 processOutThread.start();
                 processErrThread.start();
 
-                try (Socket connection = socket.accept()) {
-                    InputStream input = connection.getInputStream();
-                    OutputStream output = connection.getOutputStream();
-                    int messageID = 0;
-                    byte[] messageData = null; int messageDataIndex = 0;
-                    while (socketThread != null && !socketThread.isInterrupted() && connection.isConnected()) {
-                        if (messageData == null && input.available() >= 8) {
-                            int message = (input.read() << 24) |
-                                    (input.read() << 16) |
-                                    (input.read() << 8) |
-                                    input.read();
-                            int size = (input.read() << 24) |
-                                    (input.read() << 16) |
-                                    (input.read() << 8) |
-                                    input.read();
-                            messageID = message;
-                            messageDataIndex = 0;
-                            messageData = new byte[size];
-                        }
-                        if (messageData != null) {
-                            int available = input.available();
-                            int needed = messageData.length-messageDataIndex;
-                            byte[] data = input.readNBytes(Math.min(available, needed));
-                            System.arraycopy(data, 0, messageData, messageDataIndex, data.length);
-                            messageDataIndex += data.length;
-                            if (messageDataIndex >= messageData.length) {
-                                Consumer<byte[]> handler = handlers.get(messageID);
-                                if (handler != null) handler.accept(messageData);
-                                messageData = null;
-                            }
-                        }
-                        if (!queue.isEmpty()) {
-                            synchronized (queue) {
-                                for (byte[] message:queue)
-                                    output.write(message);
-                                queue.clear();
-                            }
-                        }
-
-                    }
-                }
+                runConnectionSocket(socket);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }, "KAMapViewer Server Thread");
         socketThread.setDaemon(true);
         socketThread.start();
+    }
+
+    private static void runConnectionSocket(ServerSocket socket) throws IOException {
+        try (Socket connection = socket.accept()) {
+            InputStream input = connection.getInputStream();
+            OutputStream output = connection.getOutputStream();
+            int messageID = 0;
+            byte[] messageData = null; int messageDataIndex = 0;
+            while (socketThread != null && !socketThread.isInterrupted() && connection.isConnected()) {
+                if (messageData == null && input.available() >= 8) {
+                    int message = (input.read() << 24) |
+                            (input.read() << 16) |
+                            (input.read() << 8) |
+                            input.read();
+                    int size = (input.read() << 24) |
+                            (input.read() << 16) |
+                            (input.read() << 8) |
+                            input.read();
+                    messageID = message;
+                    messageDataIndex = 0;
+                    messageData = new byte[size];
+                }
+                if (messageData != null) {
+                    int available = input.available();
+                    int needed = messageData.length-messageDataIndex;
+                    byte[] data = input.readNBytes(Math.min(available, needed));
+                    System.arraycopy(data, 0, messageData, messageDataIndex, data.length);
+                    messageDataIndex += data.length;
+                    if (messageDataIndex >= messageData.length) {
+                        Consumer<byte[]> handler = handlers.get(messageID);
+                        if (handler != null) handler.accept(messageData);
+                        messageData = null;
+                    }
+                }
+                if (!queue.isEmpty()) {
+                    synchronized (queue) {
+                        for (byte[] message:queue)
+                            output.write(message);
+                        queue.clear();
+                    }
+                }
+
+            }
+        }
     }
 
     private static void watchAppOutput(InputStream stream, Thread myThread, PrintStream out) {
@@ -129,21 +138,98 @@ public class ViewerAppHandle {
     }
 
     private static void disconnectProgram() {
-        processAliveThread.interrupt();
-        processAliveThread = null;
-        processOutThread.interrupt();
-        processOutThread = null;
-        processErrThread.interrupt();
-        processErrThread = null;
-        socketThread.interrupt();
-        socketThread = null;
+        if (processAliveThread != null) {
+            processAliveThread.interrupt();
+            processAliveThread = null;
+        }
+        if (processOutThread != null) {
+            processOutThread.interrupt();
+            processOutThread = null;
+        }
+        if (processErrThread != null) {
+            processErrThread.interrupt();
+            processErrThread = null;
+        }
+        if (socketThread != null) {
+            socketThread.interrupt();
+            socketThread = null;
+        }
+    }
+
+    private static boolean connectDebugEnv() {
+        File connectionData = new File("KAMapViewer/debugenvport");
+        if (!connectionData.exists()) return false;
+        int port;
+        try { try (RandomAccessFile file = new RandomAccessFile(connectionData, "r")) {
+            port = file.readInt();
+        } } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        try (Socket connection = new Socket((String)null, port)) {
+            InputStream input = connection.getInputStream();
+            OutputStream output = connection.getOutputStream();
+            byte[] messageData = new byte[8]; int messageDataIndex = 0;
+            while (messageDataIndex < messageData.length) {
+                if (!connection.isConnected()) {
+                    System.err.println("Debug connection was lost before connection was made.");
+                    return false;
+                }
+                if (input.available() >= 0) {
+                    messageData[messageDataIndex] = (byte) input.read();
+                    messageDataIndex++;
+                }
+            }
+            ByteBuffer bytes = ByteBuffer.wrap(messageData);
+            long pid = bytes.getLong();
+
+            Optional<ProcessHandle> connectingProcess = ProcessHandle.of(pid);
+            if (connectingProcess.isEmpty()) {
+                System.err.println("Connection send invalid PID.");
+                return false;
+            }
+            AtomicInteger atomicPort = new AtomicInteger(-1);
+            CountDownLatch awaitSocketLatch = new CountDownLatch(1);
+            socketThread = new Thread(() -> {
+                try (ServerSocket socket = new ServerSocket(0)) {
+                    atomicPort.set(socket.getLocalPort());
+                    awaitSocketLatch.countDown();
+
+                    processAliveThread = new Thread(() -> {
+                        while (connectingProcess.get().isAlive()) Thread.onSpinWait();
+                        if (processAliveThread != null) disconnectProgram();
+                    }, "KAMapViewer Alive Thread");
+                    processAliveThread.setDaemon(true);
+                    processAliveThread.start();
+
+                    runConnectionSocket(socket);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }, "KAMapViewer Server Thread");
+            socketThread.setDaemon(true);
+            socketThread.start();
+            try {
+                awaitSocketLatch.await();
+                bytes = ByteBuffer.allocate(4);
+                bytes.putInt(atomicPort.get());
+                output.write(bytes.array());
+            } catch (InterruptedException e) {}
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
 
     /// Send a message to the [[3D Viewer App]].
     public static void sendMessage(int message, byte[] data) {
         if (socketThread == null) {
             try {
-                startProgram();
+                if (
+                    !Main.debugenv ||  // Check for development environment.
+                    !connectDebugEnv() // Check for successfully opened and connected instance.
+                ) startProgram();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

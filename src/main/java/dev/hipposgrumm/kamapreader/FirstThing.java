@@ -125,7 +125,10 @@ public class FirstThing implements Initializable {
     }
 
     public void selectElement(TreeItem<DatingBachelor> value) {
-        if (value.getValue() == null) return;
+        DatingBachelor bachelor = value.getValue();
+        if (bachelor == null) return;
+        bachelor.onSelected();
+
         table.getItems().clear();
         table.getColumns().clear();
         double maxwidth = tableValue.getMaxWidth();

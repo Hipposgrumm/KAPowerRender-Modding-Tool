@@ -4,10 +4,10 @@ import com.badlogic.gdx.Gdx;
 import dev.hipposgrumm.kamapviewer.Main;
 import dev.hipposgrumm.kamapviewer.models.PROModelBuilder;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +19,60 @@ public class ReaderAppConnection {
     private static final List<byte[]> queue = new ArrayList<>();
 
     private static Thread socketThread = null;
+    private static Thread debugServerSocketThread = null;
+
+    public static void openDebugConnection() {
+        File debugport = new File("../debugenvport");
+        if (debugport.exists()) {
+            // delete stale file if any
+            if (!debugport.delete()) throw new RuntimeException("Was unable to delete stale debugenvport file!");
+        }
+        try {
+            debugport.createNewFile();
+            debugport.deleteOnExit();
+            debugServerSocketThread = new Thread(() -> {
+                try (ServerSocket socket = new ServerSocket(0)) {
+                    try (RandomAccessFile file = new RandomAccessFile(debugport, "rw")) {
+                        int port = socket.getLocalPort();
+                        System.out.println("Listening for app on port "+port);
+                        file.writeInt(port);
+                    }
+                    socketLoop: while (debugServerSocketThread != null && !debugServerSocketThread.isInterrupted()) {
+                        try (Socket connection = socket.accept()) {
+                            System.out.println("Received connection!");
+                            InputStream input = connection.getInputStream();
+                            OutputStream output = connection.getOutputStream();
+
+                            ByteBuffer bytes = ByteBuffer.allocate(8);
+                            bytes.putLong(ProcessHandle.current().pid());
+                            output.write(bytes.array());
+
+                            byte[] messageData = new byte[4]; int messageDataIndex = 0;
+                            while (messageDataIndex < messageData.length) {
+                                if (!connection.isConnected()) {
+                                    System.err.println("Debug connection was lost before connection was made.");
+                                    continue socketLoop;
+                                }
+                                if (input.available() >= 0) {
+                                    messageData[messageDataIndex] = (byte) input.read();
+                                    messageDataIndex++;
+                                }
+                            }
+                            bytes = ByteBuffer.wrap(messageData);
+                            int port = bytes.getInt();
+                            connect(port);
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }, "KAMapViewer Debug Server Thread");
+            debugServerSocketThread.setDaemon(true);
+            debugServerSocketThread.start();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /// Connect to the parent app.
     public static void connect(int port) {
@@ -91,6 +145,7 @@ public class ReaderAppConnection {
 
     /// Inform the parent app that this app is being closed.
     public static void terminateConnection() {
+        if (debugServerSocketThread != null) debugServerSocketThread.interrupt();
         if (socketThread == null) return;
         sendMessage(Messages.TERMINATE, new byte[0]);
         socketThread.interrupt();

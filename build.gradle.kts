@@ -46,6 +46,10 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
+tasks.withType<JavaExec> {
+    args = listOf("debugenv") // Tell app that we're in debugger land
+}
+
 jlink {
     imageName.set("KAPowerRenderModdingTool")
     options.set(listOf("--strip-debug", "--compress", "2", "--no-header-files", "--no-man-pages"))

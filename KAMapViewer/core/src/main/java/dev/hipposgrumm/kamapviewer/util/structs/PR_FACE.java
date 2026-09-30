@@ -25,13 +25,13 @@ public class PR_FACE {
 
     public static class FACE_VERTEX_DATA {
         public float U,V;
-        public COLOR_RGBA Col;
+        public COLOR_ARGB Col;
 
         public FACE_VERTEX_DATA() {
-            this.Col = new COLOR_RGBA(-1);
+            this.Col = new COLOR_ARGB(-1);
         }
 
-        public FACE_VERTEX_DATA(float U, float V, COLOR_RGBA Col) {
+        public FACE_VERTEX_DATA(float U, float V, COLOR_ARGB Col) {
             this.U = U;
             this.V = V;
             this.Col = Col;

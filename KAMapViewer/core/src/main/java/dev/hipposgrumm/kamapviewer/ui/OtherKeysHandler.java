@@ -3,6 +3,7 @@ package dev.hipposgrumm.kamapviewer.ui;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import dev.hipposgrumm.kamapviewer.Main;
+import dev.hipposgrumm.kamapviewer.util.VertexcolorMode;
 
 public class OtherKeysHandler implements InputProcessor {
     @Override
@@ -14,10 +15,10 @@ public class OtherKeysHandler implements InputProcessor {
             Main.usertoggle_grid = !Main.usertoggle_grid;
             return true;
         } else if (keycode == Input.Keys.V) {
-            Main.usertoggle_vertcolors = (Main.usertoggle_vertcolors + 1) % 3;
+            Main.usertoggle_vertcolors = cycleEnum(Main.usertoggle_vertcolors);
             return true;
         }else if (keycode == Input.Keys.C) {
-            Main.usertoggle_doubleside = !Main.usertoggle_doubleside;
+            Main.usertoggle_doubleside = cycleEnum(Main.usertoggle_doubleside);
             return true;
         } else if (keycode == Input.Keys.EQUALS || keycode == Input.Keys.NUMPAD_ADD) {
             Main.usertoggle_camspeed += 2.5f;
@@ -28,6 +29,11 @@ public class OtherKeysHandler implements InputProcessor {
             return true;
         }
         return false;
+    }
+
+    private static <T extends Enum<T>> T cycleEnum(T oldval) {
+        T[] values = oldval.getDeclaringClass().getEnumConstants();
+        return values[(oldval.ordinal()+1) % values.length];
     }
 
     @Override

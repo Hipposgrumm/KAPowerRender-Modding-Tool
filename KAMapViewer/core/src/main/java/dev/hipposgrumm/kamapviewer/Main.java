@@ -15,7 +15,9 @@ import dev.hipposgrumm.kamapviewer.rendering.PRMaterial;
 import dev.hipposgrumm.kamapviewer.rendering.PowerRenderShaderProvider;
 import dev.hipposgrumm.kamapviewer.ui.OtherKeysHandler;
 import dev.hipposgrumm.kamapviewer.ui.UIHandler;
+import dev.hipposgrumm.kamapviewer.util.DoubleSideMode;
 import dev.hipposgrumm.kamapviewer.util.ReaderAppConnection;
+import dev.hipposgrumm.kamapviewer.util.VertexcolorMode;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -32,14 +34,10 @@ public class Main extends ApplicationAdapter {
     public static final int WINDOW_WIDTH = 1280;
     public static final int WINDOW_HEIGHT = 720;
 
-    public static final int VERTCOLORTOGGLE_OFF = 0;
-    public static final int VERTCOLORTOGGLE_BLENDED = 1;
-    public static final int VERTCOLORTOGGLE_ONLY = 2;
-
     public static boolean usertoggle_hideUI = false;
     public static boolean usertoggle_grid = true;
-    public static int usertoggle_vertcolors = VERTCOLORTOGGLE_OFF;
-    public static boolean usertoggle_doubleside = false;
+    public static VertexcolorMode usertoggle_vertcolors = VertexcolorMode.BLENDED_ACCURATE;
+    public static DoubleSideMode usertoggle_doubleside = DoubleSideMode.DEFAULT;
     public static float usertoggle_camspeed = 5f;
 
     private float usertoggle_camspeed_last = usertoggle_camspeed;
@@ -58,12 +56,16 @@ public class Main extends ApplicationAdapter {
     private ModelBatch world;
 
     public Main(String[] args) {
+        int port = -1;
         for (String arg:args) {
             if (arg.startsWith("port")) {
-                int port = Integer.parseInt(arg.substring(4));
+                if (port != -1) continue;
+                port = Integer.parseInt(arg.substring(4));
                 System.out.println("Listening on "+port);
                 ReaderAppConnection.connect(port);
-                break;
+            } else if (arg.equals("debugenv")) {
+                System.out.println("Running in debug environment.");
+                ReaderAppConnection.openDebugConnection();
             }
         }
     }

@@ -47,6 +47,7 @@ run {
 // You can uncomment the next line if your IDE claims a build failure even when the app closed properly.
   //setIgnoreExitValue(true)
 
+  args = ["debugenv"] // Tell app that we're in debugger land
   if (os.contains('mac')) jvmArgs += "-XstartOnFirstThread"
 }
 

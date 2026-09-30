@@ -13,6 +13,8 @@ import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Disposable;
 import dev.hipposgrumm.kamapviewer.Main;
 import dev.hipposgrumm.kamapviewer.ui.component.ButtonStyledBackground;
+import dev.hipposgrumm.kamapviewer.util.DoubleSideMode;
+import dev.hipposgrumm.kamapviewer.util.VertexcolorMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,8 +30,8 @@ public class UIHandler implements Disposable {
     private Label label_camspeed;
 
     private boolean usertoggle_grid;
-    private int usertoggle_vertcolors;
-    private boolean usertoggle_doubleside;
+    private VertexcolorMode usertoggle_vertcolors;
+    private DoubleSideMode usertoggle_doubleside;
     private float usertoggle_camspeed;
 
     public UIHandler() {
@@ -41,8 +43,8 @@ public class UIHandler implements Disposable {
         actors.clear();
 
         usertoggle_grid = !Main.usertoggle_grid;
-        usertoggle_vertcolors = -1;
-        usertoggle_doubleside = !Main.usertoggle_doubleside;
+        usertoggle_vertcolors = null;
+        usertoggle_doubleside = null;
         usertoggle_camspeed = -Main.usertoggle_camspeed;
 
         Skin skinDefault = new Skin(Gdx.files.internal("ui/uiskin.json"));
@@ -180,16 +182,11 @@ public class UIHandler implements Disposable {
         }
         if (usertoggle_vertcolors != Main.usertoggle_vertcolors) {
             usertoggle_vertcolors = Main.usertoggle_vertcolors;
-            label_vertexcolor.setText("Vertex Colors [V]: "+switch (usertoggle_vertcolors) {
-                case Main.VERTCOLORTOGGLE_OFF -> "Off";
-                case Main.VERTCOLORTOGGLE_BLENDED -> "Blended";
-                case Main.VERTCOLORTOGGLE_ONLY -> "Only";
-                default -> "UNKNOWN VALUE";
-            });
+            label_vertexcolor.setText("Vertex Colors [V]: "+usertoggle_vertcolors);
         }
         if (usertoggle_doubleside != Main.usertoggle_doubleside) {
             usertoggle_doubleside = Main.usertoggle_doubleside;
-            label_doubleside.setText("Force Double-Sided [C]: "+usertoggle_doubleside);
+            label_doubleside.setText("Double-Sided [C]: "+usertoggle_doubleside);
         }
         if (usertoggle_camspeed != Main.usertoggle_camspeed) {
             usertoggle_camspeed = Main.usertoggle_camspeed;

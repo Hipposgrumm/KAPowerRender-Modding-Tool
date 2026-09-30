@@ -7,7 +7,7 @@ import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import dev.hipposgrumm.kamapviewer.Main;
 import dev.hipposgrumm.kamapviewer.rendering.PRMaterial;
 import dev.hipposgrumm.kamapviewer.rendering.RenderMaterial;
-import dev.hipposgrumm.kamapviewer.util.structs.COLOR_RGBA;
+import dev.hipposgrumm.kamapviewer.util.structs.COLOR_ARGB;
 import dev.hipposgrumm.kamapviewer.util.structs.PR_FACE;
 import dev.hipposgrumm.kamapviewer.util.structs.PR_POINT;
 import dev.hipposgrumm.kamapviewer.util.structs.PR_VERTEX;
@@ -64,9 +64,9 @@ public class PROModelBuilder {
             int materialUID = data.getInt();
             int materialBackUID = data.getInt(); // Probably not even used.
             int ve1 = data.getInt(), ve2 = data.getInt(), ve3 = data.getInt();
-            float u1 = data.getFloat(), v1 = data.getFloat(); COLOR_RGBA col1 = new COLOR_RGBA(data.getInt());
-            float u2 = data.getFloat(), v2 = data.getFloat(); COLOR_RGBA col2 = new COLOR_RGBA(data.getInt());
-            float u3 = data.getFloat(), v3 = data.getFloat(); COLOR_RGBA col3 = new COLOR_RGBA(data.getInt());
+            float u1 = data.getFloat(), v1 = data.getFloat(); COLOR_ARGB col1 = new COLOR_ARGB(data.getInt());
+            float u2 = data.getFloat(), v2 = data.getFloat(); COLOR_ARGB col2 = new COLOR_ARGB(data.getInt());
+            float u3 = data.getFloat(), v3 = data.getFloat(); COLOR_ARGB col3 = new COLOR_ARGB(data.getInt());
             short nX = data.getShort(), nY = data.getShort(), nZ = data.getShort();
             PR_FACE.FACE_VERTEX_DATA Data1 = new PR_FACE.FACE_VERTEX_DATA(u1, v1, col1),
                 Data2 = new PR_FACE.FACE_VERTEX_DATA(u2, v2, col2),
