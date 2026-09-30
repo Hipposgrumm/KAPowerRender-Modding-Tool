@@ -33,8 +33,7 @@ public class PROModelBuilder {
     private PR_FACE[] faces;
 
     public PROModelBuilder(String name) {
-        System.out.println();
-        System.out.println("Mesh name "+name);
+        if (Main.debugenv) System.out.println("\nMesh name "+name);
         this.name = name;
         modelBuilder.begin();
     }
@@ -44,7 +43,7 @@ public class PROModelBuilder {
         StringBuilder name = new StringBuilder();
         for (byte c=data.get();c!='\00';c=data.get())
             name.append((char)c);
-        System.out.println("Segment mesh "+name);
+        if (Main.debugenv) System.out.println("Segment mesh "+name);
         vertices = new PR_VERTEX[data.getInt()];
         for (int i=0;i<vertices.length;i++) {
             float pX = -data.getFloat(), pY = data.getFloat(), pZ = data.getFloat();

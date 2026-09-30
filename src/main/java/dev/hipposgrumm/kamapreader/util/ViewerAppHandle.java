@@ -3,6 +3,7 @@ package dev.hipposgrumm.kamapreader.util;
 import dev.hipposgrumm.kamapreader.Main;
 
 import java.io.*;
+import java.net.ConnectException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -215,6 +216,9 @@ public class ViewerAppHandle {
                 bytes.putInt(atomicPort.get());
                 output.write(bytes.array());
             } catch (InterruptedException e) {}
+        } catch (ConnectException e) {
+            // don't print an exception for this one
+            return false;
         } catch (IOException e) {
             e.printStackTrace();
             return false;

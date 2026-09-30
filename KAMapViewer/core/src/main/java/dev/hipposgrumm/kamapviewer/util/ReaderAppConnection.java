@@ -15,7 +15,7 @@ import java.util.List;
 public class ReaderAppConnection {
     public static Main instance;
 
-    public static List<Runnable> actionQueue = new ArrayList<>();
+    public static final List<Runnable> actionQueue = new ArrayList<>();
     private static final List<byte[]> queue = new ArrayList<>();
 
     private static Thread socketThread = null;
@@ -105,7 +105,9 @@ public class ReaderAppConnection {
                         if (messageDataIndex >= messageData.length) {
                             int lambdaSafeMessageID = messageID;
                             byte[] lambdaSafeMessageData = messageData;
-                            actionQueue.add(() -> handleMessage(lambdaSafeMessageID, lambdaSafeMessageData));
+                            synchronized (actionQueue) {
+                                actionQueue.add(() -> handleMessage(lambdaSafeMessageID, lambdaSafeMessageData));
+                            }
                             messageData = null;
                         }
                     }
@@ -167,7 +169,7 @@ public class ReaderAppConnection {
         switch (message) {
             case Messages.TERMINATE -> {
                 System.out.println("Received exit signal from parent application.");
-                Gdx.app.exit();
+                if (!Main.debugenv) Gdx.app.exit();
             }
             case Messages.TEST_ECHO -> {
                 for (int i=0;i<bytes.length;i++)

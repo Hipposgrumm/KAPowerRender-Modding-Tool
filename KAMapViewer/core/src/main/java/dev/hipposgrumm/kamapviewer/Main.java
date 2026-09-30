@@ -41,6 +41,7 @@ public class Main extends ApplicationAdapter {
     public static float usertoggle_camspeed = 5f;
 
     private float usertoggle_camspeed_last = usertoggle_camspeed;
+    public static boolean debugenv = false;
 
     private final List<Model> models = new ArrayList<>();
     private final List<ModelInstance> modelInstances = new ArrayList<>();
@@ -55,6 +56,8 @@ public class Main extends ApplicationAdapter {
     private FirstPersonCameraController camController;
     private ModelBatch world;
 
+    private final ProcessHandle parentProcess;
+
     public Main(String[] args) {
         int port = -1;
         for (String arg:args) {
@@ -65,9 +68,11 @@ public class Main extends ApplicationAdapter {
                 ReaderAppConnection.connect(port);
             } else if (arg.equals("debugenv")) {
                 System.out.println("Running in debug environment.");
+                debugenv = true;
                 ReaderAppConnection.openDebugConnection();
             }
         }
+        parentProcess = ProcessHandle.current().parent().orElse(null);
     }
 
     public void addModel(Model model) {
@@ -123,10 +128,17 @@ public class Main extends ApplicationAdapter {
     @Override
     public void render() {
         // Needs to be on libGDX thread.
-        if (!ReaderAppConnection.actionQueue.isEmpty()) {
-            List<Runnable> actions = ReaderAppConnection.actionQueue;
-            ReaderAppConnection.actionQueue = new ArrayList<>();
-            for (Runnable run : actions) run.run();
+        synchronized (ReaderAppConnection.actionQueue) {
+            if (!ReaderAppConnection.actionQueue.isEmpty()) {
+                Runnable[] actions = ReaderAppConnection.actionQueue.toArray(new Runnable[0]);
+                ReaderAppConnection.actionQueue.clear();
+                for (Runnable run : actions) run.run();
+            }
+        }
+
+        if (parentProcess != null && !parentProcess.isAlive()) {
+            System.out.println("Parent process closed. Exiting.");
+            Gdx.app.exit();
         }
 
         if (usertoggle_camspeed_last != usertoggle_camspeed) {
