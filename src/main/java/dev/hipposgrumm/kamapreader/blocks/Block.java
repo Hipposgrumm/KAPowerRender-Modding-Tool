@@ -29,7 +29,7 @@ public abstract class Block implements DatingBachelor {
 
     protected abstract void read(BlockReader reader, KARFile.ProgressUpdater progress);
 
-    public abstract void write(BlockWriter writer);
+    public abstract void write(BlockWriter writer, KARFile.ProgressUpdater progress);
 
     public abstract String getBlockType();
 

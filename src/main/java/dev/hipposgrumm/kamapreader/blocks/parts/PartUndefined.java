@@ -19,7 +19,8 @@ public class PartUndefined extends Part {
     }
 
     @Override
-    public void writeData(BlockWriter writer) {
+    public void writeData(BlockWriter writer, KARFile.ProgressUpdater progress) {
+        progress.setMessage("Writing Undefined Part");
         writer.writeBytes(BYTE_DATA);
     }
 

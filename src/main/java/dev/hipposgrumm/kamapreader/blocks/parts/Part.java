@@ -110,7 +110,8 @@ public abstract class Part implements DatingBachelor {
     /// Reads main mesh data excluding texture and material data.
     protected abstract void readData(BlockReader reader, KARFile.ProgressUpdater progress);
 
-    public final void write(BlockWriter writer) {
+    public final void write(BlockWriter writer, KARFile.ProgressUpdater progress) {
+        progress.setMessage("Writing Part");
         writer.writeIntLittle(UNKNOWN1);
         writer.writeIntLittle(UNKNOWN2.length);
         writer.writeBytes(UNKNOWN2);
@@ -122,7 +123,7 @@ public abstract class Part implements DatingBachelor {
         writer.setLittleEndian(true);
         writer.writeRawString("\0\0\0\0\0\0\0\0\0\0\0\0"); // Block Size and Texture/Material Offsets - Get filled in later.
         BlockWriter blockWriter = writer.segment();
-        writeData(blockWriter);
+        writeData(blockWriter, progress);
 
         byte[] alignBytes = new byte[getBytesToAlign(writer.getTruePointer())];
         if (alignBytes.length > 0) blockWriter.writeBytes(alignBytes);
@@ -130,12 +131,12 @@ public abstract class Part implements DatingBachelor {
         int texPosition;
         if (hasTextures()) {
             texPosition = writer.getPointer();
-            textures.write(writer.segment());
+            textures.write(writer.segment(), null, progress);
         } else texPosition = 0;
         int matPosition;
         if (hasMaterial()) {
             matPosition = writer.getPointer();
-            materials.write(writer.segment());
+            materials.write(writer.segment(), null, progress);
         } else matPosition = 0;
         int endPosition = writer.getPointer()-8;
         writer.setLittleEndian(wasLittleEndian);
@@ -146,7 +147,7 @@ public abstract class Part implements DatingBachelor {
     }
 
     /// Writes main mesh data excluding texture and material data.
-    protected abstract void writeData(BlockWriter writer);
+    protected abstract void writeData(BlockWriter writer, KARFile.ProgressUpdater progress);
 
     protected static int getBytesToAlign(int truePointer) {
         int posForAlign = truePointer % 4;
@@ -422,6 +423,6 @@ public abstract class Part implements DatingBachelor {
         public FillableMaterials() {}
 
         @Override
-        public void write(BlockWriter writer) {}
+        public void write(BlockWriter writer, String statusMessage, KARFile.ProgressUpdater progress) {}
     }
 }

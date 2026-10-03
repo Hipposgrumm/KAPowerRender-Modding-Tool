@@ -23,9 +23,9 @@ public class TextureArrayBlock extends Block {
     }
 
     @Override
-    public void write(BlockWriter writer) {
-        rsck.write(writer.segment());
-        data.write(writer.segment());
+    public void write(BlockWriter writer, KARFile.ProgressUpdater progress) {
+        rsck.write(writer.segment(), progress);
+        data.write(writer.segment(), "Writing TextureSet", progress);
     }
 
     @Override
@@ -82,16 +82,19 @@ public class TextureArrayBlock extends Block {
             }
         }
 
-        public void write(BlockWriter writer) {
+        public void write(BlockWriter writer, String statusMessage, KARFile.ProgressUpdater progress) {
             // TODO: Make sure to actually test this.
             writer = writer.segment();
 
             writer.writeBlockHead(head);
             writer.writeIntLittle(0);
 
+            int i = 0;
+            int count = 0;
             writer.writeIntLittle(writer.getPointer()+4);
             Iterator<Texture> texIter = textureList.iterator();
             while (texIter.hasNext()) {
+                if (statusMessage != null) progress.setMessage(statusMessage+" "+i+"/"+count);
                 Texture tex = texIter.next();
                 int offset = writer.getPointer();
                 writer.writeIntLittle(0);
@@ -102,6 +105,7 @@ public class TextureArrayBlock extends Block {
                 writer.seek(offset);
                 writer.writeIntLittle(writer.getSize());
                 writer.seek(writer.getSize());
+                i++;
             }
             writer.seek(4);
             writer.writeInt(writer.getSize()-8);

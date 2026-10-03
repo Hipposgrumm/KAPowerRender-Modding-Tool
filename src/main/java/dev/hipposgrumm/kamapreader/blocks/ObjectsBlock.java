@@ -48,13 +48,17 @@ public class ObjectsBlock extends Block {
     }
 
     @Override
-    public void write(BlockWriter writer) {
-        rsck.write(writer.segment());
-        arck.write(writer.segment());
+    public void write(BlockWriter writer, KARFile.ProgressUpdater progress) {
+        rsck.write(writer.segment(), progress);
+        arck.write(writer.segment(), progress);
 
+        int i = 0;
+        int count = objects.size();
         for (WorldObject object:objects) {
+            progress.setMessage("Writing Object "+i+"/"+count);
             object.write(writer);
             object.writeChildren(writer);
+            i++;
         }
     }
 

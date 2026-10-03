@@ -35,9 +35,9 @@ public class MaterialsBlock extends Block {
     }
 
     @Override
-    public void write(BlockWriter writer) {
-        rsck.write(writer.segment());
-        data.write(writer.segment());
+    public void write(BlockWriter writer, KARFile.ProgressUpdater progress) {
+        rsck.write(writer.segment(), progress);
+        data.write(writer.segment(), "Writing Materials", progress);
     }
 
     @Override
@@ -82,13 +82,17 @@ public class MaterialsBlock extends Block {
             }
         }
 
-        public void write(BlockWriter writer) {
+        public void write(BlockWriter writer, String statusMessage, KARFile.ProgressUpdater progress) {
             writer.writeInt(unknown);
             writer.writeInt(0);
 
-            writer.writeInt(materialList.size());
+            int i = 0;
+            int count = materialList.size();
+            writer.writeInt(count);
             for (Material mat:materialList) {
+                if (statusMessage != null) progress.setMessage(statusMessage+" "+i+"/"+count);
                 mat.write(writer.segment());
+                i++;
             }
 
             writer.seek(4);

@@ -9,10 +9,11 @@
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.SeparatorMenuItem?>
 <?import javafx.scene.control.TreeView?>
-<?import javafx.scene.control.TreeItem?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.Button?>
+
+<?import dev.hipposgrumm.kamapreader.util.control.BachelorTreeItem_External ?>
 
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="dev.hipposgrumm.kamapreader.FirstThing"
@@ -38,7 +39,7 @@
             <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
         </padding>
         <TreeView fx:id="tree" minWidth="300" minHeight="525">
-            <TreeItem fx:id="treeRoot"/>
+            <BachelorTreeItem_External fx:id="treeRoot"/>
         </TreeView>
         <VBox alignment="CENTER" spacing="5.0">
             <TableView fx:id="table" minWidth="435" minHeight="500">

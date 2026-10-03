@@ -57,10 +57,11 @@ public class SoundsBlock extends Block {
     }
 
     @Override
-    public void write(BlockWriter writer) {
-        rsck.write(writer.segment());
-        arck.write(writer.segment());
+    public void write(BlockWriter writer, KARFile.ProgressUpdater progress) {
+        rsck.write(writer.segment(), progress);
+        arck.write(writer.segment(), progress);
         for (SnSound snd:sounds) {
+            progress.setMessage("Writing "+snd);
             writer.writeBytes(snd.UNKNOWN1);
             writer.writeIntLittle(snd.getData().length);
             writer.writeIntLittle(snd.UNKNOWN2);

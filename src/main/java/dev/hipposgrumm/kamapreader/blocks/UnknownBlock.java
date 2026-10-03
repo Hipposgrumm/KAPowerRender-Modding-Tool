@@ -21,7 +21,7 @@ public class UnknownBlock extends Block {
     }
 
     @Override
-    public void write(BlockWriter writer) {
+    public void write(BlockWriter writer, KARFile.ProgressUpdater progress) {
         writer.writeBytes(data);
     }
 

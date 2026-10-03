@@ -3,6 +3,7 @@ package dev.hipposgrumm.kamapreader.blocks.subblock;
 import dev.hipposgrumm.kamapreader.blocks.UnknownBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
+import dev.hipposgrumm.kamapreader.reader.KARFile;
 
 public class ResourceCheckBlock extends UnknownBlock {
     private final int size;
@@ -20,9 +21,9 @@ public class ResourceCheckBlock extends UnknownBlock {
     }
 
     @Override
-    public void write(BlockWriter writer) {
+    public void write(BlockWriter writer, KARFile.ProgressUpdater progress) {
         writer.writeRawString("RsCk");
         writer.writeInt(size);
-        super.write(writer);
+        super.write(writer, progress);
     }
 }

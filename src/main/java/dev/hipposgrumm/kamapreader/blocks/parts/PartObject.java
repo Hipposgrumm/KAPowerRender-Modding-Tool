@@ -30,7 +30,8 @@ public class PartObject extends Part {
     }
 
     @Override
-    public void writeData(BlockWriter writer) {
+    public void writeData(BlockWriter writer, KARFile.ProgressUpdater progress) {
+        progress.setMessage("Writing Object");
         writer.writeBytes(BYTE_DATA);
         PROReader.writePRO(writer, mesh_data);
     }

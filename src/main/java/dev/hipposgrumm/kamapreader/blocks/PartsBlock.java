@@ -45,12 +45,12 @@ public class PartsBlock extends Block {
     }
 
     @Override
-    public void write(BlockWriter writer) {
-        rsck.write(writer.segment());
-        arck.write(writer.segment());
+    public void write(BlockWriter writer, KARFile.ProgressUpdater progress) {
+        rsck.write(writer.segment(), progress);
+        arck.write(writer.segment(), progress);
 
         for (Part part:parts) {
-            part.write(writer.segment());
+            part.write(writer.segment(), progress);
         }
 
         if (neglectedBytes != null) writer.writeBytes(neglectedBytes);

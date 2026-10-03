@@ -33,9 +33,10 @@ public class TextureSingleBlock extends Block {
     }
 
     @Override
-    public void write(BlockWriter writer) {
-        rsck.write(writer.segment());
-        arck.write(writer.segment());
+    public void write(BlockWriter writer, KARFile.ProgressUpdater progress) {
+        progress.setMessage("Reading Texture "+texture);
+        rsck.write(writer.segment(), progress);
+        arck.write(writer.segment(), progress);
 
         writer.writeBlockHead(head);
 

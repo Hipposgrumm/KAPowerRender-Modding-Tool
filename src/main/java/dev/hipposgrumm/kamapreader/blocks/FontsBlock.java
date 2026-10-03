@@ -38,9 +38,10 @@ public class FontsBlock extends Block {
     }
 
     @Override
-    public void write(BlockWriter writer) {
-        rsck.write(writer.segment());
-        arck.write(writer.segment());
+    public void write(BlockWriter writer, KARFile.ProgressUpdater progress) {
+        progress.setMessage("Writing FontDefinitions");
+        rsck.write(writer.segment(), progress);
+        arck.write(writer.segment(), progress);
 
         for (FontDefinition font:fonts) {
             font.write(writer.segment());

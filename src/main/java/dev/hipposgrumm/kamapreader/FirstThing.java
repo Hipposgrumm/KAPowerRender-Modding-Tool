@@ -7,6 +7,7 @@ import dev.hipposgrumm.kamapreader.util.control.ObservableDatingValue;
 import dev.hipposgrumm.kamapreader.util.control.ProgressPopup;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -38,7 +39,7 @@ public class FirstThing implements Initializable {
     @FXML private MenuBar menuBar;
     @FXML private HBox dragTarget;
     @FXML public TreeView<DatingBachelor> tree;
-    @FXML public TreeItem<DatingBachelor> treeRoot;
+    @FXML public BachelorTreeItem treeRoot;
     @FXML public TableView<Pair<TreeItem<DatingBachelor>,DatingProfileEntry>> table;
     public TableColumn<Pair<TreeItem<DatingBachelor>,DatingProfileEntry>,String> tableName;
     public TableColumn<Pair<TreeItem<DatingBachelor>,DatingProfileEntry>,Node> tableValue;
@@ -150,17 +151,23 @@ public class FirstThing implements Initializable {
 
     private void doLoad(File f) {
         clearPreview();
-        karFile = new KARFile(f);
+        karFile = null;
         try {
+            KARFile.LoadFile task = new KARFile.LoadFile(f);
             try {
-                openProgress();
-                Thread thread = new Thread(karFile);
+                openProgress(task);
+                task.valueProperty().addListener((observable, oldVal, newVal) -> {
+                    if (newVal == null) return;
+                    karFile = newVal;
+                    setPreview();
+                });
+                Thread thread = new Thread(task);
                 thread.setDaemon(true);
                 thread.start();
             } catch (IOException e) {
                 new RuntimeException("Unable to load progress popup.", e).printStackTrace();
                 // Load without progressbar.
-                karFile.run();
+                karFile = task.get();
                 setPreview();
             }
         } catch (Exception e) {
@@ -168,7 +175,7 @@ public class FirstThing implements Initializable {
         }
     }
 
-    private void openProgress() throws IOException {
+    private void openProgress(Task<?> task) throws IOException {
         Stage stage = new Stage();
         stage.setTitle("Progress");
         stage.initOwner(this.stage);
@@ -181,17 +188,12 @@ public class FirstThing implements Initializable {
         stage.show();
 
         ProgressPopup popup = loader.getController();
-        popup.status.textProperty().bind(karFile.messageProperty());
-        popup.progress.progressProperty().bind(karFile.progressProperty());
+        popup.status.textProperty().bind(task.messageProperty());
+        popup.progress.progressProperty().bind(task.progressProperty());
 
-        karFile.stateProperty().addListener((obs, oldState, newState) -> {
+        task.stateProperty().addListener((obs, oldState, newState) -> {
             switch (newState) {
-                case SUCCEEDED, FAILED:
-                    setPreview();
-                    // fall through
-                case CANCELLED:
-                    stage.close();
-                    break;
+                case SUCCEEDED, FAILED, CANCELLED -> stage.close();
             }
         });
     }
@@ -204,15 +206,35 @@ public class FirstThing implements Initializable {
     @FXML
     protected void save(ActionEvent actionEvent) {
         if (karFile == null) return;
-        File path = popupSaveFile("Save", karFile.file.getName(), "KAResource", "*.kar");
+        File path = popupSaveFile("Save", karFile.filename.toString(), "KAResource", "*.kar");
         if (path == null) {
             popupNotice("Save Cancelled", "Cancelled saving.", "You didn't select a save location.");
             return;
         }
         try {
             if (path.createNewFile() || popupQuestion("Overwrite Warning", "This file already exists!", "Would you like to overwrite the file?")) {
-                karFile.save(path);
-                popupNotice("Saved", "File saved.", "The file was saved.");
+                KARFile.SaveFile task = new KARFile.SaveFile(karFile, path);
+                try {
+                    openProgress(task);
+                    task.stateProperty().addListener((obs, oldState, newState) -> {
+                        switch (newState) {
+                            case SUCCEEDED -> popupNotice("Saved", "File saved.", "The file was saved.");
+                            case FAILED -> {
+                                Throwable error = task.getException();
+                                if (error != null) popupError("Error Saving", "An exception was thrown when saving.", error);
+                                else popupNotice("Failure!", "Task reported uncaught failure without throwing an exception.", "The file may not have been saved.");
+                            }
+                        }
+                    });
+                    Thread thread = new Thread(task);
+                    thread.setDaemon(true);
+                    thread.start();
+                } catch (IOException e) {
+                    new RuntimeException("Unable to load progress popup.", e).printStackTrace();
+                    // Run without progressbar.
+                    task.run();
+                    popupNotice("Saved", "File saved.", "The file was saved.");
+                }
             }
         } catch (Exception e) {
             popupError("Error Saving", "An exception was thrown when saving.", e);
@@ -280,7 +302,7 @@ public class FirstThing implements Initializable {
         notice.show();
     }
 
-    public void popupError(String title, String message, Exception error) {
+    public void popupError(String title, String message, Throwable error) {
         StringWriter string = new StringWriter();
         error.printStackTrace(new PrintWriter(string));
         errorTextbox.setText(string.toString());
@@ -298,7 +320,7 @@ public class FirstThing implements Initializable {
     }
 
     private void setPreview() {
-        treeRoot.setValue(new TreeBase(karFile.file.getName()));
+        treeRoot.setValue(karFile);
         karFile.blocks.forEach(b -> addTreeItem(treeRoot, b));
     }
 
@@ -309,18 +331,6 @@ public class FirstThing implements Initializable {
         if (subs != null)
             for (DatingBachelor sub:subs)
                 addTreeItem(added, sub);
-    }
-
-    private record TreeBase(String name) implements DatingBachelor {
-        @Override
-        public String toString() {
-            return name;
-        }
-
-        @Override
-        public List<? extends DatingProfileEntry> getDatingProfile() {
-            return null;
-        }
     }
 
     private static class BachelorTreeCell extends TreeCell<DatingBachelor> {
@@ -369,16 +379,25 @@ public class FirstThing implements Initializable {
     }
 
     public static class BachelorTreeItem extends TreeItem<DatingBachelor> {
-        final List<? extends DatingProfileEntry> entries;
+        List<? extends DatingProfileEntry> entries;
         final Map<DatingProfileEntry, BachelorStringProperty> updatingStrings = new HashMap<>();
         BachelorTreeCell cell;
         public boolean isModified;
 
         public BachelorTreeItem(DatingBachelor item) {
             super(item);
-            this.entries = item.getDatingProfile();
-            if (this.entries != null) for (DatingProfileEntry entry:this.entries) {
-                updatingStrings.put(entry, new BachelorStringProperty(entry.name()));
+            valueProperty().addListener(this::onValueUpdated);
+            if (item != null) onValueUpdated(null, null, item);
+        }
+
+        protected void onValueUpdated(ObservableValue<? extends DatingBachelor> observable, DatingBachelor oldVal, DatingBachelor newVal) {
+            this.entries = null;
+            this.updatingStrings.clear();
+            if (newVal != null) {
+                this.entries = newVal.getDatingProfile();
+                if (this.entries != null) for (DatingProfileEntry entry:this.entries) {
+                    this.updatingStrings.put(entry, new BachelorStringProperty(entry.name()));
+                }
             }
         }
 

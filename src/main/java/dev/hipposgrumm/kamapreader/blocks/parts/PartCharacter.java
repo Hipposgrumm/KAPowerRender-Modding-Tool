@@ -64,7 +64,8 @@ public class PartCharacter extends Part {
     }
 
     @Override
-    public void writeData(BlockWriter writer) {
+    public void writeData(BlockWriter writer, KARFile.ProgressUpdater progress) {
+        progress.setMessage("Writing "+name);
         writer.writeTerminatedStringFixed(name);
 
         writer.writeBytes(MYSTERY1);

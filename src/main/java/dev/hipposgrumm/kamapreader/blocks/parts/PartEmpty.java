@@ -13,7 +13,7 @@ public class PartEmpty extends Part {
     protected void readData(BlockReader reader, KARFile.ProgressUpdater progress) {}
 
     @Override
-    protected void writeData(BlockWriter writer) {}
+    protected void writeData(BlockWriter writer, KARFile.ProgressUpdater progress) {}
 
     @Override
     public String toString() {
