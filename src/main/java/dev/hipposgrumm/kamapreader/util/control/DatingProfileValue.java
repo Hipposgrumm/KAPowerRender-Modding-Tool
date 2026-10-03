@@ -19,6 +19,7 @@ public interface DatingProfileValue {
 
     Node createDisplay(FirstThing controller, Runnable onChanged, boolean readonly);
     boolean isModified();
+    default void onDestroyDisplay() {}
 
     static TreeItem<DatingBachelor> findInTree(TreeItem<DatingBachelor> root, DatingBachelor target) {
         if (root.getValue() == target) return root;

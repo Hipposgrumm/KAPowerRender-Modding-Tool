@@ -5,7 +5,6 @@ import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.control.ObservableDatingValue;
 import dev.hipposgrumm.kamapreader.util.control.ProgressPopup;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
@@ -19,7 +18,6 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
 import javafx.stage.*;
-import javafx.util.Pair;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,9 +38,9 @@ public class FirstThing implements Initializable {
     @FXML private HBox dragTarget;
     @FXML public TreeView<DatingBachelor> tree;
     @FXML public BachelorTreeItem treeRoot;
-    @FXML public TableView<Pair<TreeItem<DatingBachelor>,DatingProfileEntry>> table;
-    public TableColumn<Pair<TreeItem<DatingBachelor>,DatingProfileEntry>,String> tableName;
-    public TableColumn<Pair<TreeItem<DatingBachelor>,DatingProfileEntry>,Node> tableValue;
+    @FXML public TableView<ObservableDatingValue> table;
+    public TableColumn<ObservableDatingValue,String> tableName;
+    public TableColumn<ObservableDatingValue,Node> tableValue;
 
     private final Dialog<String> helpPopup = new Dialog<>();
     private final Dialog<ButtonType> question = new Dialog<>();
@@ -83,17 +81,12 @@ public class FirstThing implements Initializable {
 
         tableName = new TableColumn<>("Name");
         tableName.setMinWidth(100);
-        tableName.setCellValueFactory((cdf) -> {
-            DatingProfileEntry entry = cdf.getValue().getValue();
-            if (cdf.getValue().getKey() instanceof BachelorTreeItem item) {
-                return item.updatingStrings.get(entry);
-            } else return new SimpleStringProperty(entry.name());
-        });
+        tableName.setCellValueFactory(cdf -> cdf.getValue().nameProperty);
         tableName.setSortable(false);
         tableName.setReorderable(false);
         tableValue = new TableColumn<>("Value");
         tableValue.setMinWidth(320);
-        tableValue.setCellValueFactory(cbf -> new ObservableDatingValue(this, cbf.getValue().getKey(), cbf.getValue().getValue()));
+        tableValue.setCellValueFactory(TableColumn.CellDataFeatures::getValue);
         tableValue.setSortable(false);
         tableValue.setReorderable(false);
         table.setSelectionModel(null);
@@ -125,12 +118,17 @@ public class FirstThing implements Initializable {
         });
     }
 
-    public void selectElement(TreeItem<DatingBachelor> value) {
+    private void cleanupTableItems() {
+        for (ObservableDatingValue value:table.getItems()) value.decommission();
+        table.getItems().clear();
+    }
+
+    private void selectElement(TreeItem<DatingBachelor> value) {
         DatingBachelor bachelor = value.getValue();
         if (bachelor == null) return;
         bachelor.onSelected();
 
-        table.getItems().clear();
+        cleanupTableItems();
         table.getColumns().clear();
         double maxwidth = tableValue.getMaxWidth();
         tableValue.setMaxWidth(tableValue.getMinWidth());
@@ -138,8 +136,9 @@ public class FirstThing implements Initializable {
         if (value instanceof BachelorTreeItem item && item.entries != null) {
             table.getColumns().add(tableName);
             table.getColumns().add(tableValue);
-            for (DatingProfileEntry entry:item.entries)
-                table.getItems().add(new Pair<>(value, entry));
+            for (DatingProfileEntry entry:item.entries) {
+                table.getItems().add(new ObservableDatingValue(this, value, entry));
+            }
         }
     }
 
@@ -314,13 +313,15 @@ public class FirstThing implements Initializable {
 
     private void clearPreview() {
         treeRoot.getChildren().clear();
-        table.getItems().clear();
+        cleanupTableItems();
         table.getColumns().clear();
         ((Label) table.getPlaceholder()).setText("Select an element in the tree to edit it.");
     }
 
     private void setPreview() {
         treeRoot.setValue(karFile);
+        treeRoot.isModified = false;
+        treeRoot.doUpdate();
         karFile.blocks.forEach(b -> addTreeItem(treeRoot, b));
     }
 
@@ -380,7 +381,6 @@ public class FirstThing implements Initializable {
 
     public static class BachelorTreeItem extends TreeItem<DatingBachelor> {
         List<? extends DatingProfileEntry> entries;
-        final Map<DatingProfileEntry, BachelorStringProperty> updatingStrings = new HashMap<>();
         BachelorTreeCell cell;
         public boolean isModified;
 
@@ -391,39 +391,14 @@ public class FirstThing implements Initializable {
         }
 
         protected void onValueUpdated(ObservableValue<? extends DatingBachelor> observable, DatingBachelor oldVal, DatingBachelor newVal) {
-            this.entries = null;
-            this.updatingStrings.clear();
-            if (newVal != null) {
-                this.entries = newVal.getDatingProfile();
-                if (this.entries != null) for (DatingProfileEntry entry:this.entries) {
-                    this.updatingStrings.put(entry, new BachelorStringProperty(entry.name()));
-                }
-            }
+            if (newVal != null) this.entries = newVal.getDatingProfile();
+            else this.entries = null;
         }
 
         public void doUpdate() {
             if (cell != null) {
                 DatingBachelor value = getValue();
                 cell.updateItem(value, value == null);
-            }
-        }
-
-        public void updateLabel(DatingProfileEntry with, boolean modified) {
-            BachelorStringProperty string = updatingStrings.get(with);
-            if (string != null) string.update(with, modified);
-        }
-
-        // To anyone who says this is weird and convoluted, yes you are absolutely correct.
-        private static class BachelorStringProperty extends SimpleStringProperty {
-            public BachelorStringProperty(String initialValue) {
-                super(initialValue);
-            }
-
-            public void update(DatingProfileEntry entry, boolean modified) {
-                set(modified
-                        ? "* "+entry.name()
-                        : entry.name()
-                );
             }
         }
     }

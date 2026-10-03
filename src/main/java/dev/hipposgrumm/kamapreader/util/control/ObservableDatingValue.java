@@ -2,41 +2,34 @@ package dev.hipposgrumm.kamapreader.util.control;
 
 import dev.hipposgrumm.kamapreader.FirstThing;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValueBase;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 
-public class ObservableDatingValue extends ObservableValueBase<Node> {
-    private static ObservableDatingValue lastValue = null;
-    private static Node lastResult = null;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
-    private final FirstThing controller;
-    private final TreeItem<DatingBachelor> item;
-    private final DatingProfileEntry entry;
+public class ObservableDatingValue extends ObservableValueBase<Node> {
+    public final SimpleStringProperty nameProperty;
+    private final DatingProfileValue profileValue;
+    private final Node result;
 
     public ObservableDatingValue(FirstThing controller, TreeItem<DatingBachelor> item, DatingProfileEntry entry) {
-        this.controller = controller;
-        this.item = item;
-        this.entry = entry;
-    }
+        this.nameProperty = new BachelorStringProperty(entry);
+        this.profileValue = entry.value();
 
-    @Override
-    public Node getValue() {
-        if (this == lastValue) return lastResult;
-        lastValue = this;
-
+        Node result;
         try {
-            DatingProfileValue value = entry.value();
-            lastResult = value.createDisplay(controller, () -> {
-                boolean modified = value.isModified();
+            result = profileValue.createDisplay(controller, () -> {
+                boolean modified = profileValue.isModified();
                 TreeItem<DatingBachelor> iter = item;
                 while (iter != null) {
-                    if (!(iter instanceof FirstThing.BachelorTreeItem bachelorItem)) break;
                     if (iter == item) {
-                        bachelorItem.updateLabel(entry, modified);
+                        ((BachelorStringProperty) nameProperty).update(modified);
                     } else if (!modified) {
                         boolean hasModifiedChildren = false;
-                        for (TreeItem<DatingBachelor> childItem:bachelorItem.getChildren()) {
+                        for (TreeItem<DatingBachelor> childItem:iter.getChildren()) {
                             if (!(childItem instanceof FirstThing.BachelorTreeItem bachelorChild)) continue;
                             if (bachelorChild.isModified) {
                                 hasModifiedChildren = true;
@@ -45,14 +38,45 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
                         }
                         if (hasModifiedChildren) break;
                     }
-                    bachelorItem.isModified = modified;
-                    bachelorItem.doUpdate();
+                    if (iter instanceof FirstThing.BachelorTreeItem bachelorItem) {
+                        bachelorItem.isModified = modified;
+                        bachelorItem.doUpdate();
+                    }
                     iter = iter.getParent();
                 }
             }, entry.readonly());
         } catch (Exception e) {
+            StringWriter string = new StringWriter();
+            e.printStackTrace(new PrintWriter(string));
+            result = new Label(string.toString());
             e.printStackTrace();
         }
-        return lastResult;
+        this.result = result;
+    }
+
+    @Override
+    public Node getValue() {
+        return result;
+    }
+
+    public void decommission() {
+        this.profileValue.onDestroyDisplay();
+    }
+
+    private static class BachelorStringProperty extends SimpleStringProperty {
+        private final DatingProfileEntry entry;
+
+        public BachelorStringProperty(DatingProfileEntry entry) {
+            super(entry.name());
+            this.entry = entry;
+        }
+
+        /// @param isModified This could be easily gotten from entry, but this is more efficient for some cases.
+        public void update(boolean isModified) {
+            set(isModified
+                    ? "* "+entry.name()
+                    : entry.name()
+            );
+        }
     }
 }

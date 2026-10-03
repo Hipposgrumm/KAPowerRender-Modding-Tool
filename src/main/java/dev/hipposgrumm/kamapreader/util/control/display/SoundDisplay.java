@@ -12,12 +12,18 @@ import javafx.scene.layout.VBox;
 
 import javax.sound.sampled.*;
 import java.io.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SoundDisplay implements DatingProfileValue {
+    private static final ExecutorService AUDIOPLAYER_CLOSER = Executors.newCachedThreadPool();
+
     private static boolean autoplay = false;
     private static boolean loopingMode = false;
 
+    private AnimationTimer progressBarControl = null;
+    private final PlayerRef playerref = new PlayerRef();
     private final SnSound sound;
     private boolean isModified = false;
 
@@ -28,7 +34,6 @@ public class SoundDisplay implements DatingProfileValue {
     @Override
     public Node createDisplay(FirstThing controller, Runnable onChanged, boolean readonly) {
         Node soundInterface;
-        PlayerRef playerref = new PlayerRef();
         Slider progress = new Slider(0, 0, 0);
         try {
             playerref.player = new Player(sound);
@@ -70,18 +75,13 @@ public class SoundDisplay implements DatingProfileValue {
                 modifyingState.set(false);
             });
 
-            new AnimationTimer() {
+            this.progressBarControl = new AnimationTimer() {
                 @Override
                 public void handle(long now) {
-                    if (progress.getScene() == null) {
-                        stop();
-                        playerref.player.close();
-                        return;
-                    }
-
                     if (!modifyingState.get()) progress.setValue(playerref.player.getPosition());
                 }
-            }.start();
+            };
+            this.progressBarControl.start();
 
             soundInterface = new VBox(10, progress, autoplaybtn, new HBox(5,
                     playbtn, pausebtn, stopbtn, loopbtn
@@ -123,9 +123,9 @@ public class SoundDisplay implements DatingProfileValue {
                     sound.copyFrom(new SnSound(name, input.readAllBytes()));
                     if (playerref.player != null) {
                         playerref.player.close();
-                        playerref.player = new Player(sound);
-                        progress.setMax(playerref.player.length());
                     }
+                    playerref.player = new Player(sound);
+                    progress.setMax(playerref.player.length());
                     isModified = true;
                     onChanged.run();
                 }
@@ -144,6 +144,14 @@ public class SoundDisplay implements DatingProfileValue {
     @Override
     public boolean isModified() {
         return isModified;
+    }
+
+    @Override
+    public void onDestroyDisplay() {
+        progressBarControl.stop();
+        AUDIOPLAYER_CLOSER.execute(() -> {
+            playerref.player.close();
+        });
     }
 
     private static class PlayerRef {
