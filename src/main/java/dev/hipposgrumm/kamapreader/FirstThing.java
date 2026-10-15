@@ -2,6 +2,7 @@ package dev.hipposgrumm.kamapreader;
 
 import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
+import dev.hipposgrumm.kamapreader.util.PlaceholderValue;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.control.ObservableDatingValue;
 import dev.hipposgrumm.kamapreader.util.control.ProgressPopup;
@@ -126,13 +127,16 @@ public class FirstThing implements Initializable {
     private void selectElement(TreeItem<DatingBachelor> value) {
         DatingBachelor bachelor = value.getValue();
         if (bachelor == null) return;
-        bachelor.onSelected();
 
         cleanupTableItems();
         table.getColumns().clear();
         double maxwidth = tableValue.getMaxWidth();
         tableValue.setMaxWidth(tableValue.getMinWidth());
         tableValue.setMaxWidth(maxwidth);
+
+        if (bachelor instanceof PlaceholderValue) return;
+
+        bachelor.onSelected();
         if (value instanceof BachelorTreeItem item && item.entries != null) {
             table.getColumns().add(tableName);
             table.getColumns().add(tableValue);
@@ -328,10 +332,14 @@ public class FirstThing implements Initializable {
     private void addTreeItem(TreeItem<DatingBachelor> base, DatingBachelor item) {
         TreeItem<DatingBachelor> added = new BachelorTreeItem(item);
         base.getChildren().add(added);
-        List<? extends DatingBachelor> subs = item.getSubBachelors();
-        if (subs != null)
-            for (DatingBachelor sub:subs)
-                addTreeItem(added, sub);
+        try {
+            List<? extends DatingBachelor> subs = item.getSubBachelors();
+            if (subs != null)
+                for (DatingBachelor sub:subs)
+                    addTreeItem(added, sub);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private static class BachelorTreeCell extends TreeCell<DatingBachelor> {
@@ -354,6 +362,12 @@ public class FirstThing implements Initializable {
             if (empty || item == null) {
                 setText(null);
                 setGraphic(null);
+                return;
+            } else if (item instanceof PlaceholderValue) {
+                setText((getTreeItem() instanceof BachelorTreeItem treeitem && treeitem.isModified)
+                        ? "* PLACEHOLDER"
+                        : "PLACEHOLDER"
+                );
                 return;
             }
 

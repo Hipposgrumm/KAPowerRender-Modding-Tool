@@ -61,6 +61,7 @@ public class KARFile implements DatingBachelor {
                     case "SnFm" -> new SoundsBlock(file.getName(), kar);
                     case "ObFm" -> new ObjectsBlock();
                     case "FtFm" -> new FontsBlock();
+                    case "LvFm" -> new LevelDefinesBlock();
                     default -> new UnknownBlock(blockType);
                 };
                 block.readFull(reader.segment(blockSize), progress);
@@ -78,7 +79,14 @@ public class KARFile implements DatingBachelor {
                 }
             }
             for (Block block:kar.blocks) {
-                if (block instanceof PartsBlock bl) bl.fillMaterials(materials);
+                if (block instanceof PartsBlock bl) {
+                    try {
+                        bl.fillMaterials(materials);
+                    } catch (Exception e) {
+                        System.err.println("Error while filling materials:");
+                        e.printStackTrace();
+                    }
+                }
             }
 
             return kar;
@@ -112,7 +120,7 @@ public class KARFile implements DatingBachelor {
                 );
                 subWriter.writeRawString(block.getBlockType());
 
-                block.write(subWriter, progress);
+                block.writeFull(subWriter, progress);
                 progress.setMessage(""); // avoid blame game in case something goes wrong between this and the next one
 
                 subWriter.seek(4);

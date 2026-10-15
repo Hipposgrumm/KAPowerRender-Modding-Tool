@@ -15,8 +15,17 @@ import java.io.IOException;
 import java.util.List;
 
 public class SnSound implements DatingBachelor, Exportable {
-    public byte[] UNKNOWN1;
-    public int UNKNOWN2;
+    public byte[] HEAD;
+    public short UNKNOWN1;
+    public short UNKNOWN2;
+    public short UNKNOWN3;
+    public int UNKNOWN4;
+    public int UNKNOWN5;
+    public byte[] UNKNOWN6;
+    public int UNKNOWN7;
+    public int UNKNOWN8;
+    public int UNKNOWN9;
+    public int UNKNOWN10;
     private byte[] DATA;
 
     public byte[] DATA_DECODED;
@@ -25,9 +34,8 @@ public class SnSound implements DatingBachelor, Exportable {
     public final String exportFileName;
     private String fileExtension;
 
-    public SnSound(String exportFileName, byte[] data) {
+    public SnSound(String exportFileName) {
         this.exportFileName = exportFileName;
-        setData(data);
     }
 
     public byte[] getData() {
@@ -39,7 +47,7 @@ public class SnSound implements DatingBachelor, Exportable {
         try {
             fileExtension = AudioSystem.getAudioFileFormat(new ByteArrayInputStream(data)).getType().getExtension();
         } catch (Exception e) {
-            fileExtension = "unknown_please_report";
+            fileExtension = "something_went_wrong";
             e.printStackTrace();
         }
         // EPresident on StackOverflow

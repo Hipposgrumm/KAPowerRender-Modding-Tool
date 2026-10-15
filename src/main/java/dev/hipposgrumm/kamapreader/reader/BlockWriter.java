@@ -1,14 +1,12 @@
 package dev.hipposgrumm.kamapreader.reader;
 
-import dev.hipposgrumm.kamapreader.util.types.wrappers.SizeLimitedString;
-import dev.hipposgrumm.kamapreader.util.types.wrappers.UByte;
-import dev.hipposgrumm.kamapreader.util.types.wrappers.UInteger;
-import dev.hipposgrumm.kamapreader.util.types.wrappers.UShort;
+import dev.hipposgrumm.kamapreader.util.types.wrappers.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 /**
  * Writer designed to assist in writing data back into KAR files.
@@ -19,6 +17,7 @@ public class BlockWriter {
     private boolean littleEndian = false;
     private int pointer;
     private boolean pointerAtEnd = true;
+    private boolean pointerConenctedToEnd = true;
     private final int startpos;
 
     /// Creates a container for writing the file.
@@ -29,11 +28,13 @@ public class BlockWriter {
     }
 
     /// @see #segment()
-    private BlockWriter(SharedFileBytes file, int startpos, boolean littleEndian) {
+    private BlockWriter(SharedFileBytes file, int startpos, boolean littleEndian, boolean pointerAtEnd, boolean pointerConnectedToEnd) {
         this.file = file;
         this.littleEndian = littleEndian;
         this.startpos = startpos;
         this.pointer = startpos;
+        this.pointerAtEnd = pointerAtEnd;
+        this.pointerConenctedToEnd = pointerConnectedToEnd;
     }
 
     /// Write all byte data to a file.
@@ -64,7 +65,7 @@ public class BlockWriter {
         if (pos < 0) throw new IndexOutOfBoundsException(String.format("Seek is outside block (%s < %s)", newPos, startpos));
         if (pos > fileSize) throw new IndexOutOfBoundsException(String.format("Seek location is beyond current scope of file (%s > %s)", newPos, fileSize));
         pointer = newPos;
-        pointerAtEnd = pointer == fileSize;
+        pointerAtEnd = pointerConenctedToEnd && pointer == fileSize;
     }
 
     /**
@@ -80,7 +81,7 @@ public class BlockWriter {
         if (pos < startpos) throw new IndexOutOfBoundsException(String.format("Shift location is outside designated area (%s < %s)", pos, startpos));
         if (pos > fileSize) throw new IndexOutOfBoundsException(String.format("Shift location goes beyond current file length (%s, > %s)", pos, fileSize));
         pointer = pos;
-        pointerAtEnd = pointer == fileSize;
+        pointerAtEnd = pointerConenctedToEnd && pointer == fileSize;
     }
 
     /// @return Current pointer location relative to this writer's start position.
@@ -93,6 +94,17 @@ public class BlockWriter {
     public int getTruePointer() {
         if (pointerAtEnd) pointer = file.getSize();
         return pointer;
+    }
+
+    /// Stop pointer from following end.
+    public void disconnectPointer() {
+        this.pointerConenctedToEnd = false;
+        this.pointerAtEnd = false;
+    }
+
+    /// Make pointer start following end again.
+    public void reconnectPointer() {
+        this.pointerConenctedToEnd = true;
     }
 
     /**
@@ -382,10 +394,44 @@ public class BlockWriter {
         writeRawString(str);
     }
 
+    /**
+     * Writes a string with the internal string format used by the game.
+     * @param string UtString
+     */
+    public void writeUtString(UtString string) {
+        UtString.Encoding encoding = string.getEncoding();
+
+        writeInt(string.unknownFlags);
+        writeInt(encoding.identifier);
+        writeUInt(string.gamePointer);
+
+        String val = string.toString();
+        int lengthInBytes = val.length() * encoding.charsize;
+        writeInt(lengthInBytes);
+        writeInt(string.maxSize);
+
+        writeUInt(string.uselessPointer);
+
+        int i = 0;
+        byte[] bytes = new byte[string.maxSize];
+        Arrays.fill(bytes, (byte)0xCD);
+        if (encoding == UtString.Encoding.UTF16) {
+            for (char c:val.toCharArray()) {
+                bytes[i++] = (byte) c;
+                bytes[i++] = (byte)(c >> 8);
+            }
+        } else {
+            for (char c:val.toCharArray()) {
+                bytes[i++] = (byte) c;
+            }
+        }
+        writeBytes(bytes);
+    }
+
     /// Create a sub-writer based on this writer.
     public BlockWriter segment() {
         if (pointerAtEnd) pointer = file.getSize();
-        return new BlockWriter(file, pointer, littleEndian);
+        return new BlockWriter(file, pointer, littleEndian, pointerAtEnd, pointerConenctedToEnd);
     }
 
     /**
@@ -395,8 +441,7 @@ public class BlockWriter {
      */
     public void writeBlockHead(byte[] head) {
         if (head.length != 4) throw new IllegalArgumentException("Bytes do not match size for head.");
-        if (littleEndian) writeBytes(head);
-        else writeBytes(new byte[] {head[3], head[2], head[1], head[0]});
+        writeBytes(head);
     }
 
     private static final class SharedFileBytes {

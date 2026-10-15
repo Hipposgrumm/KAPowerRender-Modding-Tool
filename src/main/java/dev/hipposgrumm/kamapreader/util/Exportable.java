@@ -29,7 +29,12 @@ public interface Exportable {
             return;
         }
         if (!Texture.HAS_AWT) {
-            long textureCount = exportables.stream().filter(exportable -> exportable instanceof Texture).count();
+            int textureCount = 0;
+            for (Exportable exportable : exportables) {
+                if (exportable instanceof Texture) {
+                    textureCount++;
+                }
+            }
             if (textureCount >= exportables.size()) {
                 controller.popupNotice("Incompatible!", "Cannot export!", Texture.NO_AWT_MSG);
                 return;

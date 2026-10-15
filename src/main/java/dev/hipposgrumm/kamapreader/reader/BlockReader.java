@@ -1,9 +1,6 @@
 package dev.hipposgrumm.kamapreader.reader;
 
-import dev.hipposgrumm.kamapreader.util.types.wrappers.SizeLimitedString;
-import dev.hipposgrumm.kamapreader.util.types.wrappers.UByte;
-import dev.hipposgrumm.kamapreader.util.types.wrappers.UInteger;
-import dev.hipposgrumm.kamapreader.util.types.wrappers.UShort;
+import dev.hipposgrumm.kamapreader.util.types.wrappers.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -418,6 +415,40 @@ public class BlockReader {
     }
 
     /**
+     * Reads a string from the internal string format used by the game.
+     * @return UtString
+     * @throws IndexOutOfBoundsException If there is not enough data to read the full string.
+     */
+    public UtString readUtString() {
+        assertSize(24); // header
+        int unknownFlags = readInt();
+        int encodingVal = readInt();
+        UtString.Encoding encoding = switch (encodingVal) {
+            case 0 -> UtString.Encoding.US_ASCII;
+            case 3 -> UtString.Encoding.UTF16;
+            default -> {
+                System.err.println("Read UtString with unknown encoding id "+encodingVal);
+                yield UtString.Encoding.UNKNOWN;
+            }
+        };
+        UInteger gamePointer = readUInt();
+
+        int size = readInt();
+        int maxsize = readInt();
+        UInteger uselessPointer = readUInt();
+
+        assertSize(maxsize);
+        String string = new String(readBytes(size), encoding.charset);
+        move(maxsize-size); // this is spacer data, we don't need to worry about it
+
+        UtString value = new UtString(string, maxsize / encoding.charsize);
+        value.unknownFlags = unknownFlags;
+        value.gamePointer = gamePointer;
+        value.uselessPointer = uselessPointer;
+        return value;
+    }
+
+    /**
      * Creates a new sub-reader based on the data from this reader.
      * @param size Size of the data allocated to this sub-reader.
      * @throws IndexOutOfBoundsException If there is not enough data to create a sub-reader of the requested size.
@@ -445,8 +476,6 @@ public class BlockReader {
      * @throws IndexOutOfBoundsException If there is less than 4 bytes remaining.
      */
     public byte[] readBlockHead() {
-        byte[] bytes = readBytes(4);
-        if (littleEndian) return bytes;
-        else return new byte[] {bytes[3], bytes[2], bytes[1], bytes[0]};
+        return readBytes(4);
     }
 }

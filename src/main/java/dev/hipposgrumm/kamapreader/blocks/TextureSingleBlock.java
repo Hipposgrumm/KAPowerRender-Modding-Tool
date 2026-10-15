@@ -1,7 +1,5 @@
 package dev.hipposgrumm.kamapreader.blocks;
 
-import dev.hipposgrumm.kamapreader.blocks.subblock.ArCkBlock;
-import dev.hipposgrumm.kamapreader.blocks.subblock.ResourceCheckBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.reader.KARFile;
@@ -9,20 +7,25 @@ import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.BlockType;
 import dev.hipposgrumm.kamapreader.util.types.Texture;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class TextureSingleBlock extends Block {
-    private ResourceCheckBlock rsck;
-    private ArCkBlock arck;
-
+public class TextureSingleBlock extends Block.ArrayChecked {
     private byte[] head;
     public Texture texture;
 
+    private boolean isPlaceholder = false;
+
     @Override
-    protected void read(BlockReader reader, KARFile.ProgressUpdater progress) {
+    protected void readFromArrayBegin(int count, KARFile.ProgressUpdater progress) {
         progress.setMessage("Reading Texture");
-        rsck = ResourceCheckBlock.read(reader, "TrFm");
-        arck = ArCkBlock.read(reader, "TrFm");
+        if (count != 1) System.out.println("WARNING: Dubious texture count for single texture: "+count);
+    }
+
+    @Override
+    protected void readPartFromArray(BlockReader reader, int index, KARFile.ProgressUpdater progress) {
+        if (index != 0) return;
+        isPlaceholder = false;
 
         head = reader.readBlockHead();
         if (head[0] != BlockType.TEXTURE_SINGLE)
@@ -33,10 +36,21 @@ public class TextureSingleBlock extends Block {
     }
 
     @Override
-    public void write(BlockWriter writer, KARFile.ProgressUpdater progress) {
-        progress.setMessage("Reading Texture "+texture);
-        rsck.write(writer.segment(), progress);
-        arck.write(writer.segment(), progress);
+    protected void readPlaceholderFromArray(int index) {
+        if (index != 0) return;
+
+        isPlaceholder = true;
+    }
+
+    @Override
+    protected int writeForArrayBegin(KARFile.ProgressUpdater progress) {
+        progress.setMessage("Writing Texture "+texture);
+        return 1;
+    }
+
+    @Override
+    public boolean writePartForArray(BlockWriter writer, int index, KARFile.ProgressUpdater progress) {
+        if (isPlaceholder) return false;
 
         writer.writeBlockHead(head);
 
@@ -47,11 +61,14 @@ public class TextureSingleBlock extends Block {
 
         writer.seek(0);
         writer.writeIntLittle(writer.getSize()-4);
+        return true;
     }
 
     @Override
     public List<? extends DatingProfileEntry> getDatingProfile() {
-        return texture.getDatingProfile();
+        List<DatingProfileEntry> list = new ArrayList<>(texture.getDatingProfile());
+        list.add(getMetadataDatingProfileEntry());
+        return list;
     }
 
     @Override

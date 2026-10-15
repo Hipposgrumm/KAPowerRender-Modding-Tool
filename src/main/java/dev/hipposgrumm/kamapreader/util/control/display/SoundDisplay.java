@@ -117,10 +117,7 @@ public class SoundDisplay implements DatingProfileValue {
                 File file = controller.popupOpenFile("Choose a File", null, "OGG, WAV", "*.ogg", "*.wav");
                 if (file == null) return;
                 try (InputStream input = new FileInputStream(file)) {
-                    String name = file.getName();
-                    int extPos = name.lastIndexOf('.');
-                    name = name.substring(0, extPos);
-                    sound.copyFrom(new SnSound(name, input.readAllBytes()));
+                    sound.setData(input.readAllBytes());
                     if (playerref.player != null) {
                         playerref.player.close();
                     }

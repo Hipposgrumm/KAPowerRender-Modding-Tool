@@ -1,6 +1,5 @@
 package dev.hipposgrumm.kamapreader.blocks;
 
-import dev.hipposgrumm.kamapreader.blocks.subblock.ResourceCheckBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.reader.KARFile;
@@ -12,37 +11,41 @@ import dev.hipposgrumm.kamapreader.util.types.Texture;
 
 import java.util.*;
 
-public class MaterialsBlock extends Block {
+public class MaterialsBlock extends Block.Singular {
     private final List<Map<Integer, Texture>> textureMaps;
-    private ResourceCheckBlock rsck;
     public MaterialsData data;
 
     public MaterialsBlock(KARFile file) {
-        this.textureMaps = file.blocks.stream()
-                .map(b -> switch (b) {
-                    case TextureSingleBlock bl -> Collections.singletonMap(bl.texture.getUid().get(), bl.texture);
-                    case TextureArrayBlock bl -> bl.data.textures;
-                    default -> null;
-                })
-                .filter(Objects::nonNull)
-                .toList();
+        this.textureMaps = new ArrayList<>();
+        for (Block b : file.blocks) {
+            if (!b.successfullyRead()) continue;
+            Map<Integer, Texture> textures = switch (b) {
+                case TextureSingleBlock bl -> Collections.singletonMap(bl.texture.getUid().get(), bl.texture);
+                case TextureArrayBlock bl -> bl.data.textures;
+                default -> null;
+            };
+            if (textures != null) {
+                this.textureMaps.add(textures);
+            }
+        }
     }
 
     @Override
-    protected void read(BlockReader reader, KARFile.ProgressUpdater progress) {
-        rsck = ResourceCheckBlock.read(reader, "MtFm");
+    protected void readWithAll(BlockReader reader, KARFile.ProgressUpdater progress) {
         data = new MaterialsData(reader, textureMaps, "Reading Materials", progress);
     }
 
     @Override
-    public void write(BlockWriter writer, KARFile.ProgressUpdater progress) {
-        rsck.write(writer.segment(), progress);
+    public void writeWithAll(BlockWriter writer, KARFile.ProgressUpdater progress) {
         data.write(writer.segment(), "Writing Materials", progress);
     }
 
     @Override
     public List<? extends DatingProfileEntry> getDatingProfile() {
-        return List.of(new DatingProfileEntry("Content", new SubBachelorPreviewEntry(data.materialList)));
+        return List.of(
+                new DatingProfileEntry("Content", new SubBachelorPreviewEntry(data.materialList)),
+                getMetadataDatingProfileEntry()
+        );
     }
 
     @Override

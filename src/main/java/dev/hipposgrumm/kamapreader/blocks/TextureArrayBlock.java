@@ -1,6 +1,5 @@
 package dev.hipposgrumm.kamapreader.blocks;
 
-import dev.hipposgrumm.kamapreader.blocks.subblock.ResourceCheckBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.reader.KARFile;
@@ -12,25 +11,30 @@ import dev.hipposgrumm.kamapreader.util.types.Texture;
 
 import java.util.*;
 
-public class TextureArrayBlock extends Block {
-    private ResourceCheckBlock rsck;
+public class TextureArrayBlock extends Block.Singular {
     public TexturesData data;
 
     @Override
-    protected void read(BlockReader reader, KARFile.ProgressUpdater progress) {
-        rsck = ResourceCheckBlock.read(reader, "TxFm");
+    protected void readWithAll(BlockReader reader, KARFile.ProgressUpdater progress) {
         data = new TexturesData(reader, "Reading TextureSet", progress);
     }
 
     @Override
-    public void write(BlockWriter writer, KARFile.ProgressUpdater progress) {
-        rsck.write(writer.segment(), progress);
+    public void writeWithAll(BlockWriter writer, KARFile.ProgressUpdater progress) {
         data.write(writer.segment(), "Writing TextureSet", progress);
     }
 
     @Override
     public List<? extends DatingProfileEntry> getDatingProfile() {
-        return List.of(new DatingProfileEntry("Content", new SubBachelorPreviewEntry(data.textureList)));
+        try {
+            return List.of(
+                    new DatingProfileEntry("Content", new SubBachelorPreviewEntry(data.textureList)),
+                    getMetadataDatingProfileEntry()
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return List.of(getMetadataDatingProfileEntry());
+        }
     }
 
     @Override

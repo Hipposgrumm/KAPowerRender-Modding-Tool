@@ -16,6 +16,6 @@ module dev.hipposgrumm.kamapreader {
     exports dev.hipposgrumm.kamapreader.util.types.wrappers;
     exports dev.hipposgrumm.kamapreader.reader;
     exports dev.hipposgrumm.kamapreader.blocks;
-    exports dev.hipposgrumm.kamapreader.blocks.subblock;
+    exports dev.hipposgrumm.kamapreader.blocks.parts;
     exports dev.hipposgrumm.kamapreader.blocks.worldobjects;
 }

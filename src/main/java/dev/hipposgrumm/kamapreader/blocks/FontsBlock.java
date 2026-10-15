@@ -1,57 +1,66 @@
 package dev.hipposgrumm.kamapreader.blocks;
 
-import dev.hipposgrumm.kamapreader.blocks.subblock.ArCkBlock;
-import dev.hipposgrumm.kamapreader.blocks.subblock.ResourceCheckBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
+import dev.hipposgrumm.kamapreader.util.PlaceholderValue;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.BlockType;
 import dev.hipposgrumm.kamapreader.util.types.EnumChoices;
-import dev.hipposgrumm.kamapreader.util.types.wrappers.SizeLimitedString;
-import dev.hipposgrumm.kamapreader.util.types.wrappers.UInteger;
+import dev.hipposgrumm.kamapreader.util.types.wrappers.UtString;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class FontsBlock extends Block {
-    private ResourceCheckBlock rsck;
-    private ArCkBlock arck;
+public class FontsBlock extends Block.ArrayChecked {
     public List<FontDefinition> fonts = new ArrayList<>();
+    private FontDefinition[] fontsArrayBuilder;
 
     @Override
-    protected void read(BlockReader reader, KARFile.ProgressUpdater progress) {
+    protected void readFromArrayBegin(int count, KARFile.ProgressUpdater progress) {
         progress.setMessage("Reading FontDefinitions");
-        rsck = ResourceCheckBlock.read(reader, "FtFm");
-        arck = ArCkBlock.read(reader, "FtFm");
-
-        while (reader.getRemaining() > 0) {
-            progress.updateWith(reader);
-            byte type = reader.readByte();
-            if (type == 0x00) break;
-            reader.move(-1);
-
-            fonts.add(new FontDefinition(reader));
-        }
-        progress.updateWith(reader);
+        fontsArrayBuilder = new FontDefinition[count];
     }
 
     @Override
-    public void write(BlockWriter writer, KARFile.ProgressUpdater progress) {
-        progress.setMessage("Writing FontDefinitions");
-        rsck.write(writer.segment(), progress);
-        arck.write(writer.segment(), progress);
+    protected void readPartFromArray(BlockReader reader, int index, KARFile.ProgressUpdater progress) {
+        fontsArrayBuilder[index] = new FontDefinition(reader);
+    }
 
-        for (FontDefinition font:fonts) {
-            font.write(writer.segment());
-        }
+    @Override
+    protected void readPlaceholderFromArray(int index) {
+        fontsArrayBuilder[index] = new FontDefinition.Placeholder();
+    }
+
+    @Override
+    protected void readFromArrayEnd(KARFile.ProgressUpdater progress) {
+        fonts = new ArrayList<>(List.of(fontsArrayBuilder));
+    }
+
+    @Override
+    protected int writeForArrayBegin(KARFile.ProgressUpdater progress) {
+        progress.setMessage("Writing FontDefinitions");
+        return fonts.size();
+    }
+
+    @Override
+    public boolean writePartForArray(BlockWriter writer, int index, KARFile.ProgressUpdater progress) {
+        FontDefinition definition = fonts.get(index);
+        if (definition instanceof PlaceholderValue) return false;
+
+        definition.write(writer.segment());
+        return true;
+    }
+
+    @Override
+    protected void writeForArrayEnd(BlockWriter writer, KARFile.ProgressUpdater progress) {
         writer.writeShort((short)0);
     }
 
     @Override
     public List<? extends DatingProfileEntry> getDatingProfile() {
-        return null;
+        return List.of(getMetadataDatingProfileEntry());
     }
 
     @Override
@@ -71,12 +80,10 @@ public class FontsBlock extends Block {
 
     public static class FontDefinition implements DatingBachelor {
         private byte[] head;
-        private int unknownFlags;
-        public Encoding encoding;
-        private UInteger gamePointer;
-        public SizeLimitedString fontName;
-        private UInteger uselessPointer;
+        public UtString fontName;
         private short unknown;
+
+        protected FontDefinition() {}
 
         public FontDefinition(BlockReader reader) {
             head = reader.readBlockHead();
@@ -84,40 +91,13 @@ public class FontsBlock extends Block {
 
             reader = reader.segment(reader.readInt());
 
-            unknownFlags = reader.readInt(); // string flags - not sure what they're used for
-            int encodingVal = reader.readInt();
-            encoding = switch (encodingVal) {
-                case 0 -> Encoding.UTF8;
-                case 3 -> Encoding.UTF16;
-                default -> {
-                    System.err.println("Read font with unknown encoding id "+encodingVal);
-                    yield Encoding.UNKNOWN;
-                }
-            };
-            gamePointer = reader.readUInt(); // pointer location used internally by the game
-
-            int size = reader.readInt();
-            int maxsize = reader.readInt();
-            uselessPointer = reader.readUInt(); // placeholder pointer; is overwritten by the game
-            fontName = new SizeLimitedString(reader.readString(size), maxsize);
-            reader.move(maxsize-size);
+            fontName = reader.readUtString();
             unknown = reader.readShort();
         }
 
         public void write(BlockWriter writer) {
             writer.writeBlockHead(head);
-
-            writer.writeInt(unknownFlags);
-            writer.writeInt(encoding.identifier);
-            writer.writeUInt(gamePointer);
-
-            int size = fontName.toString().length();
-            int maxsize = fontName.getSize();
-            writer.writeInt(size);
-            writer.writeInt(maxsize);
-            writer.writeUInt(uselessPointer);
-            writer.writeRawString(fontName.toString());
-            for (int i=size;i<maxsize;i++) writer.writeByte((byte)0xCD);
+            writer.writeUtString(fontName);
             writer.writeShort(unknown);
         }
 
@@ -150,6 +130,12 @@ public class FontsBlock extends Block {
             @Override
             public List<? extends Enum<? extends EnumChoices>> choices() {
                 return List.of(UTF8, UTF16);
+            }
+        }
+
+        private static final class Placeholder extends FontDefinition implements PlaceholderValue {
+            public Placeholder() {
+                super();
             }
         }
     }

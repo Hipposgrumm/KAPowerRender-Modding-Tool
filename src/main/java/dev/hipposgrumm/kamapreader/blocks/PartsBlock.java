@@ -1,12 +1,12 @@
 package dev.hipposgrumm.kamapreader.blocks;
 
 import dev.hipposgrumm.kamapreader.blocks.parts.Part;
-import dev.hipposgrumm.kamapreader.blocks.subblock.ArCkBlock;
-import dev.hipposgrumm.kamapreader.blocks.subblock.ResourceCheckBlock;
+import dev.hipposgrumm.kamapreader.blocks.parts.PartEmpty;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.reader.KARFile;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
+import dev.hipposgrumm.kamapreader.util.PlaceholderValue;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.Material;
 
@@ -14,45 +14,61 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class PartsBlock extends Block {
-    private ResourceCheckBlock rsck;
-    private ArCkBlock arck;
-
-    private final List<Part> parts = new ArrayList<>();
+// TODO: Now that we have array check, we need to refactor this.
+public class PartsBlock extends Block.ArrayChecked {
+    public List<Part> parts = new ArrayList<>();
+    private Part[] partsArrayBuilder;
     private byte[] neglectedBytes = null;
 
     @Override
-    protected void read(BlockReader reader, KARFile.ProgressUpdater progress) {
-        rsck = ResourceCheckBlock.read(reader, "PtFm");
-        arck = ArCkBlock.read(reader, "PtFm");
+    protected void readFromArrayBegin(int count, KARFile.ProgressUpdater progress) {
+        partsArrayBuilder = new Part[count];
+    }
 
-        while (reader.getRemaining() > 0) {
-            int pos = reader.getPointer();
-            try {
-                Part part = Part.read(reader, progress);
-                if (part == null) {
-                    reader.seek(pos);
-                    neglectedBytes = reader.readBytes(reader.getRemaining());
-                    break;
-                }
-                parts.add(part);
-            } catch (Exception e) {
+    @Override
+    protected void readPartFromArray(BlockReader reader, int index, KARFile.ProgressUpdater progress) {
+        int pos = reader.getPointer();
+        try {
+            Part part = Part.read(reader, progress);
+            if (part == null) {
                 reader.seek(pos);
                 neglectedBytes = reader.readBytes(reader.getRemaining());
-                throw e;
+                return;
             }
+            partsArrayBuilder[index] = part;
+        } catch (Exception e) {
+            reader.seek(pos);
+            neglectedBytes = reader.readBytes(reader.getRemaining());
+            throw e;
         }
     }
 
     @Override
-    public void write(BlockWriter writer, KARFile.ProgressUpdater progress) {
-        rsck.write(writer.segment(), progress);
-        arck.write(writer.segment(), progress);
+    protected void readPlaceholderFromArray(int index) {
+        partsArrayBuilder[index] = new PlaceholderPart();
+    }
 
-        for (Part part:parts) {
-            part.write(writer.segment(), progress);
-        }
+    @Override
+    protected void readFromArrayEnd(KARFile.ProgressUpdater progress) {
+        parts = new ArrayList<>(List.of(partsArrayBuilder));
+    }
 
+    @Override
+    protected int writeForArrayBegin(KARFile.ProgressUpdater progress) {
+        return parts.size();
+    }
+
+    @Override
+    public boolean writePartForArray(BlockWriter writer, int index, KARFile.ProgressUpdater progress) {
+        Part part = parts.get(index);
+        if (part instanceof PlaceholderValue) return false;
+
+        part.write(writer.segment(), progress);
+        return true;
+    }
+
+    @Override
+    protected void writeForArrayEnd(BlockWriter writer, KARFile.ProgressUpdater progress) {
         if (neglectedBytes != null) writer.writeBytes(neglectedBytes);
     }
 
@@ -64,7 +80,7 @@ public class PartsBlock extends Block {
 
     @Override
     public List<? extends DatingProfileEntry> getDatingProfile() {
-        return null;
+        return List.of(getMetadataDatingProfileEntry());
     }
 
     @Override
@@ -81,4 +97,6 @@ public class PartsBlock extends Block {
     public String toString() {
         return "Parts";
     }
+
+    private static final class PlaceholderPart extends PartEmpty implements PlaceholderValue {}
 }
