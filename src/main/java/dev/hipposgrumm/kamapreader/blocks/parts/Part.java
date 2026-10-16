@@ -1,7 +1,7 @@
 package dev.hipposgrumm.kamapreader.blocks.parts;
 
 import dev.hipposgrumm.kamapreader.blocks.MaterialsBlock;
-import dev.hipposgrumm.kamapreader.blocks.TextureArrayBlock;
+import dev.hipposgrumm.kamapreader.blocks.MaterialTexturesBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.reader.KARFile;
@@ -26,10 +26,10 @@ public abstract class Part implements DatingBachelor {
 
     protected byte[] BYTE_DATA;
 
-    protected final TextureArrayBlock.TexturesData textures;
+    protected final MaterialTexturesBlock.TexturesData textures;
     protected final MaterialsBlock.MaterialsData materials;
 
-    public Part(TextureArrayBlock.TexturesData textures, MaterialsBlock.MaterialsData materials) {
+    public Part(MaterialTexturesBlock.TexturesData textures, MaterialsBlock.MaterialsData materials) {
         this.textures = textures;
         this.materials = materials;
     }
@@ -69,11 +69,11 @@ public abstract class Part implements DatingBachelor {
             int currentOffset = reader.getPointer();
 
             // TODO: Read textures and materials first before reading object data, it will be cleaner (and I think the game does that anyway).
-            TextureArrayBlock.TexturesData textures;
+            MaterialTexturesBlock.TexturesData textures;
             if (texturesOffset > 0) {
                 reader.seek(texturesOffset-currentOffset);
                 progress.updateWith(reader);
-                textures = new TextureArrayBlock.TexturesData(reader, null, progress);
+                textures = new MaterialTexturesBlock.TexturesData(reader, null, progress);
             } else textures = null;
             MaterialsBlock.MaterialsData materials;
             if (materialsOffset > 0) {
@@ -385,7 +385,7 @@ public abstract class Part implements DatingBachelor {
         }
     }
 
-    private record TexturesWrapper(TextureArrayBlock.TexturesData textures) implements DatingBachelor {
+    private record TexturesWrapper(MaterialTexturesBlock.TexturesData textures) implements DatingBachelor {
         @Override
         public List<? extends DatingProfileEntry> getDatingProfile() {
             return List.of(new DatingProfileEntry("Content", new SubBachelorPreviewEntry(textures.textureList)));

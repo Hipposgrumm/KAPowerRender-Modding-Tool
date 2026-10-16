@@ -40,7 +40,7 @@ public class SoundsBlock extends Block.ArrayChecked {
     @Override
     protected void readPartFromArray(BlockReader reader, int index, KARFile.ProgressUpdater progress) {
         String name = soundPrefix+index;
-        progress.setMessage("Reading "+name);
+        progress.setMessage("Reading Sound "+name);
         SnSound snd = new SnSound(name);
         snd.HEAD = reader.readBlockHead();
 
@@ -85,7 +85,7 @@ public class SoundsBlock extends Block.ArrayChecked {
         SnSound snd = sounds.get(index);
         if (snd instanceof PlaceholderValue) return false;
 
-        progress.setMessage("Writing "+snd);
+        progress.setMessage("Writing Sound "+snd);
         writer.writeBlockHead(snd.HEAD);
 
         writer.writeShort(snd.UNKNOWN1);

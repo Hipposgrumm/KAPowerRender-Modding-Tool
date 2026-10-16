@@ -11,7 +11,7 @@ import dev.hipposgrumm.kamapreader.util.types.Texture;
 
 import java.util.*;
 
-public class TextureArrayBlock extends Block.Singular {
+public class MaterialTexturesBlock extends Block.Singular {
     public TexturesData data;
 
     @Override
@@ -49,7 +49,7 @@ public class TextureArrayBlock extends Block.Singular {
 
     @Override
     public String toString() {
-        return "TextureSet";
+        return "MaterialTextures";
     }
 
     public static class TexturesData {
@@ -59,8 +59,8 @@ public class TextureArrayBlock extends Block.Singular {
 
         public TexturesData(BlockReader reader, String statusMessage, KARFile.ProgressUpdater progress) {
             head = reader.readBlockHead();
-            if (head[0] != BlockType.TEXTURE_ARRAY)
-                throw new IllegalStateException(String.format("Block data value (0x%02X) does not match for type TEXTURE_ARRAY", head[0]));
+            if (head[0] != BlockType.MATERIAL_TEXTURES)
+                throw new IllegalStateException(String.format("Block data value (0x%02X) does not match for type MATERIAL_TEXTURES", head[0]));
 
             // Offset values need this at exactly the position of "head"
             int remainingSize = reader.readIntLittle();

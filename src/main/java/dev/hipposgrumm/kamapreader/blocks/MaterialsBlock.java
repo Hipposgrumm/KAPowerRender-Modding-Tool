@@ -20,8 +20,8 @@ public class MaterialsBlock extends Block.Singular {
         for (Block b : file.blocks) {
             if (!b.successfullyRead()) continue;
             Map<Integer, Texture> textures = switch (b) {
-                case TextureSingleBlock bl -> Collections.singletonMap(bl.texture.getUid().get(), bl.texture);
-                case TextureArrayBlock bl -> bl.data.textures;
+                //case TextureSetBlock bl -> Collections.singletonMap(bl.texture.getUid().get(), bl.texture);
+                case MaterialTexturesBlock bl -> bl.data.textures;
                 default -> null;
             };
             if (textures != null) {

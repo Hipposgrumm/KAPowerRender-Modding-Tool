@@ -1,7 +1,7 @@
 package dev.hipposgrumm.kamapreader.blocks.parts;
 
 import dev.hipposgrumm.kamapreader.blocks.MaterialsBlock;
-import dev.hipposgrumm.kamapreader.blocks.TextureArrayBlock;
+import dev.hipposgrumm.kamapreader.blocks.MaterialTexturesBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.reader.KARFile;
@@ -28,7 +28,7 @@ public class PartCharacter extends Part {
     private byte[] MYSTERY4;
     private TextFileString file_mot;
 
-    public PartCharacter(TextureArrayBlock.TexturesData textures, MaterialsBlock.MaterialsData materials) {
+    public PartCharacter(MaterialTexturesBlock.TexturesData textures, MaterialsBlock.MaterialsData materials) {
         super(textures, materials);
     }
 

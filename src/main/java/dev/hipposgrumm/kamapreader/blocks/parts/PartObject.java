@@ -1,7 +1,7 @@
 package dev.hipposgrumm.kamapreader.blocks.parts;
 
 import dev.hipposgrumm.kamapreader.blocks.MaterialsBlock;
-import dev.hipposgrumm.kamapreader.blocks.TextureArrayBlock;
+import dev.hipposgrumm.kamapreader.blocks.MaterialTexturesBlock;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.reader.KARFile;
@@ -18,7 +18,7 @@ import java.util.Map;
 public class PartObject extends Part {
     private PROReader.PROData mesh_data;
 
-    public PartObject(TextureArrayBlock.TexturesData textures, MaterialsBlock.MaterialsData materials) {
+    public PartObject(MaterialTexturesBlock.TexturesData textures, MaterialsBlock.MaterialsData materials) {
         super(textures, materials);
     }
 

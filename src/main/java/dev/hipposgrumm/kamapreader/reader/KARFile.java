@@ -55,8 +55,8 @@ public class KARFile implements DatingBachelor {
                 progress.setMessage("Reading "+blockType);
                 Block block = switch (blockType) {
                     case "PtFm" -> new PartsBlock();
-                    case "TxFm" -> new TextureArrayBlock();
-                    case "TrFm" -> new TextureSingleBlock();
+                    case "TxFm" -> new MaterialTexturesBlock();
+                    case "TrFm" -> new TextureSetBlock();
                     case "MtFm" -> new MaterialsBlock(kar);
                     case "SnFm" -> new SoundsBlock(file.getName(), kar);
                     case "ObFm" -> new ObjectsBlock();
