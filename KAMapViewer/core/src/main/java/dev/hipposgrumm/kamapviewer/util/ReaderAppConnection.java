@@ -153,7 +153,22 @@ public class ReaderAppConnection {
         socketThread.interrupt();
     }
 
+    public static void onFilesDropped(String[] files) {
+        StringBuilder filesString = new StringBuilder();
+        for (String file:files) filesString.append(file).append('\0');
+        String endFileString = filesString.toString();
+
+        byte[] bytes = new byte[endFileString.length()+4];
+        bytes[0] = (byte)(files.length>>24);
+        bytes[1] = (byte)((files.length>>16)&0xFF);
+        bytes[2] = (byte)((files.length>>8)&0xFF);
+        bytes[3] = (byte)(files.length&0xFF);
+        System.arraycopy(endFileString.getBytes(StandardCharsets.US_ASCII), 0, bytes, 4, endFileString.length());
+        sendMessage(Messages.FILE_DROPPED, bytes);
+    }
+
     public static final class Messages {
+        private static final int FILE_DROPPED = -2;
         private static final int TERMINATE = -1;
         public static final int MODEL_START = 0;
         public static final int MODEL_PART = 1;

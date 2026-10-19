@@ -43,6 +43,12 @@ public class Lwjgl3Launcher {
 
         configuration.setWindowListener(new Lwjgl3WindowAdapter() {
             @Override
+            public void filesDropped(String[] files) {
+                ReaderAppConnection.onFilesDropped(files);
+                super.filesDropped(files);
+            }
+
+            @Override
             public boolean closeRequested() {
                 ReaderAppConnection.terminateConnection();
                 return super.closeRequested();

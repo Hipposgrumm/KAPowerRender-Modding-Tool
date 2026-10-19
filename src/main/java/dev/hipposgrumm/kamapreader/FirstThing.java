@@ -1,11 +1,14 @@
 package dev.hipposgrumm.kamapreader;
 
+import dev.hipposgrumm.kamapreader.reader.KADataFile;
 import dev.hipposgrumm.kamapreader.reader.KARFile;
+import dev.hipposgrumm.kamapreader.reader.KASFile;
 import dev.hipposgrumm.kamapreader.util.DatingBachelor;
 import dev.hipposgrumm.kamapreader.util.PlaceholderValue;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.control.ObservableDatingValue;
 import dev.hipposgrumm.kamapreader.util.control.ProgressPopup;
+import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
@@ -29,8 +32,10 @@ import java.util.*;
 import java.util.function.Consumer;
 
 public class FirstThing implements Initializable {
+    public static Consumer<File[]> onFilesDroppedHook = null;
+
     Window stage;
-    private KARFile karFile;
+    private KADataFile kaDataFile;
     private String file_chooser_last = System.getProperty("user.home");
     private FileChooser file_chooser;
     private DirectoryChooser directory_chooser;
@@ -60,6 +65,7 @@ public class FirstThing implements Initializable {
                 new FileChooser.ExtensionFilter("Unset File Type", "*")
         );
         directory_chooser = new DirectoryChooser();
+        onFilesDroppedHook = this::onFilesDragged;
 
         helpPopup.setTitle("Help");
         helpPopup.setHeaderText("This is the Help menu.");
@@ -107,12 +113,7 @@ public class FirstThing implements Initializable {
 
         dragTarget.setOnDragDropped(event -> {
             if (event.getDragboard().hasFiles()) {
-                File file = event.getDragboard().getFiles().get(0);
-
-                String last = file.getParent();
-                if (last != null) file_chooser_last = last;
-
-                doLoad(file);
+                onFilesDragged(event.getDragboard().getFiles().toArray(new File[0]));
             }
             event.setDropCompleted(event.getDragboard().hasFiles());
             event.consume();
@@ -146,22 +147,46 @@ public class FirstThing implements Initializable {
         }
     }
 
+    private static final String FILE_OPEN_EXT_DESC = String.join(", ", KARFile.FILE_DESCRIPTOR, KASFile.FILE_DESCRIPTOR);
+    private static final String[] FILE_OPEN_EXT_LIST = new String[] { KARFile.FILE_EXT, KASFile.FILE_EXT };
+
     @FXML
     protected void load() {
-        File f = popupOpenFile("Open", null, "KAResource", "*.kar");
+        File f = popupOpenFile("Open", null, FILE_OPEN_EXT_DESC, FILE_OPEN_EXT_LIST);
         if (f != null) doLoad(f);
+    }
+
+    private void onFilesDragged(File[] files) {
+        if (Platform.isFxApplicationThread()) {
+            if (files.length == 0) return;
+            File file = files[0];
+
+            String last = file.getParent();
+            if (last != null) file_chooser_last = last;
+
+            doLoad(file);
+        } else Platform.runLater(() -> {
+            if (files.length == 0) return;
+            File file = files[0];
+
+            String last = file.getParent();
+            if (last != null) file_chooser_last = last;
+
+            doLoad(file);
+        });
     }
 
     private void doLoad(File f) {
         clearPreview();
-        karFile = null;
+        kaDataFile = null;
         try {
-            KARFile.LoadFile task = new KARFile.LoadFile(f);
+            KADataFile.LoadFile<?> task = KADataFile.getLoadFunction(f);
+            if (task == null) return;
             try {
                 openProgress(task);
                 task.valueProperty().addListener((observable, oldVal, newVal) -> {
                     if (newVal == null) return;
-                    karFile = newVal;
+                    kaDataFile = newVal;
                     setPreview();
                 });
                 Thread thread = new Thread(task);
@@ -170,7 +195,7 @@ public class FirstThing implements Initializable {
             } catch (IOException e) {
                 new RuntimeException("Unable to load progress popup.", e).printStackTrace();
                 // Load without progressbar.
-                karFile = task.get();
+                kaDataFile = task.get();
                 setPreview();
             }
         } catch (Exception e) {
@@ -208,15 +233,15 @@ public class FirstThing implements Initializable {
 
     @FXML
     protected void save(ActionEvent actionEvent) {
-        if (karFile == null) return;
-        File path = popupSaveFile("Save", karFile.filename.toString(), "KAResource", "*.kar");
+        if (kaDataFile == null) return;
+        File path = popupSaveFile("Save", kaDataFile.filename.toString(), kaDataFile.fileDescriptor(), kaDataFile.fileChooserExt());
         if (path == null) {
             popupNotice("Save Cancelled", "Cancelled saving.", "You didn't select a save location.");
             return;
         }
         try {
             if (path.createNewFile() || popupQuestion("Overwrite Warning", "This file already exists!", "Would you like to overwrite the file?")) {
-                KARFile.SaveFile task = new KARFile.SaveFile(karFile, path);
+                KADataFile.SaveFile<?> task = kaDataFile.getSaveFunction(path);
                 try {
                     openProgress(task);
                     task.stateProperty().addListener((obs, oldState, newState) -> {
@@ -323,10 +348,14 @@ public class FirstThing implements Initializable {
     }
 
     private void setPreview() {
-        treeRoot.setValue(karFile);
+        treeRoot.setValue(kaDataFile);
         treeRoot.isModified = false;
         treeRoot.doUpdate();
-        karFile.blocks.forEach(b -> addTreeItem(treeRoot, b));
+        switch (kaDataFile) {
+            case KARFile kar -> kar.blocks.forEach(b -> addTreeItem(treeRoot, b));
+            default -> {} // make compiler happy
+        }
+        selectElement(treeRoot);
     }
 
     private void addTreeItem(TreeItem<DatingBachelor> base, DatingBachelor item) {

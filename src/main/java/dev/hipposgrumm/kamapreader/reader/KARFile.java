@@ -1,34 +1,46 @@
 package dev.hipposgrumm.kamapreader.reader;
 
 import dev.hipposgrumm.kamapreader.blocks.*;
-import dev.hipposgrumm.kamapreader.util.DatingBachelor;
-import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.types.Material;
-import dev.hipposgrumm.kamapreader.util.types.wrappers.FilePathString;
-import javafx.concurrent.Task;
 
 import java.io.File;
 import java.util.*;
 
-public class KARFile implements DatingBachelor {
-    public FilePathString filename = new KARFilePathString("KARFile.kar");
+public class KARFile extends KADataFile {
+    public static final String FILE_DESCRIPTOR = "KAResource";
+    public static final String FILE_EXT = "*.kar";
+
     public final List<Block> blocks = new ArrayList<>();
 
     @Override
-    public List<? extends DatingProfileEntry> getDatingProfile() {
-        return List.of(new DatingProfileEntry("Filename", false, filename));
+    public KADataFile.SaveFile<?> getSaveFunction(File file) {
+        return new SaveFile(this, file);
     }
 
-    public static class LoadFile extends AccessibleTask<KARFile> {
-        public final File file;
+    @Override
+    protected String defaultFilename() {
+        return "KARFile.kar";
+    }
+
+    @Override
+    public String fileDescriptor() {
+        return FILE_DESCRIPTOR;
+    }
+
+    @Override
+    public String fileChooserExt() {
+        return FILE_EXT;
+    }
+
+    public static class LoadFile extends KADataFile.LoadFile<KARFile> {
         public LoadFile(File file) {
-            this.file = file;
+            super(file);
         }
 
         @Override
-        protected KARFile call() throws Exception {
+        protected KARFile execute() throws Exception {
             KARFile kar = new KARFile();
-            kar.filename = new KARFilePathString(file.getName());
+            kar.filename = new KADataFilePathString(file.getName());
 
             updateMessage("Starting Read");
             BlockReader reader = new BlockReader(file);
@@ -93,22 +105,18 @@ public class KARFile implements DatingBachelor {
         }
     }
 
-    public static class SaveFile extends AccessibleTask<Void> {
-        private final KARFile kar;
-        private final File file;
-
+    public static class SaveFile extends KADataFile.SaveFile<KARFile> {
         public SaveFile(KARFile kar, File file) {
-            this.kar = kar;
-            this.file = file;
+            super(kar, file);
         }
 
         @Override
-        protected Void call() throws Exception {
+        protected void execute() throws Exception {
             updateMessage("Starting Write");
             BlockWriter writer = new BlockWriter();
             ProgressUpdater progress = new ProgressUpdater(this, 0);
             writer.writeRawString("CAT \0\0\0\0    ");
-            for (Block block:kar.blocks) {
+            for (Block block:data.blocks) {
                 progress.setMessage("Writing "+block.getBlockType());
 
                 writer.setLittleEndian(block.isLittleEndian());
@@ -133,22 +141,6 @@ public class KARFile implements DatingBachelor {
             writer.writeInt(writer.getSize()-8);
 
             writer.writeout(file);
-            return null;
-        }
-    }
-
-    @Override
-    public String toString() {
-        return filename.toString();
-    }
-
-    /// Allow these two methods to be accessible for {@link ProgressUpdater}
-    private abstract static class AccessibleTask<T> extends Task<T> {
-        @Override public void updateMessage(String message) {
-            super.updateMessage(message);
-        }
-        @Override public void updateProgress(long workDone, long max) {
-            super.updateProgress(workDone, max);
         }
     }
 
@@ -167,17 +159,6 @@ public class KARFile implements DatingBachelor {
 
         public void setMessage(String message) {
             task.updateMessage(message);
-        }
-    }
-
-    private static class KARFilePathString extends FilePathString {
-        public KARFilePathString(String string) {
-            super(string);
-        }
-
-        @Override
-        public boolean isModified() {
-            return false; // Don't flag the user if the output filename is modified. They probably know what they're doing and it doesn't matter too much.
         }
     }
 }

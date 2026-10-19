@@ -1,5 +1,6 @@
 package dev.hipposgrumm.kamapreader.util;
 
+import dev.hipposgrumm.kamapreader.FirstThing;
 import dev.hipposgrumm.kamapreader.Main;
 
 import java.io.*;
@@ -21,6 +22,23 @@ public class ViewerAppHandle {
     private static Thread socketThread = null;
 
     static {
+        enactMessageHandler(Messages.FILE_DROPPED, bytes -> {
+            int i = 4;
+            int count = (bytes[0] << 24) |
+                    (bytes[1] << 16) |
+                    (bytes[2] << 8) |
+                    bytes[3];
+            File[] files = new File[count];
+            for (int j=0;j<count;j++) {
+                StringBuilder file = new StringBuilder();
+                for (;i<bytes.length;i++) {
+                    if (bytes[i] == '\00') break;
+                    file.append((char) bytes[i]);
+                }
+                files[j] = new File(file.toString());
+            }
+            FirstThing.onFilesDroppedHook.accept(files);
+        });
         enactMessageHandler(Messages.TERMINATE, bytes -> {
             if (processAliveThread == null) return;
             disconnectProgram();
@@ -263,6 +281,7 @@ public class ViewerAppHandle {
     }
 
     public static final class Messages {
+        private static final int FILE_DROPPED = -2;
         private static final int TERMINATE = -1;
         public static final int MODEL_START = 0;
         public static final int MODEL_PART = 1;
