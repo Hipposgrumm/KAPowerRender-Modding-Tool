@@ -8,6 +8,7 @@ import dev.hipposgrumm.kamapreader.util.PlaceholderValue;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.control.display.BachelorProfileValueList;
 import dev.hipposgrumm.kamapreader.util.types.Flags;
+import dev.hipposgrumm.kamapreader.util.types.Version;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.UtString;
 
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ public class LevelDefinesBlock extends Block.ArrayChecked {
 
     @Override
     protected void readPartFromArray(BlockReader reader, int index, KARFile.ProgressUpdater progress) {
-        levelDefinitionsArrayBuilder[index] = new LevelDefinition(reader, index);
+        levelDefinitionsArrayBuilder[index] = new LevelDefinition(reader, resourceVersion, index);
     }
 
     @Override
@@ -73,8 +74,9 @@ public class LevelDefinesBlock extends Block.ArrayChecked {
 
     public static class LevelDefinition implements DatingBachelor {
         private UnknownFlag someFlag;
-        private byte[] unknown1;
-        private float[] unknown2;
+        private int unknown1;
+        private byte[] unknown2;
+        private float[] unknown3;
         private List<UtString> strings;
 
         private int index;
@@ -83,12 +85,14 @@ public class LevelDefinesBlock extends Block.ArrayChecked {
             this.index = index;
         }
 
-        public LevelDefinition(BlockReader reader, int index) {
+        public LevelDefinition(BlockReader reader, Version version, int index) {
             this.index = index;
 
             someFlag = new UnknownFlag(reader.readInt());
-            unknown1 = reader.readBytes(12);
-            unknown2 = new float[] {
+            unknown1 = reader.readInt();
+            if (version.major() >= 1)  // This is an assumption, there's no real way of knowing for sure.
+                unknown2 = reader.readBytes(8);
+            unknown3 = new float[] {
                     reader.readFloat(),
                     reader.readFloat(),
                     reader.readFloat(),
@@ -105,8 +109,9 @@ public class LevelDefinesBlock extends Block.ArrayChecked {
 
         public void write(BlockWriter writer) {
             writer.writeInt(someFlag.getValue());
-            writer.writeBytes(unknown1);
-            for (float f:unknown2) writer.writeFloat(f);
+            writer.writeInt(unknown1);
+            if (unknown2 != null) writer.writeBytes(unknown2);
+            for (float f:unknown3) writer.writeFloat(f);
             for (UtString string:strings) writer.writeUtString(string);
         }
 

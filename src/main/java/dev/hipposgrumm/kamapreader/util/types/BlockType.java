@@ -5,4 +5,5 @@ public class BlockType {
     public static final byte TEXTURE_ARRAY = 0x06;
     public static final byte MATERIAL_TEXTURES = 0x07;
     public static final byte FONT_DEFINITION = 0x0F;
+    public static final byte STRINGS_DEFINITION = 0x0B;
 }

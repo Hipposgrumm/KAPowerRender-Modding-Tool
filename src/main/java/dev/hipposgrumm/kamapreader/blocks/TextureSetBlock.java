@@ -32,7 +32,7 @@ public class TextureSetBlock extends Block.ArrayChecked {
     protected void readPartFromArray(BlockReader reader, int index, KARFile.ProgressUpdater progress) {
         byte[] head = reader.readBlockHead();
         if (head[0] != BlockType.TEXTURE_ARRAY)
-            throw new IllegalStateException(String.format("Block data value (0x%02X) does not match for type TEXTURE_SINGLE", head[0]));
+            throw new IllegalStateException(String.format("Block data value (0x%02X) does not match for type TEXTURE_ARRAy", head[0]));
 
         BlockReader texreader = reader.segment(reader.readIntLittle());
         texturesArrayBuilder[index] = new TextureValue(head, new Texture(texreader));
