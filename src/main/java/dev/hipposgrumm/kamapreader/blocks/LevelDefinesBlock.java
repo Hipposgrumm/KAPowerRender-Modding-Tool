@@ -21,16 +21,12 @@ public class LevelDefinesBlock extends Block.ArrayChecked {
     @Override
     protected void readFromArrayBegin(int count, KARFile.ProgressUpdater progress) {
         levelDefinitionsArrayBuilder = new LevelDefinition[count];
+        for (int i=0;i<count;i++) levelDefinitionsArrayBuilder[i] = new LevelDefinition.Placeholder(i);
     }
 
     @Override
     protected void readPartFromArray(BlockReader reader, int index, KARFile.ProgressUpdater progress) {
         levelDefinitionsArrayBuilder[index] = new LevelDefinition(reader, resourceVersion, index);
-    }
-
-    @Override
-    protected void readPlaceholderFromArray(int index) {
-        levelDefinitionsArrayBuilder[index] = new LevelDefinition.Placeholder(index);
     }
 
     @Override

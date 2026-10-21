@@ -1,7 +1,7 @@
 package dev.hipposgrumm.kamapreader.blocks;
 
 import dev.hipposgrumm.kamapreader.blocks.parts.Part;
-import dev.hipposgrumm.kamapreader.blocks.parts.PartEmpty;
+import dev.hipposgrumm.kamapreader.blocks.parts.PartUnknown;
 import dev.hipposgrumm.kamapreader.reader.BlockReader;
 import dev.hipposgrumm.kamapreader.reader.BlockWriter;
 import dev.hipposgrumm.kamapreader.reader.KARFile;
@@ -14,15 +14,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-// TODO: Now that we have array check, we need to refactor this.
 public class PartsBlock extends Block.ArrayChecked {
     public List<Part> parts = new ArrayList<>();
     private Part[] partsArrayBuilder;
-    private byte[] neglectedBytes = null;
 
     @Override
     protected void readFromArrayBegin(int count, KARFile.ProgressUpdater progress) {
         partsArrayBuilder = new Part[count];
+        for (int i=0;i<count;i++) partsArrayBuilder[i] = new PlaceholderPart();
     }
 
     @Override
@@ -32,20 +31,18 @@ public class PartsBlock extends Block.ArrayChecked {
             Part part = Part.read(reader, progress);
             if (part == null) {
                 reader.seek(pos);
-                neglectedBytes = reader.readBytes(reader.getRemaining());
-                return;
+                PartUnknown fallback = new PartUnknown();
+                fallback.readData(reader.segment(reader.getRemaining()), progress);
+                part = fallback;
             }
             partsArrayBuilder[index] = part;
         } catch (Exception e) {
             reader.seek(pos);
-            neglectedBytes = reader.readBytes(reader.getRemaining());
+            PartUnknown fallback = new PartUnknown();
+            fallback.readData(reader.segment(reader.getRemaining()), progress);
+            partsArrayBuilder[index] = fallback;
             throw e;
         }
-    }
-
-    @Override
-    protected void readPlaceholderFromArray(int index) {
-        partsArrayBuilder[index] = new PlaceholderPart();
     }
 
     @Override
@@ -65,11 +62,6 @@ public class PartsBlock extends Block.ArrayChecked {
 
         part.write(writer.segment(), progress);
         return true;
-    }
-
-    @Override
-    protected void writeForArrayEnd(BlockWriter writer, KARFile.ProgressUpdater progress) {
-        if (neglectedBytes != null) writer.writeBytes(neglectedBytes);
     }
 
     public void fillMaterials(Map<Integer, Material> materials) {
@@ -98,5 +90,15 @@ public class PartsBlock extends Block.ArrayChecked {
         return "Parts";
     }
 
-    private static final class PlaceholderPart extends PartEmpty implements PlaceholderValue {}
+    private static final class PlaceholderPart extends Part implements PlaceholderValue {
+        public PlaceholderPart() {
+            super(null, null);
+        }
+
+        @Override protected void readData(BlockReader reader, KARFile.ProgressUpdater progress) {}
+        @Override protected void writeData(BlockWriter writer, KARFile.ProgressUpdater progress) {}
+        @Override public String toString() {
+            return "PLACEHOLDER";
+        }
+    }
 }

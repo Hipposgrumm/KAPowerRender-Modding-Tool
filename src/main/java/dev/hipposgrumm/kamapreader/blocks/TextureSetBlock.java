@@ -26,6 +26,8 @@ public class TextureSetBlock extends Block.ArrayChecked {
     protected void readFromArrayBegin(int count, KARFile.ProgressUpdater progress) {
         progress.setMessage("Reading TextureSet");
         texturesArrayBuilder = new TextureValue[count];
+
+        for (int i=0;i<count;i++) texturesArrayBuilder[i] = new PlaceholderTextureValue();
     }
 
     @Override
@@ -36,11 +38,6 @@ public class TextureSetBlock extends Block.ArrayChecked {
 
         BlockReader texreader = reader.segment(reader.readIntLittle());
         texturesArrayBuilder[index] = new TextureValue(head, new Texture(texreader));
-    }
-
-    @Override
-    protected void readPlaceholderFromArray(int index) {
-        texturesArrayBuilder[index] = new PlaceholderTextureValue();
     }
 
     @Override
@@ -146,6 +143,11 @@ public class TextureSetBlock extends Block.ArrayChecked {
         @Override
         public void onSelected() {
             texture.onSelected();
+        }
+
+        @Override
+        public String toString() {
+            return texture.toString();
         }
     }
 

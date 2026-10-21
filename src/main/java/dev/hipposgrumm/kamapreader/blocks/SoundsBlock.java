@@ -35,6 +35,7 @@ public class SoundsBlock extends Block.ArrayChecked {
     protected void readFromArrayBegin(int count, KARFile.ProgressUpdater progress) {
         progress.setMessage("Reading Sounds");
         soundsArrayBuilder = new SnSound[count];
+        for (int i=0;i<count;i++) soundsArrayBuilder[i] = new PlaceholderSound();
     }
 
     @Override
@@ -62,11 +63,6 @@ public class SoundsBlock extends Block.ArrayChecked {
         reader.seek(fileDataOffset);
         snd.setData(reader.readBytes(size));
         soundsArrayBuilder[index] = snd;
-    }
-
-    @Override
-    protected void readPlaceholderFromArray(int index) {
-        soundsArrayBuilder[index] = new PlaceholderSound();
     }
 
     @Override

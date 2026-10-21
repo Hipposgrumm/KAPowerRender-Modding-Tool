@@ -18,6 +18,7 @@ public class ObjectsBlock extends Block.ArrayChecked {
     @Override
     protected void readFromArrayBegin(int count, KARFile.ProgressUpdater progress) {
         objectsArrayBuilder = new WorldObject[count];
+        for (int i=0;i<count;i++) objectsArrayBuilder[i] = new WorldObjectPlaceholder();
     }
 
     @Override
@@ -41,11 +42,6 @@ public class ObjectsBlock extends Block.ArrayChecked {
         object.read(reader);
         object.readChildren(reader);
         objectsArrayBuilder[index] = object;
-    }
-
-    @Override
-    protected void readPlaceholderFromArray(int index) {
-        objectsArrayBuilder[index] = new WorldObjectPlaceholder();
     }
 
     @Override

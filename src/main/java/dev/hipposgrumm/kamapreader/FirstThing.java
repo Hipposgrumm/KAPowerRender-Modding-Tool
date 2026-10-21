@@ -362,6 +362,7 @@ public class FirstThing implements Initializable {
         TreeItem<DatingBachelor> added = new BachelorTreeItem(item);
         base.getChildren().add(added);
         try {
+            if (item instanceof PlaceholderValue) return;
             List<? extends DatingBachelor> subs = item.getSubBachelors();
             if (subs != null)
                 for (DatingBachelor sub:subs)
@@ -397,6 +398,7 @@ public class FirstThing implements Initializable {
                         ? "* PLACEHOLDER"
                         : "PLACEHOLDER"
                 );
+                setContextMenu(new ContextMenu());
                 return;
             }
 
@@ -434,8 +436,9 @@ public class FirstThing implements Initializable {
         }
 
         protected void onValueUpdated(ObservableValue<? extends DatingBachelor> observable, DatingBachelor oldVal, DatingBachelor newVal) {
-            if (newVal != null) this.entries = newVal.getDatingProfile();
-            else this.entries = null;
+            if (newVal == null) this.entries = null;
+            else if (newVal instanceof PlaceholderValue) this.entries = null;
+            else this.entries = newVal.getDatingProfile();
         }
 
         public void doUpdate() {

@@ -61,7 +61,7 @@ public abstract class Block implements DatingBachelor {
                                 reader.seek(offset);
                                 progress.updateWith(reader);
                                 readPartFromArray(reader.segment(reader.getRemaining()), i, progress);
-                            } else readPlaceholderFromArray(i);
+                            }
                         }
                         readFromArrayEnd(progress);
                         progress.updateWith(reader);
@@ -163,13 +163,6 @@ public abstract class Block implements DatingBachelor {
     protected abstract void readPartFromArray(BlockReader reader, int index, KARFile.ProgressUpdater progress);
 
     /**
-     * Called when a placeholder entry is found in ArrayCheck.
-     * @param index Index of Entry
-     * @implNote Only called when ArrayCheck is present.
-     */
-    protected abstract void readPlaceholderFromArray(int index);
-
-    /**
      * Called after all data has been read by ArrayCheck.
      * Use this to finalize array data into lists that can be modified by the program.
      * @param progress ProgressUpdater
@@ -227,10 +220,6 @@ public abstract class Block implements DatingBachelor {
         }
 
         protected final void readPartFromArray(BlockReader reader, int index, KARFile.ProgressUpdater progress) {
-            throw new BlockDataProcessingMethodException("Block type "+getBlockType()+" is not supposed to be read as an array.");
-        }
-
-        protected final void readPlaceholderFromArray(int index) {
             throw new BlockDataProcessingMethodException("Block type "+getBlockType()+" is not supposed to be read as an array.");
         }
 

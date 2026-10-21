@@ -12,10 +12,7 @@ import dev.hipposgrumm.kamapreader.util.control.display.TexturesDisplay;
 import dev.hipposgrumm.kamapreader.util.types.structs.BITMAP_TEXTURE;
 import dev.hipposgrumm.kamapreader.util.types.wrappers.UniqueIdentifier;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TreeItem;
+import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -252,9 +249,11 @@ public class Texture implements DatingBachelor, Previewable, Exportable {
                     view.setFitHeight(100);
                     Button refButton = new Button("Go to Reference", Icon.redirect());
                     TreeItem<DatingBachelor> found = DatingProfileValue.findInTree(controller.tree.getRoot(), texture);
-                    if (found != null) refButton.setOnAction(event ->
-                            controller.tree.getSelectionModel().select(found)
-                    );
+                    if (found != null) refButton.setOnAction(event -> {
+                        MultipleSelectionModel<TreeItem<DatingBachelor>> selection = controller.tree.getSelectionModel();
+                        selection.clearSelection();
+                        selection.select(found);
+                    });
                     else refButton.setDisable(true);
                     images.getChildren().add(new VBox(view, refButton));
                 } else {

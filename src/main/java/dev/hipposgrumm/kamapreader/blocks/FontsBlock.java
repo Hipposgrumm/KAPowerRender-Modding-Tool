@@ -21,16 +21,12 @@ public class FontsBlock extends Block.ArrayChecked {
     protected void readFromArrayBegin(int count, KARFile.ProgressUpdater progress) {
         progress.setMessage("Reading FontDefinitions");
         fontsArrayBuilder = new FontDefinition[count];
+        for (int i=0;i<count;i++) fontsArrayBuilder[i] = new FontDefinition.Placeholder();
     }
 
     @Override
     protected void readPartFromArray(BlockReader reader, int index, KARFile.ProgressUpdater progress) {
         fontsArrayBuilder[index] = new FontDefinition(reader);
-    }
-
-    @Override
-    protected void readPlaceholderFromArray(int index) {
-        fontsArrayBuilder[index] = new FontDefinition.Placeholder();
     }
 
     @Override
@@ -133,10 +129,6 @@ public class FontsBlock extends Block.ArrayChecked {
             }
         }
 
-        private static final class Placeholder extends FontDefinition implements PlaceholderValue {
-            public Placeholder() {
-                super();
-            }
-        }
+        private static final class Placeholder extends FontDefinition implements PlaceholderValue {}
     }
 }

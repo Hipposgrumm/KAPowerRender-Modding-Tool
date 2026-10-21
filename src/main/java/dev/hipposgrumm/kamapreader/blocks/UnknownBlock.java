@@ -37,11 +37,6 @@ public class UnknownBlock extends Block {
     }
 
     @Override
-    protected void readPlaceholderFromArray(int index) {
-        dataArray[index] = null;
-    }
-
-    @Override
     protected void readWithAll(BlockReader reader, KARFile.ProgressUpdater progress) {
         dataAll = reader.readBytes(reader.getRemaining());
     }

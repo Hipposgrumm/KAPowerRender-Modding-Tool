@@ -20,9 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public abstract class Part implements DatingBachelor {
-    protected int UNKNOWN1;
-    protected byte[] UNKNOWN2;
-    protected Integer TYPE;
+    protected byte[] HEAD;
 
     protected byte[] BYTE_DATA;
 
@@ -36,75 +34,67 @@ public abstract class Part implements DatingBachelor {
 
     public static Part read(BlockReader reader, KARFile.ProgressUpdater progress) {
         progress.setMessage("Reading Part");
-        int un1 = reader.readIntLittle();
-        byte[] un2 = reader.readBytes(reader.readIntLittle());
-
-        if (reader.getRemaining() == 0) {
-            Part part = new PartEmpty();
-            part.UNKNOWN1 = un1;
-            part.UNKNOWN2 = un2;
-            part.TYPE = null;
-            return part;
-        }
-        int type = reader.readIntLittle();
-        byte typeFirst = (byte) (type & 0xFF);
-        if (typeFirst == 0x03 || typeFirst == 0x08) { // TODO: Look for all of these cases.
-            reader.move(-4);
-            Part part = new PartEmpty();
-            part.UNKNOWN1 = un1;
-            part.UNKNOWN2 = un2;
-            part.TYPE = null;
-            return part;
-        } else if (typeFirst != 0x01) {
-            System.err.println("Unknown type 0x"+Integer.toHexString(typeFirst).toUpperCase()+" at 0x"+Integer.toHexString(reader.getTruePointer()-4).toUpperCase()+" - You can ignore this exception (for now).");
-            return null;
-        }
-        reader = reader.segment(reader.readInt());
+        byte[] head = reader.readBlockHead();
+        reader = reader.segment(switch (head[0]) { // TODO: Endianness here seems randomly be either little endian or the file's endianness. Investigate (maybe)
+            case 0x01 -> reader.readInt();
+            case 0x03 -> reader.readIntLittle();
+            default -> reader.readInt();
+        });
         reader.setLittleEndian(true);
-        Part part = null;
-        try {
-            // These offsets are from the beginning of the segmented reader.
-            int texturesOffset = reader.readInt();
-            int materialsOffset = reader.readInt();
-            int currentOffset = reader.getPointer();
 
-            // TODO: Read textures and materials first before reading object data, it will be cleaner (and I think the game does that anyway).
-            MaterialTexturesBlock.TexturesData textures;
-            if (texturesOffset > 0) {
-                reader.seek(texturesOffset-currentOffset);
-                progress.updateWith(reader);
-                textures = new MaterialTexturesBlock.TexturesData(reader, null, progress);
-            } else textures = null;
-            MaterialsBlock.MaterialsData materials;
-            if (materialsOffset > 0) {
-                reader.seek(materialsOffset-currentOffset);
-                progress.updateWith(reader);
-                materials = new MaterialsBlock.MaterialsData(reader, (textures != null) ? Collections.singletonList(textures.textures) : Collections.emptyList(), null, progress);
-            } else materials = new FillableMaterials();
-            reader.seek(currentOffset);
-            progress.updateWith(reader);
+        switch (head[0]) { // TODO: Look for all of these cases.
+            case 0x01 -> {
+                try {
+                    // These offsets are from the beginning of the segmented reader.
+                    int texturesOffset = reader.readInt();
+                    int materialsOffset = reader.readInt();
+                    int currentOffset = reader.getPointer();
 
-            part = switch ((type >> 8) & 0xFF) { // TODO: There's more data to be read.
-                case 0x10 -> new PartCharacter(textures, materials);
-                case 0x20 -> new PartObject(textures, materials);
-                default -> new PartUndefined(textures, materials);
-            };
-            part.UNKNOWN1 = un1;
-            part.UNKNOWN2 = un2;
-            part.TYPE = type;
-            int endOffset = (texturesOffset>0 ? texturesOffset : (materialsOffset>0 ? materialsOffset : (reader.getSize()+8)));
-            BlockReader subReader = reader.segment(endOffset-currentOffset-8);
-            part.readData(subReader, progress);
-        } catch (Exception e) {
-            e.printStackTrace();
-            if (part == null) {
-                part = new PartEmpty();
-                part.UNKNOWN1 = un1;
-                part.UNKNOWN2 = un2;
-                part.TYPE = type;
+                    // TODO: Read textures and materials first before reading object data, it will be cleaner (and I think the game does that anyway).
+                    MaterialTexturesBlock.TexturesData textures;
+                    if (texturesOffset > 0) {
+                        reader.seek(texturesOffset-currentOffset);
+                        progress.updateWith(reader);
+                        textures = new MaterialTexturesBlock.TexturesData(reader, null, progress);
+                    } else textures = null;
+                    MaterialsBlock.MaterialsData materials;
+                    if (materialsOffset > 0) {
+                        reader.seek(materialsOffset-currentOffset);
+                        progress.updateWith(reader);
+                        materials = new MaterialsBlock.MaterialsData(reader, (textures != null) ? Collections.singletonList(textures.textures) : Collections.emptyList(), null, progress);
+                    } else materials = new FillableMaterials();
+                    reader.seek(currentOffset);
+                    progress.updateWith(reader);
+
+                    Part part = switch (head[1]) { // TODO: There's more data to be read.
+                        case 0x10 -> new PartCharacter(textures, materials);
+                        case 0x20 -> new PartObject(textures, materials);
+                        default -> new PartUnknown(textures, materials);
+                    };
+                    int endOffset = (texturesOffset>0 ? texturesOffset : (materialsOffset>0 ? materialsOffset : (reader.getSize()+8)));
+                    BlockReader subReader = reader.segment(endOffset-currentOffset-8);
+                    part.readData(subReader, progress);
+                    return part;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+            case 0x03, 0x08 -> {
+                Part part = new PartUnknown();
+                part.HEAD = head;
+                part.readData(reader, progress);
+                return part;
+            }
+            default -> {
+                System.err.println("Unknown type 0x"+Integer.toHexString(head[0]).toUpperCase()+" at 0x"+Integer.toHexString(reader.getTruePointer()-4).toUpperCase()+" - You can ignore this exception (for now).");
+
+                Part part = new PartUnknown();
+                part.HEAD = head;
+                part.readData(reader.segment(reader.getRemaining()), progress);
+                return part;
             }
         }
-        return part;
     }
 
     /// Reads main mesh data excluding texture and material data.
@@ -112,35 +102,32 @@ public abstract class Part implements DatingBachelor {
 
     public final void write(BlockWriter writer, KARFile.ProgressUpdater progress) {
         progress.setMessage("Writing Part");
-        writer.writeIntLittle(UNKNOWN1);
-        writer.writeIntLittle(UNKNOWN2.length);
-        writer.writeBytes(UNKNOWN2);
+        writer.writeBlockHead(HEAD);
+        writer.writeIntLittle(0); // size placeholder
 
-        if (TYPE == null) return;
-        writer = writer.segment();
-        writer.writeIntLittle(TYPE);
-        boolean wasLittleEndian = writer.isLittleEndian();
-        writer.setLittleEndian(true);
-        writer.writeRawString("\0\0\0\0\0\0\0\0\0\0\0\0"); // Block Size and Texture/Material Offsets - Get filled in later.
-        BlockWriter blockWriter = writer.segment();
+        BlockWriter newWriter = writer.segment();
+        writer.seek(-4); // send the original writer to write the size out when we're done
+
+        newWriter.setLittleEndian(true);
+        newWriter.writeRawString("\0\0\0\0\0\0\0\0\0\0\0\0"); // Block Size and Texture/Material Offsets - Get filled in later.
+        BlockWriter blockWriter = newWriter.segment();
         writeData(blockWriter, progress);
 
-        byte[] alignBytes = new byte[getBytesToAlign(writer.getTruePointer())];
+        byte[] alignBytes = new byte[getBytesToAlign(newWriter.getTruePointer())];
         if (alignBytes.length > 0) blockWriter.writeBytes(alignBytes);
 
         int texPosition;
         if (hasTextures()) {
-            texPosition = writer.getPointer();
-            textures.write(writer.segment(), null, progress);
+            texPosition = newWriter.getPointer();
+            textures.write(newWriter.segment(), null, progress);
         } else texPosition = 0;
         int matPosition;
         if (hasMaterial()) {
-            matPosition = writer.getPointer();
-            materials.write(writer.segment(), null, progress);
+            matPosition = newWriter.getPointer();
+            materials.write(newWriter.segment(), null, progress);
         } else matPosition = 0;
-        int endPosition = writer.getPointer()-8;
-        writer.setLittleEndian(wasLittleEndian);
-        writer.seek(4);
+        int endPosition = newWriter.getPointer()-8;
+
         writer.writeInt(endPosition);
         writer.writeIntLittle(texPosition);
         writer.writeIntLittle(matPosition);
