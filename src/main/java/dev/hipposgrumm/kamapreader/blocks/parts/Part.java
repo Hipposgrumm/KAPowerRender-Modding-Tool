@@ -80,10 +80,10 @@ public abstract class Part implements DatingBachelor {
                     return null;
                 }
             }
-            case 0x03, 0x08 -> {
+            case 0x03, 0x08, 0x09, 0x0A -> {
                 Part part = new PartUnknown();
                 part.HEAD = head;
-                part.readData(reader, progress);
+                part.readData(reader.segment(reader.getRemaining()), progress);
                 return part;
             }
             default -> {

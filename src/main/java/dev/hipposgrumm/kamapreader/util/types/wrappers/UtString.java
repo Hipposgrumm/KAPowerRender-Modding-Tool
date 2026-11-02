@@ -24,14 +24,28 @@ public class UtString implements DatingProfileValue {
     public UtString(int maxSize) {
         this.value = "";
         this.original = null;
-        this.encoding = Encoding.US_ASCII;
+        this.encoding = null;
+        this.maxSize = maxSize;
+    }
+
+    public UtString(int maxSize, Encoding encoding) {
+        this.value = "";
+        this.original = null;
+        this.encoding = encoding;
         this.maxSize = maxSize;
     }
 
     public UtString(String string, int maxSize) {
         this.value = string;
         this.original = string;
-        this.encoding = detectEncoding(string);
+        this.encoding = null;
+        this.maxSize = maxSize;
+    }
+
+    public UtString(String string, int maxSize, Encoding encoding) {
+        this.value = string;
+        this.original = string;
+        this.encoding = encoding;
         this.maxSize = maxSize;
     }
 
@@ -41,6 +55,7 @@ public class UtString implements DatingProfileValue {
     }
 
     public Encoding getEncoding() {
+        if (encoding == null) return detectEncoding(value); // NULL encoding = auto-detect
         return encoding;
     }
 
@@ -55,8 +70,10 @@ public class UtString implements DatingProfileValue {
     public Node createDisplay(FirstThing controller, Runnable onChanged, boolean readonly) {
         AtomicReference<TextField> text = new AtomicReference<>();
         text.set(DatingProfileValue.text(this.value, readonly, (observable, oldValue, newValue) -> {
-            this.encoding = detectEncoding(newValue);
-            int maxSize = this.maxSize / this.encoding.charsize;
+            Encoding encoding = this.encoding == null
+                    ? detectEncoding(newValue)
+                    : this.encoding;
+            int maxSize = this.maxSize / encoding.charsize;
             if (newValue.length() > maxSize) {
                 newValue = newValue.substring(0, maxSize);
                 text.get().setText(newValue);

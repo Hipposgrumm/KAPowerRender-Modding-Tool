@@ -73,5 +73,11 @@ tasks.withType<org.beryx.jlink.JlinkTask> {
             }
             into("${layout.buildDirectory.get()}/KAPowerRenderModdingTool")
         }
+        copy {
+            from("/") {
+                include("hashed_strings.txt")
+            }
+            into("${layout.buildDirectory.get()}/KAPowerRenderModdingTool")
+        }
     }
 }

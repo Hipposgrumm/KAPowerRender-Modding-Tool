@@ -22,5 +22,9 @@ public record UShort(short innerVal) {
         public int get(int i) {
             return array[i] & 0xFFFF;
         }
+
+        public UShort getWrapped(int i) {
+            return new UShort(array[i]);
+        }
     }
 }

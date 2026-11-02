@@ -22,5 +22,9 @@ public record UInteger(int innerVal) {
         public long get(int i) {
             return array[i] & 0xFFFFFFFFL;
         }
+
+        public UInteger getWrapped(int i) {
+            return new UInteger(array[i]);
+        }
     }
 }

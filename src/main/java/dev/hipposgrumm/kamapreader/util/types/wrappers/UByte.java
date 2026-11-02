@@ -22,5 +22,9 @@ public record UByte(byte innerVal) {
         public short get(int i) {
             return (short) (array[i] & 0xFF);
         }
+
+        public UByte getWrapped(int i) {
+            return new UByte(array[i]);
+        }
     }
 }

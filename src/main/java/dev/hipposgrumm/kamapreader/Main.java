@@ -1,6 +1,7 @@
 package dev.hipposgrumm.kamapreader;
 
 import dev.hipposgrumm.kamapreader.util.ViewerAppHandle;
+import dev.hipposgrumm.kamapreader.util.types.HashedStrings;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -31,6 +32,7 @@ public class Main extends Application {
             }
         }
 
+        HashedStrings.init();
         launch();
     }
 
