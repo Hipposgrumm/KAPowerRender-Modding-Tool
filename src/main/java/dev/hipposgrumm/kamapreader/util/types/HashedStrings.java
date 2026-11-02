@@ -47,10 +47,7 @@ public class HashedStrings {
                 for (String line:Files.readAllLines(stringsFile.toPath())) {
                     // The comments in the file also get hashed, but this doesn't hurt anything.
                     if (!line.isBlank())
-                        fromString(line.substring(0, Math.min(
-                                line.indexOf('\n'),
-                                line.indexOf('\r')
-                        )));
+                        fromString(line);
                 }
             } catch (IOException | SecurityException e) {
                 throw new RuntimeException(e);
