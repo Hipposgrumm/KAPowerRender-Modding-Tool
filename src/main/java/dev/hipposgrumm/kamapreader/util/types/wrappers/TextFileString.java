@@ -49,7 +49,7 @@ public class TextFileString implements DatingProfileValue {
             });
         }
 
-        Button saveButton = new Button("Save File", Icon.export());
+        Button saveButton = new Button("Save File", Icon.export(15));
         saveButton.setOnAction(event -> {
             try {
                 int extPos = this.name.lastIndexOf('.');

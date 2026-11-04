@@ -35,8 +35,8 @@ public class TexturesDisplay implements DatingProfileValue {
         for (int i=0;i<textures.length;i++) {
             int lambdaSafeIndex = i;
             ImageView image = new ImageView(textures[i].getJavaFXImage());
-            Button saveButton = new Button("Save Texture", Icon.download());
-            Button changeButton = new Button("Change Texture", Icon.upload());
+            Button saveButton = new Button("Save Texture", Icon.download(15));
+            Button changeButton = new Button("Change Texture", Icon.upload(15));
             if (i == 0) {
                 double minwidth = controller.tableValue.getMinWidth();
                 controller.tableValue.setMinWidth(image.getImage().getWidth() + 150);
@@ -59,8 +59,8 @@ public class TexturesDisplay implements DatingProfileValue {
                     new VBox(saveButton, changeButton)
             );
         }
-        Button saveButton = new Button("Save All", Icon.download());
-        Button changeButton = new Button("Change All", Icon.upload());
+        Button saveButton = new Button("Save All", Icon.download(15));
+        Button changeButton = new Button("Change All", Icon.upload(15));
         if (Texture.HAS_AWT) {
             saveButton.setOnAction(event -> saveAll(controller, textures));
         } else {

@@ -39,10 +39,10 @@ public class SoundDisplay implements DatingProfileValue {
             playerref.player = new Player(sound);
             progress.setMax(playerref.player.length());
 
-            Button playbtn = new Button("", Icon.play());
-            Button pausebtn = new Button("", Icon.pause());
-            Button stopbtn = new Button("", Icon.stop());
-            ToggleButton loopbtn = new ToggleButton("", Icon.loop());
+            Button playbtn = new Button("", Icon.play(25));
+            Button pausebtn = new Button("", Icon.pause(25));
+            Button stopbtn = new Button("", Icon.stop(25));
+            ToggleButton loopbtn = new ToggleButton("", Icon.loop(25));
             CheckBox autoplaybtn = new CheckBox("Auto-play");
 
             loopbtn.setSelected(loopingMode);
@@ -93,8 +93,8 @@ public class SoundDisplay implements DatingProfileValue {
             soundInterface = new Label("Preview could not be loaded.");
         }
 
-        Button saveButton = new Button("Save Sound", Icon.download());
-        Button changeButton = new Button("Replace Sound", Icon.upload());
+        Button saveButton = new Button("Save Sound", Icon.download(15));
+        Button changeButton = new Button("Replace Sound", Icon.upload(15));
         saveButton.setOnAction(event -> {
             try {
                 String extension = sound.getFileExtension();

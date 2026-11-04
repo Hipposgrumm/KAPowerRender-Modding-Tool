@@ -247,7 +247,7 @@ public class Texture implements DatingBachelor, Previewable, Exportable {
                     ImageView view = new ImageView(texture.getViewable().getJavaFXImage());
                     view.setFitWidth(100);
                     view.setFitHeight(100);
-                    Button refButton = new Button("Go to Reference", Icon.redirect());
+                    Button refButton = new Button("Go to Reference", Icon.redirect(15));
                     TreeItem<DatingBachelor> found = DatingProfileValue.findInTree(controller.tree.getRoot(), texture);
                     if (found != null) refButton.setOnAction(event -> {
                         MultipleSelectionModel<TreeItem<DatingBachelor>> selection = controller.tree.getSelectionModel();

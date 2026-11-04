@@ -77,7 +77,7 @@ public record DatingProfileEntry(String name, boolean readonly, DatingProfileVal
                     onChanged.run();
                 });
                 case UByte b -> DatingProfileValue.ubyteSpinner(b, readonly, (observable, oldValue, newValue) -> {
-                    setter.accept((T) newValue);
+                    setter.accept((T) new UByte(newValue.shortValue()));
                     onChanged.run();
                 });
                 case Short s -> DatingProfileValue.shortSpinner(s, readonly, (observable, oldValue, newValue) -> {
@@ -85,7 +85,7 @@ public record DatingProfileEntry(String name, boolean readonly, DatingProfileVal
                     onChanged.run();
                 });
                 case UShort s -> DatingProfileValue.ushortSpinner(s, readonly, (observable, oldValue, newValue) -> {
-                    setter.accept((T) newValue);
+                    setter.accept((T) new UShort(newValue));
                     onChanged.run();
                 });
                 case Integer i -> DatingProfileValue.intSpinner(i, readonly, (observable, oldValue, newValue) -> {
@@ -93,7 +93,7 @@ public record DatingProfileEntry(String name, boolean readonly, DatingProfileVal
                     onChanged.run();
                 });
                 case UInteger i -> DatingProfileValue.uintSpinner(i, readonly, (observable, oldValue, newValue) -> {
-                    setter.accept((T) newValue);
+                    setter.accept((T) new UInteger(newValue));
                     onChanged.run();
                 });
                 case Float f -> DatingProfileValue.floatSpinner(f, readonly, (observable, oldValue, newValue) -> {
