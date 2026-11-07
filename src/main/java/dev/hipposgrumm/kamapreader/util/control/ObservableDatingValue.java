@@ -59,8 +59,8 @@ public class ObservableDatingValue extends ObservableValueBase<Node> {
         return result;
     }
 
-    public void decommission() {
-        this.profileValue.onDestroyDisplay();
+    public void decommission(boolean isAppExit) {
+        this.profileValue.onDestroyDisplay(isAppExit);
     }
 
     private static class BachelorStringProperty extends SimpleStringProperty {

@@ -80,9 +80,9 @@ public class BachelorProfileValueList<T extends DatingProfileValue> implements D
     }
 
     @Override
-    public void onDestroyDisplay() {
+    public void onDestroyDisplay(boolean isAppExit) {
         for (DatingProfileValue v:displayCache.keySet()) {
-            v.onDestroyDisplay();
+            v.onDestroyDisplay(isAppExit);
         }
     }
 }

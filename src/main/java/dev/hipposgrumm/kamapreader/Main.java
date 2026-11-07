@@ -11,12 +11,14 @@ import java.io.IOException;
 
 public class Main extends Application {
     public static boolean debugenv = false;
+    private FirstThing controller;
 
     @Override
     public void start(Stage stage) throws IOException {
         FXMLLoader loader = new FXMLLoader(Main.class.getClassLoader().getResource("main.fxml"));
         Scene scene = new Scene(loader.load(), 800, 600);
-        ((FirstThing)loader.getController()).stage = stage;
+        controller = loader.getController();
+        controller.stage = stage;
         stage.setTitle("KAPowerRender Modding Tool");
         stage.setScene(scene);
         stage.show();
@@ -38,6 +40,7 @@ public class Main extends Application {
 
     @Override
     public void stop() {
+        if (controller != null) controller.destroyDisplay(true);
         ViewerAppHandle.terminateProgram();
     }
 }

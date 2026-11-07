@@ -120,8 +120,13 @@ public class FirstThing implements Initializable {
         });
     }
 
+    public void destroyDisplay(boolean isAppExit) {
+        for (ObservableDatingValue value:table.getItems()) value.decommission(isAppExit);
+    }
+
     private void cleanupTableItems() {
         for (ObservableDatingValue value:table.getItems()) value.decommission();
+        destroyDisplay(false);
         table.getItems().clear();
     }
 

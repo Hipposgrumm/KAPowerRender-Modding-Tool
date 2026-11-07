@@ -144,9 +144,10 @@ public class SoundDisplay implements DatingProfileValue {
     }
 
     @Override
-    public void onDestroyDisplay() {
+    public void onDestroyDisplay(boolean isAppExit) {
         progressBarControl.stop();
-        AUDIOPLAYER_CLOSER.execute(() -> {
+        if (isAppExit) playerref.player.close(); // workers don't work after the app is closed
+        else AUDIOPLAYER_CLOSER.execute(() -> {
             playerref.player.close();
         });
     }
