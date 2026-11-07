@@ -15,6 +15,8 @@ import javafx.scene.transform.Rotate;
 
 // https://github.com/jvm-graphics-labs/hello-triangle/blob/master/src/main/java/gl3/HelloTriangleSimple.java
 public class MaterialView implements DatingProfileValue {
+    private AnimationTimer rotationControl = null;
+
     private final Material material;
     private final double width, height;
 
@@ -54,22 +56,18 @@ public class MaterialView implements DatingProfileValue {
             subScene.setFill(Color.TEAL);
             subScene.setCamera(camera);
 
-            new AnimationTimer() {
+            this.rotationControl = new AnimationTimer() {
                 private long last = 0;
 
                 @Override
                 public void handle(long now) {
                     if (last == 0) last = now;
-                    if (subScene.getScene() == null) {
-                        stop();
-                        return;
-                    }
-
                     updateMaterial(material, sphere, pongMaterial);
                     sphere.getTransforms().add(new Rotate((now-last)/10000000d, Rotate.Y_AXIS));
                     last = now;
                 }
-            }.start();
+            };
+            this.rotationControl.start();
 
             changableView = subScene;
         } catch (Exception e) {
@@ -77,6 +75,11 @@ public class MaterialView implements DatingProfileValue {
             changableView = new Label("Preview could not be loaded.");
         }
         return changableView;
+    }
+
+    @Override
+    public void onDestroyDisplay(boolean isAppExit) {
+        rotationControl.stop();
     }
 
     private static void updateMaterial(Material material, Sphere sphere, PhongMaterial pongMaterial) {
