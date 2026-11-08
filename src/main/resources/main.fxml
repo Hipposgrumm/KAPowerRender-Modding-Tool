@@ -2,8 +2,8 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.SplitPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.Menu?>
@@ -32,22 +32,23 @@
         </Menu>
         <Menu text="Help">
             <MenuItem text="Help" onAction="#helpButton"/>
+            <MenuItem text="About" onAction="#aboutButton"/>
         </Menu>
     </MenuBar>
-    <HBox fx:id="dragTarget" alignment="CENTER" spacing="20.0">
+    <SplitPane fx:id="contents" dividerPositions="0.4" prefWidth="1E10" prefHeight="1E10">
         <padding>
             <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
         </padding>
-        <TreeView fx:id="tree" minWidth="300" minHeight="525">
+        <TreeView fx:id="tree" minWidth="50">
             <BachelorTreeItem_External fx:id="treeRoot"/>
         </TreeView>
-        <VBox alignment="CENTER" spacing="5.0">
-            <TableView fx:id="table" minWidth="435" minHeight="500">
+        <VBox alignment="CENTER" spacing="5.0" minWidth="50">
+            <TableView fx:id="table" prefHeight="1E10">
                 <placeholder>
-                    <Label text="Open a file to begin."/>
+                    <Label text="Open a file to begin." wrapText="true"/>
                 </placeholder>
             </TableView>
-            <Button text="Save" minWidth="435" onAction="#save"/>
+            <Button text="Save" prefWidth="Infinity" onAction="#save"/>
         </VBox>
-    </HBox>
+    </SplitPane>
 </VBox>

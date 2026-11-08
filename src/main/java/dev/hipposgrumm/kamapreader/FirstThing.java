@@ -8,7 +8,9 @@ import dev.hipposgrumm.kamapreader.util.PlaceholderValue;
 import dev.hipposgrumm.kamapreader.util.control.DatingProfileEntry;
 import dev.hipposgrumm.kamapreader.util.control.ObservableDatingValue;
 import dev.hipposgrumm.kamapreader.util.control.ProgressPopup;
+import dev.hipposgrumm.kamapreader.util.types.UtTable;
 import javafx.application.Platform;
+import javafx.beans.binding.IntegerExpression;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
@@ -20,7 +22,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.TransferMode;
-import javafx.scene.layout.HBox;
 import javafx.stage.*;
 
 import java.io.File;
@@ -41,14 +42,21 @@ public class FirstThing implements Initializable {
     private DirectoryChooser directory_chooser;
 
     @FXML private MenuBar menuBar;
-    @FXML private HBox dragTarget;
+    @FXML private SplitPane contents;
     @FXML public TreeView<DatingBachelor> tree;
     @FXML public BachelorTreeItem treeRoot;
-    @FXML public TableView<ObservableDatingValue> table;
+    @FXML public TableView<?> table;
+
+    public TableView<ObservableDatingValue> datingtable = null;
     public TableColumn<ObservableDatingValue,String> tableName;
     public TableColumn<ObservableDatingValue,Node> tableValue;
 
+    public TableView<IntegerExpression> datatable = null;
+    public UtTable datatabledata = null;
+
+
     private final Dialog<String> helpPopup = new Dialog<>();
+    private final Dialog<String> aboutPopup = new Dialog<>();
     private final Dialog<ButtonType> question = new Dialog<>();
     private final Dialog<String> notice = new Dialog<>();
     private final Dialog<String> popupError = new Dialog<>();
@@ -66,6 +74,22 @@ public class FirstThing implements Initializable {
         );
         directory_chooser = new DirectoryChooser();
         onFilesDroppedHook = this::onFilesDragged;
+
+        aboutPopup.setWidth(450.0);
+        aboutPopup.setTitle("About");
+        aboutPopup.setHeaderText("KAPowerRenderModdingTool");
+        aboutPopup.setContentText("""
+                Author: Hipposgrumm
+                
+                This program is a work in progress. If you have any questions, feel free to contact me (through GitHub or whatever).
+                No AI was used to reverse engineer or write any part of this program.
+                
+                Icons by FontAwesome
+                
+                Additional Thanks:
+                Alice Averlong (@foone) - for initial research on Barbie Fashion Show
+                """);
+        aboutPopup.getDialogPane().getButtonTypes().add(ButtonType.OK);
 
         helpPopup.setTitle("Help");
         helpPopup.setHeaderText("This is the Help menu.");
@@ -104,14 +128,14 @@ public class FirstThing implements Initializable {
         });
         tree.setCellFactory(treeView -> new BachelorTreeCell(this));
 
-        dragTarget.setOnDragOver(event -> {
-            if (event.getGestureSource() != dragTarget && event.getDragboard().hasFiles()) {
+        contents.setOnDragOver(event -> {
+            if (event.getGestureSource() != contents && event.getDragboard().hasFiles()) {
                 event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
             }
             event.consume();
         });
 
-        dragTarget.setOnDragDropped(event -> {
+        contents.setOnDragDropped(event -> {
             if (event.getDragboard().hasFiles()) {
                 onFilesDragged(event.getDragboard().getFiles().toArray(new File[0]));
             }
@@ -121,21 +145,28 @@ public class FirstThing implements Initializable {
     }
 
     public void destroyDisplay(boolean isAppExit) {
-        for (ObservableDatingValue value:table.getItems()) value.decommission(isAppExit);
+        if (datingtable != null)
+            for (ObservableDatingValue value:datingtable.getItems())
+                value.decommission(isAppExit);
+        if (datatabledata != null) datatabledata.onDestroyDisplay(isAppExit);
     }
 
     private void cleanupTableItems() {
-        for (ObservableDatingValue value:table.getItems()) value.decommission();
         destroyDisplay(false);
+        datatabledata = null;
+
         table.getItems().clear();
+        table.getColumns().clear();
+        datingtable = null;
+        datatable = null;
     }
 
+    @SuppressWarnings("unchecked")
     private void selectElement(TreeItem<DatingBachelor> value) {
         DatingBachelor bachelor = value.getValue();
         if (bachelor == null) return;
 
         cleanupTableItems();
-        table.getColumns().clear();
         double maxwidth = tableValue.getMaxWidth();
         tableValue.setMaxWidth(tableValue.getMinWidth());
         tableValue.setMaxWidth(maxwidth);
@@ -144,10 +175,19 @@ public class FirstThing implements Initializable {
 
         bachelor.onSelected();
         if (value instanceof BachelorTreeItem item && item.entries != null) {
-            table.getColumns().add(tableName);
-            table.getColumns().add(tableValue);
-            for (DatingProfileEntry entry:item.entries) {
-                table.getItems().add(new ObservableDatingValue(this, value, entry));
+            if (item.getValue() instanceof UtTable utTable) {
+                datatable = (TableView<IntegerExpression>) table;
+                utTable.fillTable(datatable, this, () -> {
+                    // TODO: There should be an update function here.
+                }, false);
+                datatabledata = utTable;
+            } else {
+                datingtable = (TableView<ObservableDatingValue>) table;
+                datingtable.getColumns().add(tableName);
+                datingtable.getColumns().add(tableValue);
+                for (DatingProfileEntry entry:item.entries) {
+                    datingtable.getItems().add(new ObservableDatingValue(this, value, entry));
+                }
             }
         }
     }
@@ -229,6 +269,11 @@ public class FirstThing implements Initializable {
                 case SUCCEEDED, FAILED, CANCELLED -> stage.close();
             }
         });
+    }
+
+    @FXML
+    protected void aboutButton(ActionEvent event) {
+        aboutPopup.showAndWait();
     }
 
     @FXML
@@ -348,7 +393,6 @@ public class FirstThing implements Initializable {
     private void clearPreview() {
         treeRoot.getChildren().clear();
         cleanupTableItems();
-        table.getColumns().clear();
         ((Label) table.getPlaceholder()).setText("Select an element in the tree to edit it.");
     }
 

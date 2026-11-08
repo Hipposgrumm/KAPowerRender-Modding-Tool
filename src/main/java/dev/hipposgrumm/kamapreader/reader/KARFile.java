@@ -75,6 +75,7 @@ public class KARFile extends KADataFile {
                     case "FtFm" -> new FontsBlock();
                     case "LvFm" -> new LevelDefinesBlock();
                     case "StFm" -> new StringsBlock();
+                    case "TbFm" -> new TablesBlock();
                     default -> new UnknownBlock(blockType);
                 };
                 block.readFull(reader.segment(blockSize), progress);

@@ -1,3 +1,12 @@
 .root {
     -fx-font-family: Veranda;
 }
+
+.split-pane {
+    -fx-background-insets: 0;
+}
+
+.split-pane > .split-pane-divider {
+    -fx-padding: 7.5;
+    -fx-background-color: #80808020;
+}
